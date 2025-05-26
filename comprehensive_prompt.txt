@@ -1,0 +1,162 @@
+# Comprehensive Prompt for Comnecter - Location-Based Social Networking App
+
+Create a sophisticated mobile application with the following specifications:
+
+## App Name and Purpose
+Build "Comnecter" - a location-based social networking application designed to help users discover and connect with nearby people who share similar interests. The app emphasizes real-world connections by using radar visualization to detect nearby users, enabling direct messaging after establishing connections, and supporting community creation around shared interests.
+
+## Core Visual Design
+- **Color Scheme**: Use a modern, vibrant palette with primary color #3E64FF (bright blue), secondary color #5EDFFF (light blue), and accent color #FFC857 (yellow)
+- **Design Language**: Implement a clean, modern UI with subtle animations throughout the interface
+- **Animations**: Create smooth transitions between screens, subtle micro-interactions, and a captivating radar animation for the main feature
+- **Dark/Light Modes**: Support both with appropriate color adaptations
+- **Layout**: Employ rounded corners (12-16px radius), comfortable padding, and clear visual hierarchy
+- **Typography**: Use Poppins font family with appropriate weight variations for different UI elements
+
+## Main Components & Features
+
+### 1. Navigation Structure
+- Implement a tab-based navigation with 5 main sections:
+  - Radar (Nearby Users)
+  - Chats
+  - Communities
+  - Profile
+  - Events
+- Include settings access from all main screens
+- Design smooth transitions between tabs
+
+### 2. Radar Screen
+- Create an animated radar visualization that "scans" for nearby users
+- Display nearby users as dots on the radar with distance-appropriate positioning
+- Show pulsating animation for newly detected users
+- Include distance rings with kilometer markings
+- Implement a pull-to-refresh mechanism to update nearby users
+- Add a slider to adjust maximum detection range
+- Display a list of nearby users below the radar with:
+  - Profile picture/initial
+  - Name
+  - Distance
+  - Common interests
+  - Action buttons based on connection status
+- Create detailed user profile modals when tapping on users
+
+### 3. Chat Functionality
+- Display active conversations with:
+  - Profile pictures with online status indicators
+  - Usernames
+  - Last message preview
+  - Timestamp
+  - Unread message count
+- Implement detailed chat view with:
+  - Message bubbles (different colors for sent/received)
+  - Timestamps
+  - Text input with send button
+  - Smooth animations for new messages
+  - Ability to switch between direct and community chats
+
+### 4. Communities Section
+- Design tabs for "Discover" and "My Communities"
+- Display community cards with:
+  - Cover image or gradient
+  - Name
+  - Tag (with @ prefix)
+  - Brief description
+  - Member count
+  - Join/View buttons
+- Create community creation flow with:
+  - Name and unique tag input
+  - Description
+  - Interest tag selection
+  - Privacy settings
+- Implement member management features
+
+### 5. User Profiles
+- Create customizable profiles with:
+  - Profile picture/animation options
+  - Username and display name
+  - Editable bio
+  - Interest tags
+  - Background customization options
+- Show profile statistics (friends, communities, posts)
+- Implement Friends Insight feature for transparency in social interactions
+- Add privacy controls for profile visibility
+
+### 6. Events (Coming Soon Section)
+- Design a placeholder for upcoming events functionality
+- Include the event creation flow with:
+  - Basic information (title, description, tags)
+  - Location selection
+  - Preview and publishing options
+
+### 7. Onboarding Flow
+- Create visually appealing intro screens
+- Design profile creation with:
+  - Name and username inputs
+  - Interest selection
+  - Animated transitions between steps
+- Implement validation for usernames
+
+### 8. Settings Screen
+- Add toggles for:
+  - Dark/light mode
+  - Notifications
+  - Location services
+  - Radar visibility
+  - Maximum search distance
+  - Friends Insight options
+- Include account management options
+- Add about section with app info
+
+## Technical Requirements
+
+### Data Models
+- User model with profile info, location data, online status, friends lists
+- Chat and message models for conversation management
+- Community model for group organization
+- Notification model for system alerts
+- Event model (for future implementation)
+
+### State Management
+- Use Provider pattern for app-wide state
+- Implement local data persistence using shared_preferences
+- Create simulated backend services for all features
+- Include proper error handling throughout the app
+
+### Service Layer
+- Design services for:
+  - User management
+  - Chat functionality
+  - Community features
+  - Notifications
+  - Location/radar features
+  - Sound effects
+
+### UI Components
+- Develop reusable widgets for:
+  - User avatars with customization options
+  - Enhanced radar visualization
+  - Message bubbles with status indicators
+  - Community and event cards
+  - Notification badges
+  - Profile sections with animations
+
+### Animations & Effects
+- Implement subtle animations for:
+  - Tab transitions
+  - List item appearances
+  - Button interactions
+  - Radar scanning effect
+  - Profile elements
+- Add sound effects for key interactions
+
+## Implementation Notes
+- Focus on a clean, maintainable architecture
+- Include realistic sample data for all features
+- Create fallback mechanisms for location services
+- Implement proper error handling and loading states
+- Optimize the radar feature for smooth performance
+- Add appropriate platform permissions for location features
+- Ensure accessibility with proper contrast and text sizes
+- Include shimmer loading effects and placeholders
+
+Develop this complete application with production-ready architecture, beautiful design, and functional features that demonstrate real-world social networking capabilities. The app should provide a seamless experience for discovering and connecting with nearby users.

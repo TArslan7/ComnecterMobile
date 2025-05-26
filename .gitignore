@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Build outputs
+/build/
+/ios/Flutter/Flutter.framework/
+/ios/Flutter/Flutter.podspec
+/ios/Flutter/Generated.xcconfig
+/ios/Pods/
+/ios/Runner.xcworkspace/
+/android/.gradle/
+/android/app/build/
+/android/build/
+/web/.dart_tool/
+/.dart_tool/
+.packages
+
+# IDE settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Secrets
+.env
+
+# Firebase keys (als ze bestaan)
+google-services.json
+GoogleService-Info.plist
