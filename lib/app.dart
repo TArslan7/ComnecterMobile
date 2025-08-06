@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'routing/app_router.dart';
 
 class ComnecterApp extends StatelessWidget {
@@ -7,7 +6,7 @@ class ComnecterApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context){
-      final _router = createRouter();
+      final router = createRouter();
 
       return MaterialApp.router(
         title: 'Comnecter',
@@ -16,7 +15,7 @@ class ComnecterApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
           fontFamily: 'SF Pro',
         ),
-        routerConfig: _router,
+        routerConfig: router,
       );
 
   }
