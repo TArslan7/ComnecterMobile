@@ -7,6 +7,8 @@ class NearbyUser {
   final double distanceKm;
   final String status;
   final List<String> interests;
+  final DateTime lastSeen;
+  final double angleDegrees;
 
   NearbyUser({
     required this.id,
@@ -15,7 +17,11 @@ class NearbyUser {
     required this.distanceKm,
     required this.status,
     required this.interests,
+    required this.lastSeen,
+    required this.angleDegrees,
   });
+
+  bool get isOnline => status == 'Online' || status == 'Available';
 
   static List<NearbyUser> generateMockUsers(int count) {
     final random = Random();
@@ -96,6 +102,8 @@ class NearbyUser {
         distanceKm: distance,
         status: status,
         interests: userInterests,
+        lastSeen: DateTime.now().subtract(Duration(minutes: random.nextInt(60))),
+        angleDegrees: random.nextDouble() * 360, // Random angle between 0 and 360 degrees
       );
     });
   }
