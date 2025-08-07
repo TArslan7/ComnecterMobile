@@ -30,3 +30,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  
+  assets:
+    - assets/app_icon.png
+    - assets/sounds/
+    - assets/images/
+    - assets/icons/
