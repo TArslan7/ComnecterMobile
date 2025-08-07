@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
-import 'models/app_settings.dart';
-import 'services/settings_service.dart';
 import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
+import 'models/app_settings.dart';
+import 'services/settings_service.dart';
 
 class SettingsScreen extends HookWidget {
   const SettingsScreen({super.key});
@@ -97,254 +98,89 @@ class SettingsScreen extends HookWidget {
           ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // Radar Settings
+              // Monetization Section
               _buildSettingsCard(
                 context,
-                'Radar Settings',
-                Icons.radar,
+                'Premium & Monetization',
+                Icons.workspace_premium,
                 [
-                  _buildSliderSetting(
-                    context,
-                    'Radar Radius (km)',
-                    '${currentSettings.radarRadiusKm.toStringAsFixed(1)} km',
-                    currentSettings.radarRadiusKm,
-                    1,
-                    20,
-                    (value) async {
-                      final settingsService = SettingsService();
-                      await settingsService.updateRadarRadius(value);
-                      await _loadSettings();
-                      await soundService.playButtonClickSound();
-                    },
-                  ),
-                  _buildSwitchSetting(
-                    context,
-                    'Auto Refresh Radar',
-                    'Automatically refresh radar every 5 seconds',
-                    currentSettings.autoRefreshEnabled,
-                    (value) async {
-                      final settingsService = SettingsService();
-                      await settingsService.updateAutoRefreshEnabled(value);
-                      await _loadSettings();
-                      await soundService.playToggleEffect();
-                    },
-                  ),
-                  _buildSwitchSetting(
-                    context,
-                    'Location Services',
-                    'Enable to detect nearby users',
-                    currentSettings.locationServicesEnabled,
-                    (value) async {
-                      final settingsService = SettingsService();
-                      await settingsService.updateLocationServicesEnabled(value);
-                      await _loadSettings();
-                      await soundService.playToggleEffect();
-                    },
-                  ),
+                  _buildSubscriptionSection(context, soundService),
+                  const SizedBox(height: 16),
+                  _buildAdSettingsSection(context, soundService),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // Notification Settings
-              _buildSettingsCard(
-                context,
-                'Notifications',
-                Icons.notifications,
-                [
-                  _buildSwitchSetting(
-                    context,
-                    'Enable Notifications',
-                    'Receive push notifications',
-                    currentSettings.notificationsEnabled,
-                    (value) async {
-                      final settingsService = SettingsService();
-                      await settingsService.updateNotificationsEnabled(value);
-                      await _loadSettings();
-                      await soundService.playToggleEffect();
-                    },
-                  ),
-                  _buildSwitchSetting(
-                    context,
-                    'Sound',
-                    'Play sound for notifications',
-                    currentSettings.soundEnabled,
-                    (value) async {
-                      final settingsService = SettingsService();
-                      await settingsService.updateSoundEnabled(value);
-                      await _loadSettings();
-                      await soundService.playToggleEffect();
-                    },
-                  ),
-                  _buildSwitchSetting(
-                    context,
-                    'Vibration',
-                    'Vibrate for notifications',
-                    currentSettings.vibrationEnabled,
-                    (value) async {
-                      final settingsService = SettingsService();
-                      await settingsService.updateVibrationEnabled(value);
-                      await _loadSettings();
-                      await soundService.playToggleEffect();
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Privacy Settings
-              _buildSettingsCard(
-                context,
-                'Privacy',
-                Icons.privacy_tip,
-                [
-                  _buildSwitchSetting(
-                    context,
-                    'Privacy Mode',
-                    'Hide your location from others',
-                    currentSettings.privacyModeEnabled,
-                    (value) async {
-                      final settingsService = SettingsService();
-                      await settingsService.updatePrivacyModeEnabled(value);
-                      await _loadSettings();
-                      await soundService.playToggleEffect();
-                    },
-                  ),
-                  _buildSwitchSetting(
-                    context,
-                    'Show Online Status',
-                    'Let others see when you\'re online',
-                    currentSettings.showOnlineStatus,
-                    (value) async {
-                      final settingsService = SettingsService();
-                      await settingsService.updateShowOnlineStatus(value);
-                      await _loadSettings();
-                      await soundService.playToggleEffect();
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // Sound Settings
               _buildSettingsCard(
                 context,
-                'Sound & Haptics',
+                'Sound & Feedback',
                 Icons.volume_up,
                 [
+                  _buildToggleSetting(
+                    context,
+                    'Sound Effects',
+                    'Play sounds for interactions',
+                    Icons.music_note,
+                    currentSettings.soundEnabled,
+                    (value) async {
+                      await soundService.toggleSound();
+                      final settingsService = SettingsService();
+                      await settingsService.updateSoundEnabled(value);
+                      settings.value = await settingsService.getSettings();
+                    },
+                    soundService,
+                  ),
+                  const SizedBox(height: 16),
                   _buildSliderSetting(
                     context,
                     'Sound Volume',
-                    '${(currentSettings.soundVolume * 100).toInt()}%',
+                    'Adjust sound effect volume',
                     currentSettings.soundVolume,
                     0.0,
                     1.0,
                     (value) async {
+                      await soundService.setVolume(value);
                       final settingsService = SettingsService();
                       await settingsService.updateSoundVolume(value);
-                      await _loadSettings();
-                      await soundService.playButtonClickSound();
+                      settings.value = await settingsService.getSettings();
                     },
                   ),
-                  _buildSwitchSetting(
+                  const SizedBox(height: 16),
+                  _buildToggleSetting(
                     context,
                     'Haptic Feedback',
                     'Vibrate on interactions',
+                    Icons.vibration,
                     currentSettings.hapticFeedbackEnabled,
                     (value) async {
                       final settingsService = SettingsService();
                       await settingsService.updateHapticFeedbackEnabled(value);
-                      await _loadSettings();
-                      await soundService.playToggleEffect();
+                      settings.value = await settingsService.getSettings();
                     },
+                    soundService,
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-              // Data Management
+              // App Settings
               _buildSettingsCard(
                 context,
-                'Data Management',
-                Icons.storage,
+                'App Settings',
+                Icons.app_settings_alt,
                 [
                   _buildActionSetting(
                     context,
-                    'Reset Settings',
-                    'Reset to default values',
-                    Icons.restore,
+                    'Notifications',
+                    'Manage notification preferences',
+                    Icons.notifications,
                     () async {
                       await soundService.playButtonClickSound();
-                      _showResetConfirmDialog(context, () async {
-                        final settingsService = SettingsService();
-                        await settingsService.resetSettings();
-                        await _loadSettings();
-                        confettiController.play();
-                        await soundService.playSuccessSound();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Settings reset to default!'),
-                              backgroundColor: AppTheme.accentGreen,
-                            ),
-                          );
-                        }
-                      });
+                      _showNotificationsDialog(context);
                     },
                   ),
-                  _buildActionSetting(
-                    context,
-                    'Clear All Data',
-                    'Delete all app data',
-                    Icons.delete_forever,
-                    () async {
-                      await soundService.playButtonClickSound();
-                      _showClearDataConfirmDialog(context, () async {
-                        final settingsService = SettingsService();
-                        await settingsService.clearAllData();
-                        await soundService.playSuccessSound();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('All data cleared!'),
-                              backgroundColor: AppTheme.accentGreen,
-                            ),
-                          );
-                        }
-                      });
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // About Section
-              _buildSettingsCard(
-                context,
-                'About',
-                Icons.info,
-                [
-                  _buildInfoSetting(
-                    context,
-                    'App Version',
-                    '1.0.0',
-                    Icons.apps,
-                  ),
-                  _buildInfoSetting(
-                    context,
-                    'Build Number',
-                    '2024.1.0',
-                    Icons.build,
-                  ),
-                  _buildActionSetting(
-                    context,
-                    'Terms of Service',
-                    'Read our terms and conditions',
-                    Icons.description,
-                    () async {
-                      await soundService.playButtonClickSound();
-                      _showTermsDialog(context);
-                    },
-                  ),
+                  const SizedBox(height: 16),
                   _buildActionSetting(
                     context,
                     'Privacy Policy',
@@ -353,6 +189,59 @@ class SettingsScreen extends HookWidget {
                     () async {
                       await soundService.playButtonClickSound();
                       _showPrivacyDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildActionSetting(
+                    context,
+                    'Terms of Service',
+                    'Read our terms of service',
+                    Icons.description,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showTermsDialog(context);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // About Section
+              _buildSettingsCard(
+                context,
+                'About',
+                Icons.info,
+                [
+                  _buildActionSetting(
+                    context,
+                    'App Version',
+                    'Version 1.0.0',
+                    Icons.apps,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showAboutDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildActionSetting(
+                    context,
+                    'Rate App',
+                    'Rate us on the app store',
+                    Icons.star,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showRateDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildActionSetting(
+                    context,
+                    'Contact Support',
+                    'Get help and support',
+                    Icons.support_agent,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showSupportDialog(context);
                     },
                   ),
                 ],
@@ -375,6 +264,371 @@ class SettingsScreen extends HookWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionSection(BuildContext context, SoundService soundService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Subscription Plans',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildSubscriptionCard(
+          context,
+          'Free Plan',
+          'Basic features',
+          'Free',
+          false,
+          () async {
+            await soundService.playButtonClickSound();
+            _showSubscriptionDialog(context, 'Free Plan');
+          },
+        ),
+        const SizedBox(height: 8),
+        _buildSubscriptionCard(
+          context,
+          'Premium Plan',
+          'Ad-free experience + advanced features',
+          '\$9.99/month',
+          true,
+          () async {
+            await soundService.playButtonClickSound();
+            _showSubscriptionDialog(context, 'Premium Plan');
+          },
+        ),
+        const SizedBox(height: 8),
+        _buildSubscriptionCard(
+          context,
+          'Pro Plan',
+          'Everything + priority support',
+          '\$19.99/month',
+          false,
+          () async {
+            await soundService.playButtonClickSound();
+            _showSubscriptionDialog(context, 'Pro Plan');
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubscriptionCard(
+    BuildContext context,
+    String title,
+    String description,
+    String price,
+    bool isRecommended,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: isRecommended ? 4 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isRecommended 
+            ? BorderSide(color: AppTheme.primaryBlue, width: 2)
+            : BorderSide.none,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        if (isRecommended) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryBlue,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'RECOMMENDED',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                price,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: isRecommended ? AppTheme.primaryBlue : Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdSettingsSection(BuildContext context, SoundService soundService) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Advertisement Settings',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildToggleSetting(
+          context,
+          'Show Ads',
+          'Display advertisements in the app',
+          Icons.ad_units,
+          true, // Default to showing ads
+          (value) async {
+            await soundService.playButtonClickSound();
+            _showAdSettingsDialog(context, value);
+          },
+          soundService,
+        ),
+        const SizedBox(height: 16),
+        _buildActionSetting(
+          context,
+          'Ad Preferences',
+          'Customize ad experience',
+          Icons.tune,
+          () async {
+            await soundService.playButtonClickSound();
+            _showAdPreferencesDialog(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToggleSetting(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    bool value,
+    Function(bool) onChanged,
+    SoundService soundService,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppTheme.primaryBlue, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: (newValue) {
+              soundService.playToggleEffect();
+              onChanged(newValue);
+            },
+            activeColor: AppTheme.primaryBlue,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSliderSetting(
+    BuildContext context,
+    String title,
+    String subtitle,
+    double value,
+    double min,
+    double max,
+    Function(double) onChanged,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.volume_up, color: AppTheme.primaryBlue, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '${(value * 100).round()}%',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: onChanged,
+            activeColor: AppTheme.primaryBlue,
+            inactiveColor: Colors.grey[300],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionSetting(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryBlue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: AppTheme.primaryBlue, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey[400],
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -422,197 +676,64 @@ class SettingsScreen extends HookWidget {
     ).animate().fadeIn(duration: const Duration(milliseconds: 400)).slideY(begin: 0.2, duration: const Duration(milliseconds: 400));
   }
 
-  Widget _buildSliderSetting(
-    BuildContext context,
-    String title,
-    String subtitle,
-    double value,
-    double min,
-    double max,
-    Function(double) onChanged,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: AppTheme.neutralGrey,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          divisions: ((max - min) * 10).toInt(),
-          label: subtitle,
-          onChanged: onChanged,
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  Widget _buildSwitchSetting(
-    BuildContext context,
-    String title,
-    String subtitle,
-    bool value,
-    Function(bool) onChanged,
-  ) {
-    return Column(
-      children: [
-        SwitchListTile(
-          title: Text(title),
-          subtitle: Text(subtitle),
-          value: value,
-          onChanged: onChanged,
-          activeColor: AppTheme.primaryBlue,
-        ),
-        const Divider(),
-      ],
-    );
-  }
-
-  Widget _buildActionSetting(
-    BuildContext context,
-    String title,
-    String subtitle,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(icon, color: AppTheme.primaryBlue),
-          title: Text(title),
-          subtitle: Text(subtitle),
-          trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: onTap,
-        ),
-        const Divider(),
-      ],
-    );
-  }
-
-  Widget _buildInfoSetting(
-    BuildContext context,
-    String title,
-    String value,
-    IconData icon,
-  ) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(icon, color: AppTheme.primaryBlue),
-          title: Text(title),
-          subtitle: Text(value),
-        ),
-        const Divider(),
-      ],
-    );
-  }
-
-  void _showResetConfirmDialog(BuildContext context, VoidCallback onConfirm) {
+  void _showSubscriptionDialog(BuildContext context, String plan) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Settings'),
-        content: const Text('Are you sure you want to reset all settings to default values?'),
+        title: Text('$plan Subscription'),
+        content: Text('This feature will be available soon!'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onConfirm();
-            },
-            child: const Text('Reset'),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
 
-  void _showClearDataConfirmDialog(BuildContext context, VoidCallback onConfirm) {
+  void _showAdSettingsDialog(BuildContext context, bool showAds) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear All Data'),
-        content: const Text('This will delete all your data. This action cannot be undone.'),
+        title: const Text('Ad Settings'),
+        content: Text('Ads are currently ${showAds ? 'enabled' : 'disabled'}. This feature will be available soon!'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onConfirm();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.accentRed,
-            ),
-            child: const Text('Clear All Data'),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
 
-  void _showHelpDialog(BuildContext context) {
+  void _showAdPreferencesDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Help'),
-        content: const Text('Need help with settings? Contact our support team.'),
+        title: const Text('Ad Preferences'),
+        content: const Text('Customize your ad experience. This feature will be available soon!'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement help functionality
-            },
-            child: const Text('Contact Support'),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
 
-  void _showTermsDialog(BuildContext context) {
+  void _showNotificationsDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Terms of Service'),
-        content: const Text('Our terms of service will be displayed here.'),
+        title: const Text('Notifications'),
+        content: const Text('Manage your notification preferences. This feature will be available soon!'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -624,11 +745,91 @@ class SettingsScreen extends HookWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Privacy Policy'),
-        content: const Text('Our privacy policy will be displayed here.'),
+        content: const Text('Read our privacy policy. This feature will be available soon!'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Terms of Service'),
+        content: const Text('Read our terms of service. This feature will be available soon!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('About Comnecter'),
+        content: const Text('Version 1.0.0\n\nA social discovery app for connecting with people nearby.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRateDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rate App'),
+        content: const Text('Rate us on the app store. This feature will be available soon!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSupportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Contact Support'),
+        content: const Text('Get help and support. This feature will be available soon!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Help'),
+        content: const Text('Need help? Contact our support team. This feature will be available soon!'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
         ],
       ),

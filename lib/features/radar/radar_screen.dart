@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:math';
+import '../../services/sound_service.dart';
+import '../../theme/app_theme.dart';
 import 'models/user_model.dart';
 import 'widgets/radar_widget.dart';
 import 'widgets/empty_state_widget.dart';
 import 'widgets/loading_widget.dart';
-import 'widgets/user_list_widget.dart';
-import '../../services/sound_service.dart';
-import '../../theme/app_theme.dart';
 
 class RadarScreen extends HookWidget {
   const RadarScreen({super.key});
@@ -20,170 +18,132 @@ class RadarScreen extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final nearbyUsers = useState<List<NearbyUser>>([]);
-    final isLoading = useState<bool>(false);
-    final isRefreshing = useState<bool>(false);
-    final refreshController = useMemoized(() => RefreshController());
-    final isMounted = useRef(true);
+    final isLoading = useState(true);
+    final isRefreshing = useState(false);
     final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 2)));
     final soundService = useMemoized(() => SoundService());
+    final pulseController = useAnimationController(duration: const Duration(seconds: 2));
+    final fadeController = useAnimationController(duration: const Duration(milliseconds: 300));
 
-    // Animation controllers
-    final pulseController = useAnimationController(duration: const Duration(milliseconds: 1500));
-    final fadeController = useAnimationController(duration: const Duration(milliseconds: 800));
+    // Mock data for nearby users
+    final mockUsers = [
+      NearbyUser(
+        id: '1',
+        name: 'Sarah Johnson',
+        distanceKm: 0.05,
+        avatar: '👩‍🦰',
+        status: 'Online',
+        interests: ['Music', 'Travel', 'Photography'],
+        lastSeen: DateTime.now(),
+        angleDegrees: 45,
+      ),
+      NearbyUser(
+        id: '2',
+        name: 'Mike Chen',
+        distanceKm: 0.12,
+        avatar: '👨‍💼',
+        status: 'Away',
+        interests: ['Technology', 'Gaming', 'Coffee'],
+        lastSeen: DateTime.now().subtract(const Duration(minutes: 30)),
+        angleDegrees: 120,
+      ),
+      NearbyUser(
+        id: '3',
+        name: 'Emma Wilson',
+        distanceKm: 0.08,
+        avatar: '👩‍🎨',
+        status: 'Online',
+        interests: ['Art', 'Design', 'Fashion'],
+        lastSeen: DateTime.now(),
+        angleDegrees: 200,
+      ),
+    ];
 
-    // Function to fetch nearby users (simulated)
-    Future<void> fetchNearbyUsers({bool isManualRefresh = false}) async {
-      if (!isMounted.value) return;
-      
+    Future<void> fetchNearbyUsers() async {
       try {
-        if (isManualRefresh) {
-          isRefreshing.value = true;
-        } else {
-          isLoading.value = true;
-        }
-        
         // Simulate network delay
-        await Future.delayed(const Duration(milliseconds: 1500));
+        await Future.delayed(const Duration(milliseconds: 2000));
         
-        // Check if still mounted before updating state
-        if (!isMounted.value) return;
+        // Simulate finding users
+        soundService.playRadarPingSound();
         
-        // Generate random number of users (0-8)
-        final random = Random();
-        final userCount = random.nextInt(9);
-        final newUsers = NearbyUser.generateMockUsers(userCount);
-        
-        if (isMounted.value) {
-          // Play sound effects based on results
-          if (newUsers.isNotEmpty) {
-            if (newUsers.length > nearbyUsers.value.length) {
-              await soundService.playUserFoundSound();
-              confettiController.play();
-            } else {
-              await soundService.playRadarPingSound();
-            }
-          } else {
-            await soundService.playNotificationSound();
-          }
-          
-          nearbyUsers.value = newUsers;
-          isLoading.value = false;
-          isRefreshing.value = false;
-          
-          // Trigger animations
-          pulseController.repeat();
-          fadeController.forward();
+        // Add users gradually for better UX
+        for (int i = 0; i < mockUsers.length; i++) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          nearbyUsers.value = [...nearbyUsers.value, mockUsers[i]];
+          soundService.playUserFoundSound();
+          confettiController.play();
         }
+        
+        soundService.playNotificationSound();
       } catch (e) {
-        // Handle any errors and ensure we don't update state if disposed
-        if (isMounted.value) {
-          isLoading.value = false;
-          isRefreshing.value = false;
-          await soundService.playErrorSound();
-        }
+        soundService.playErrorSound();
       }
     }
 
-    // Auto-refresh timer every 5 seconds
+    Future<void> handleRefresh() async {
+      if (isRefreshing.value) return;
+      
+      isRefreshing.value = true;
+      soundService.playSwipeSound();
+      
+      // Clear existing users
+      nearbyUsers.value = [];
+      
+      // Fetch new users
+      await fetchNearbyUsers();
+      
+      isRefreshing.value = false;
+    }
+
+    void handleUserTap(NearbyUser user) {
+      soundService.playTapSound();
+      _buildUserDetailsDialog(context, user);
+    }
+
+    // Initial load
     useEffect(() {
-      // Initial load
       fetchNearbyUsers();
       
-      // Set up periodic refresh
-      final timer = Timer.periodic(const Duration(seconds: 5), (_) {
-        // Check if the widget is still mounted before updating state
-        if (isMounted.value && !isLoading.value && !isRefreshing.value) {
-          fetchNearbyUsers();
-        }
-      });
+             // Auto-refresh every 5 seconds
+       final timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+         if (!isRefreshing.value) {
+           handleRefresh();
+         }
+       });
       
       return () {
-        isMounted.value = false;
         timer.cancel();
       };
     }, []);
 
-    // Manual refresh handler
-    Future<void> handleRefresh() async {
-      await soundService.playSwipeSound();
-      await fetchNearbyUsers(isManualRefresh: true);
-      refreshController.refreshCompleted();
-    }
-
-    // Handle user tap
-    void handleUserTap(NearbyUser user) async {
-      await soundService.playTapSound();
-      
-      // Show enhanced user details dialog
-      showDialog(
-        context: context,
-        builder: (context) => _buildUserDetailsDialog(context, user),
-      );
-    }
+    // Start pulse animation
+    useEffect(() {
+      pulseController.repeat();
+      return null;
+    }, []);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: _buildAppBar(context, isLoading.value, fetchNearbyUsers, soundService),
+      appBar: _buildAppBar(context, soundService, handleRefresh, isRefreshing),
       body: Stack(
         children: [
-          // Main content
-          SmartRefresher(
-            controller: refreshController,
-            enablePullDown: true,
-            onRefresh: handleRefresh,
-            header: WaterDropMaterialHeader(
-              backgroundColor: AppTheme.primaryBlue,
-              color: Colors.white,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  
-                  // Status indicator
-                  _buildStatusIndicator(context, nearbyUsers.value.length, isLoading.value),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Loading state
-                  if (isLoading.value && nearbyUsers.value.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(40),
-                      child: LoadingWidget(),
-                                         ).animate().fadeIn(duration: const Duration(milliseconds: 300)),
-                  
-                  // Empty state
-                  if (!isLoading.value && nearbyUsers.value.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(40),
-                      child: EmptyStateWidget(),
-                    ).animate().fadeIn(duration: const Duration(milliseconds: 500)),
-                  
-                  // Radar display with users
-                  if (nearbyUsers.value.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: RadarWidget(
-                        users: nearbyUsers.value,
-                        isLoading: isLoading.value,
-                        size: 320,
-                        onUserTap: handleUserTap,
-                      ),
-                    ).animate().scale(duration: const Duration(milliseconds: 600), curve: Curves.elasticOut),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // User list
-                  if (nearbyUsers.value.isNotEmpty)
-                    UserListWidget(
-                      users: nearbyUsers.value,
-                      onUserTap: handleUserTap,
-                    ).animate().slideY(begin: 0.3, duration: const Duration(milliseconds: 400), delay: const Duration(milliseconds: 200)),
-                  
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+          // Main content with smooth transitions
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: isLoading.value
+                ? _buildLoadingState(context)
+                : nearbyUsers.value.isEmpty
+                    ? _buildEmptyState(context)
+                    : _buildUserList(context, nearbyUsers.value, handleUserTap),
+          ),
+          
+          // Status indicator
+          Positioned(
+            top: 16,
+            left: 16,
+            right: 16,
+            child: _buildStatusIndicator(context, isLoading.value, nearbyUsers.value.length, isRefreshing.value),
           ),
           
           // Confetti overlay
@@ -206,9 +166,9 @@ class RadarScreen extends HookWidget {
 
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
-    bool isLoading,
-    Future<void> Function() onRefresh,
     SoundService soundService,
+    VoidCallback onRefresh,
+    ValueNotifier<bool> isRefreshing,
   ) {
     return AppBar(
       title: Row(
@@ -221,198 +181,348 @@ class RadarScreen extends HookWidget {
           const SizedBox(width: 8),
           const Text(
             'Radar',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),
       backgroundColor: Theme.of(context).colorScheme.surface,
       elevation: 0,
       actions: [
-        // Settings button
+        // Animated refresh button
+        AnimatedBuilder(
+          animation: isRefreshing.value ? const AlwaysStoppedAnimation(1.0) : const AlwaysStoppedAnimation(0.0),
+          builder: (context, child) {
+            return Transform.rotate(
+              angle: isRefreshing.value ? 2 * pi : 0,
+              child: IconButton(
+                icon: Icon(
+                  isRefreshing.value ? Icons.refresh : Icons.refresh,
+                  color: AppTheme.primaryBlue,
+                ),
+                onPressed: isRefreshing.value ? null : () async {
+                  soundService.playButtonClickSound();
+                  onRefresh();
+                },
+              ),
+            );
+          },
+        ),
         IconButton(
           icon: Icon(
             Icons.settings,
             color: AppTheme.primaryBlue,
           ),
-          onPressed: () async {
-            await soundService.playButtonClickSound();
-            // Navigate to settings
-            if (context.mounted) {
-              Navigator.pushNamed(context, '/settings');
-            }
+          onPressed: () {
+            soundService.playButtonClickSound();
+            Navigator.pushNamed(context, '/settings');
           },
-          tooltip: 'Settings',
-        ),
-        
-        // Refresh button
-        IconButton(
-          icon: AnimatedRotation(
-            turns: isLoading ? 1 : 0,
-            duration: const Duration(seconds: 1),
-            child: Icon(
-              Icons.refresh,
-              color: AppTheme.primaryBlue,
-            ),
-          ),
-          onPressed: isLoading ? null : () async {
-            await soundService.playButtonClickSound();
-            onRefresh();
-          },
-          tooltip: 'Refresh',
         ),
       ],
     );
   }
 
-  Widget _buildStatusIndicator(BuildContext context, int userCount, bool isLoading) {
+  Widget _buildStatusIndicator(
+    BuildContext context,
+    bool isLoading,
+    int userCount,
+    bool isRefreshing,
+  ) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        gradient: userCount > 0 ? AppTheme.successGradient : AppTheme.secondaryGradient,
+        gradient: AppTheme.primaryGradient,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryBlue.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppTheme.primaryBlue.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLoading || isRefreshing) ...[
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isRefreshing ? 'Refreshing...' : 'Scanning for users...',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ] else ...[
+            Icon(
+              Icons.people,
+              color: Colors.white,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$userCount users nearby',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
+    ).animate().fadeIn(duration: const Duration(milliseconds: 300));
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    return Center(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            userCount > 0 ? Icons.people : Icons.search,
-            color: Colors.white,
-            size: 20,
+          // Radar animation
+          Container(
+            width: 200,
+            height: 200,
+            child: RadarWidget(
+              onUserTap: (user) {},
+              users: [],
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(height: 32),
           Text(
-            isLoading
-                ? 'Scanning for users...'
-                : userCount > 0
-                    ? '$userCount user${userCount == 1 ? '' : 's'} nearby'
-                    : 'No users found nearby',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
+            'Scanning for nearby users...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'This may take a few seconds',
+            style: TextStyle(
               fontSize: 14,
+              color: Colors.grey[500],
             ),
           ),
         ],
-             ),
-     ).animate().fadeIn(duration: const Duration(milliseconds: 400)).slideY(begin: 0.2, duration: const Duration(milliseconds: 400));
+      ),
+    );
   }
 
-  Widget _buildUserDetailsDialog(BuildContext context, NearbyUser user) {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+  Widget _buildEmptyState(BuildContext context) {
+    return const EmptyStateWidget();
+  }
+
+  Widget _buildUserList(
+    BuildContext context,
+    List<NearbyUser> users,
+    Function(NearbyUser) onUserTap,
+  ) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 80, 16, 16),
+      itemCount: users.length,
+      itemBuilder: (context, index) {
+        final user = users[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: _buildUserCard(context, user, onUserTap),
+        ).animate().fadeIn(
+          delay: Duration(milliseconds: index * 100),
+          duration: const Duration(milliseconds: 300),
+        ).slideY(
+          begin: 0.3,
+          duration: const Duration(milliseconds: 300),
+        );
+      },
+    );
+  }
+
+  Widget _buildUserCard(
+    BuildContext context,
+    NearbyUser user,
+    Function(NearbyUser) onUserTap,
+  ) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () => onUserTap(user),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Avatar with online indicator
+              Stack(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.primaryGradient,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Center(
+                      child: Text(
+                        user.avatar,
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                    ),
+                  ),
+                  if (user.isOnline)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            user.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                                                 Text(
+                           '${(user.distanceKm * 1000).round()}m',
+                           style: TextStyle(
+                             fontSize: 14,
+                             color: Colors.grey[600],
+                             fontWeight: FontWeight.w500,
+                           ),
+                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.interests.join(' • '),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey[400],
+                size: 16,
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    );
+  }
+
+  void _buildUserDetailsDialog(BuildContext context, NearbyUser user) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
           children: [
-            // User avatar
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-              child: Text(
-                user.name[0].toUpperCase(),
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryBlue,
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Center(
+                child: Text(
+                  user.avatar,
+                  style: const TextStyle(fontSize: 20),
                 ),
               ),
             ),
-            
-            const SizedBox(height: 16),
-            
-            // User name
-            Text(
-              user.name,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            
-            const SizedBox(height: 8),
-            
-            // Distance
-            Text(
-              '${user.distanceKm.toStringAsFixed(1)} km away',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.neutralGrey,
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await SoundService().playButtonClickSound();
-                      Navigator.pop(context);
-                      // TODO: Implement message functionality
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Message ${user.name}'),
-                            backgroundColor: AppTheme.accentGreen,
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.message),
-                    label: const Text('Message'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-                
-                const SizedBox(width: 12),
-                
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      await SoundService().playButtonClickSound();
-                      Navigator.pop(context);
-                      // TODO: Implement connect functionality
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Connected with ${user.name}!'),
-                            backgroundColor: AppTheme.accentGreen,
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('Connect'),
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Close button
-            TextButton(
-              onPressed: () async {
-                await SoundService().playButtonClickSound();
-                Navigator.pop(context);
-              },
-              child: const Text('Close'),
+                                     Text(
+                     '${(user.distanceKm * 1000).round()}m away',
+                     style: TextStyle(
+                       fontSize: 12,
+                       color: Colors.grey[600],
+                     ),
+                   ),
+                ],
+              ),
             ),
           ],
         ),
-             ),
-     ).animate().scale(duration: const Duration(milliseconds: 300), curve: Curves.elasticOut);
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Interests:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: user.interests.map((interest) => Chip(
+                label: Text(interest),
+                backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+              )).toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement chat functionality
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Start Chat'),
+          ),
+        ],
+      ),
+    );
   }
 }
