@@ -5,9 +5,7 @@ import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
 import 'features/settings/services/settings_service.dart';
 import 'services/sound_service.dart';
-
-// Provider for dark mode state
-final darkModeProvider = StateProvider<bool>((ref) => false);
+import 'providers/theme_provider.dart';
 
 class ComnecterApp extends ConsumerStatefulWidget {
   const ComnecterApp({super.key});

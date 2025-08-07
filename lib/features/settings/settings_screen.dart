@@ -7,11 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
+import '../../providers/theme_provider.dart';
 import 'models/app_settings.dart';
 import 'services/settings_service.dart';
-
-// Import the dark mode provider from app.dart
-final darkModeProvider = StateProvider<bool>((ref) => false);
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
