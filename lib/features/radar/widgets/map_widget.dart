@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 import 'dart:math';
 import '../../../theme/app_theme.dart';
 import '../models/user_model.dart';
@@ -27,32 +28,39 @@ class MapWidget extends HookWidget {
     final markers = useState<Set<Marker>>({});
     final scanAnimation = useAnimationController(duration: const Duration(seconds: 2));
 
-    // Get current position
-    useEffect(() {
-      _getCurrentLocation().then((position) {
-        currentPosition.value = position;
-        _updateMarkers();
-      });
-      return null;
-    }, []);
-
-    // Update markers when users change
-    useEffect(() {
-      _updateMarkers();
-      return null;
-    }, [users]);
-
-    // Start scan animation
-    useEffect(() {
-      if (isScanning) {
-        scanAnimation.repeat();
-      } else {
-        scanAnimation.stop();
+    // Define helper functions first
+    LatLng calculateUserPosition(NearbyUser user) {
+      if (currentPosition.value == null) {
+        return const LatLng(40.7128, -74.0060);
       }
-      return null;
-    }, [isScanning]);
 
-    Future<LatLng> _getCurrentLocation() async {
+      // Convert distance and angle to lat/lng offset
+      final distanceInDegrees = user.distanceKm / 111.0; // Approximate km to degrees
+      final angleRadians = user.angleDegrees * pi / 180;
+      
+      final deltaLat = distanceInDegrees * cos(angleRadians);
+      final deltaLng = distanceInDegrees * sin(angleRadians);
+      
+      return LatLng(
+        currentPosition.value!.latitude + deltaLat,
+        currentPosition.value!.longitude + deltaLng,
+      );
+    }
+
+    BitmapDescriptor getUserMarkerIcon(NearbyUser user) {
+      // Create custom marker based on signal strength
+      if (user.signalStrength > 0.8) {
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+      } else if (user.signalStrength > 0.5) {
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+      } else if (user.signalStrength > 0.2) {
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+      } else {
+        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+      }
+    }
+
+    Future<LatLng> getCurrentLocation() async {
       try {
         final permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.denied) {
@@ -67,7 +75,7 @@ class MapWidget extends HookWidget {
       }
     }
 
-    void _updateMarkers() {
+    void updateMarkers() {
       if (currentPosition.value == null) return;
 
       final newMarkers = <Marker>{};
@@ -87,12 +95,12 @@ class MapWidget extends HookWidget {
 
       // Add user markers
       for (final user in users) {
-        final userPosition = _calculateUserPosition(user);
+        final userPosition = calculateUserPosition(user);
         newMarkers.add(
           Marker(
             markerId: MarkerId(user.id),
             position: userPosition,
-            icon: _getUserMarkerIcon(user),
+            icon: getUserMarkerIcon(user),
             infoWindow: InfoWindow(
               title: user.name,
               snippet: '${(user.distanceKm * 1000).round()}m away',
@@ -105,36 +113,30 @@ class MapWidget extends HookWidget {
       markers.value = newMarkers;
     }
 
-    LatLng _calculateUserPosition(NearbyUser user) {
-      if (currentPosition.value == null) {
-        return const LatLng(40.7128, -74.0060);
-      }
+    // Get current position
+    useEffect(() {
+      getCurrentLocation().then((position) {
+        currentPosition.value = position;
+        updateMarkers();
+      });
+      return null;
+    }, []);
 
-      // Convert distance and angle to lat/lng offset
-      final distanceInDegrees = user.distanceKm / 111.0; // Approximate km to degrees
-      final angleRadians = user.angleDegrees * pi / 180;
-      
-      final deltaLat = distanceInDegrees * cos(angleRadians);
-      final deltaLng = distanceInDegrees * sin(angleRadians);
-      
-      return LatLng(
-        currentPosition.value!.latitude + deltaLat,
-        currentPosition.value!.longitude + deltaLng,
-      );
-    }
+    // Update markers when users change
+    useEffect(() {
+      updateMarkers();
+      return null;
+    }, [users]);
 
-    BitmapDescriptor _getUserMarkerIcon(NearbyUser user) {
-      // Create custom marker based on signal strength
-      if (user.signalStrength > 0.8) {
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
-      } else if (user.signalStrength > 0.5) {
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
-      } else if (user.signalStrength > 0.2) {
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+    // Start scan animation
+    useEffect(() {
+      if (isScanning) {
+        scanAnimation.repeat();
       } else {
-        return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet);
+        scanAnimation.stop();
       }
-    }
+      return null;
+    }, [isScanning]);
 
     return Stack(
       children: [
