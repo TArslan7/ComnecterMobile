@@ -230,11 +230,11 @@ class RadarScreen extends HookWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
+        gradient: AppTheme.auroraGradient,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryBlue.withOpacity(0.3),
+            color: AppTheme.electricAurora.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -364,20 +364,20 @@ class RadarScreen extends HookWidget {
               // Avatar with online indicator
               Stack(
                 children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.primaryGradient,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Center(
-                      child: Text(
-                        user.avatar,
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                    ),
-                  ),
+                                     Container(
+                     width: 60,
+                     height: 60,
+                     decoration: BoxDecoration(
+                       gradient: AppTheme.sunsetGradient,
+                       borderRadius: BorderRadius.circular(30),
+                     ),
+                     child: Center(
+                       child: Text(
+                         user.avatar,
+                         style: const TextStyle(fontSize: 24),
+                       ),
+                     ),
+                   ),
                   if (user.isOnline)
                     Positioned(
                       right: 0,

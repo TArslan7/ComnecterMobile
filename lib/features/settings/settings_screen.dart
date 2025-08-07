@@ -331,7 +331,7 @@ class SettingsScreen extends HookWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: isRecommended 
-            ? BorderSide(color: AppTheme.primaryBlue, width: 2)
+            ? BorderSide(color: AppTheme.electricAurora, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
@@ -354,24 +354,24 @@ class SettingsScreen extends HookWidget {
                             fontSize: 16,
                           ),
                         ),
-                        if (isRecommended) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryBlue,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Text(
-                              'RECOMMENDED',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
+                                                 if (isRecommended) ...[
+                           const SizedBox(width: 8),
+                           Container(
+                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                             decoration: BoxDecoration(
+                               gradient: AppTheme.auroraGradient,
+                               borderRadius: BorderRadius.circular(12),
+                             ),
+                             child: const Text(
+                               'RECOMMENDED',
+                               style: TextStyle(
+                                 color: Colors.white,
+                                 fontSize: 10,
+                                 fontWeight: FontWeight.bold,
+                               ),
+                             ),
+                           ),
+                         ],
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -385,14 +385,14 @@ class SettingsScreen extends HookWidget {
                   ],
                 ),
               ),
-              Text(
-                price,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: isRecommended ? AppTheme.primaryBlue : Colors.grey[700],
-                ),
-              ),
+                             Text(
+                 price,
+                 style: TextStyle(
+                   fontWeight: FontWeight.bold,
+                   fontSize: 16,
+                   color: isRecommended ? AppTheme.electricAurora : Colors.grey[700],
+                 ),
+               ),
             ],
           ),
         ),
