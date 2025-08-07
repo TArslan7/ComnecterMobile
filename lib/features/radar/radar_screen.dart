@@ -13,6 +13,7 @@ import 'widgets/radar_widget.dart';
 import 'widgets/empty_state_widget.dart';
 import 'widgets/loading_widget.dart';
 import 'widgets/radar_settings_widget.dart';
+import 'widgets/map_widget.dart';
 
 class RadarScreen extends HookWidget {
   const RadarScreen({super.key});
@@ -23,9 +24,9 @@ class RadarScreen extends HookWidget {
     final nearbyUsers = useState<List<NearbyUser>>([]);
     final isLoading = useState(true);
     final isRefreshing = useState(false);
-    final isScanning = useState(true); // Start scanning by default
+    final isRadarEnabled = useState(true); // Radar detection switch
     final showSettings = useState(false);
-    final showRadarView = useState(true); // Toggle between radar and list view
+    final currentView = useState<RadarView>(RadarView.radar); // Current view: radar, list, map
     final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 2)));
     final soundService = useMemoized(() => SoundService());
     final pulseController = useAnimationController(duration: const Duration(seconds: 2));
@@ -76,15 +77,15 @@ class RadarScreen extends HookWidget {
       return null;
     }, []);
 
-    Future<void> handleToggleScanning() async {
-      if (isScanning.value) {
-        // Stop scanning
-        isScanning.value = false;
+    Future<void> handleToggleRadar() async {
+      if (isRadarEnabled.value) {
+        // Disable radar
+        isRadarEnabled.value = false;
         soundService.playButtonClickSound();
         await radarService.stopScanning();
       } else {
-        // Start scanning
-        isScanning.value = true;
+        // Enable radar
+        isRadarEnabled.value = true;
         isLoading.value = true;
         soundService.playButtonClickSound();
         await radarService.updateSettings(settings.value);
@@ -132,6 +133,11 @@ class RadarScreen extends HookWidget {
       radarService.updateSettings(newSettings);
     }
 
+    void handleViewChanged(RadarView view) {
+      soundService.playButtonClickSound();
+      currentView.value = view;
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: _buildAppBar(
@@ -139,10 +145,10 @@ class RadarScreen extends HookWidget {
         soundService, 
         handleRefresh, 
         isRefreshing, 
-        isScanning,
+        isRadarEnabled,
         () => showSettings.value = !showSettings.value,
-        showRadarView,
-        () => showRadarView.value = !showRadarView.value,
+        currentView,
+        handleViewChanged,
       ),
       body: Stack(
         children: [
@@ -150,12 +156,10 @@ class RadarScreen extends HookWidget {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: isLoading.value
-                ? _buildLoadingState(context, radarRotationController, isScanning.value)
+                ? _buildLoadingState(context, radarRotationController, isRadarEnabled.value)
                 : nearbyUsers.value.isEmpty
-                    ? _buildEmptyState(context, isScanning.value)
-                    : showRadarView.value
-                        ? _buildRadarView(context, nearbyUsers.value, handleUserTap, settings.value, isScanning.value)
-                        : _buildUserList(context, nearbyUsers.value, handleUserTap, handleManualDetection, settings.value),
+                    ? _buildEmptyState(context, isRadarEnabled.value)
+                    : _buildCurrentView(context, nearbyUsers.value, handleUserTap, handleManualDetection, settings.value, isRadarEnabled.value, currentView.value),
           ),
           
           // Status indicator
@@ -163,7 +167,7 @@ class RadarScreen extends HookWidget {
             top: 16,
             left: 16,
             right: 16,
-            child: _buildStatusIndicator(context, isLoading.value, nearbyUsers.value.length, isRefreshing.value, isScanning.value, settings.value),
+            child: _buildStatusIndicator(context, isLoading.value, nearbyUsers.value.length, isRefreshing.value, isRadarEnabled.value, settings.value),
           ),
           
           // Settings overlay
@@ -200,8 +204,8 @@ class RadarScreen extends HookWidget {
       ),
       floatingActionButton: _buildFloatingActionButton(
         context,
-        isScanning.value,
-        handleToggleScanning,
+        isRadarEnabled.value,
+        handleToggleRadar,
         soundService,
       ),
     );
@@ -212,10 +216,10 @@ class RadarScreen extends HookWidget {
     SoundService soundService,
     VoidCallback onRefresh,
     ValueNotifier<bool> isRefreshing,
-    ValueNotifier<bool> isScanning,
+    ValueNotifier<bool> isRadarEnabled,
     VoidCallback onSettingsTap,
-    ValueNotifier<bool> showRadarView,
-    VoidCallback onToggleView,
+    ValueNotifier<RadarView> currentView,
+    Function(RadarView) onViewChanged,
   ) {
     return AppBar(
       title: Row(
@@ -249,29 +253,30 @@ class RadarScreen extends HookWidget {
       backgroundColor: Theme.of(context).colorScheme.surface,
       elevation: 0,
       actions: [
-        // View toggle button
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.orangeAurora.withOpacity(0.3),
-                blurRadius: 8,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: Icon(
-              showRadarView.value ? Icons.list : Icons.radar,
-              color: AppTheme.orangeAurora,
-            ),
-            onPressed: () {
-              soundService.playButtonClickSound();
-              onToggleView();
-            },
-          ),
+        // View toggle buttons
+        _buildViewToggleButton(
+          context,
+          RadarView.radar,
+          Icons.radar,
+          currentView.value == RadarView.radar,
+          onViewChanged,
+          soundService,
+        ),
+        _buildViewToggleButton(
+          context,
+          RadarView.list,
+          Icons.list,
+          currentView.value == RadarView.list,
+          onViewChanged,
+          soundService,
+        ),
+        _buildViewToggleButton(
+          context,
+          RadarView.map,
+          Icons.map,
+          currentView.value == RadarView.map,
+          onViewChanged,
+          soundService,
         ),
         // Animated refresh button
         AnimatedBuilder(
@@ -331,12 +336,64 @@ class RadarScreen extends HookWidget {
     );
   }
 
+  Widget _buildViewToggleButton(
+    BuildContext context,
+    RadarView view,
+    IconData icon,
+    bool isSelected,
+    Function(RadarView) onViewChanged,
+    SoundService soundService,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(right: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: (isSelected ? AppTheme.electricAurora : AppTheme.orangeAurora).withOpacity(0.3),
+            blurRadius: 8,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(
+          icon,
+          color: isSelected ? AppTheme.electricAurora : AppTheme.orangeAurora,
+        ),
+        onPressed: () {
+          soundService.playButtonClickSound();
+          onViewChanged(view);
+        },
+      ),
+    );
+  }
+
+  Widget _buildCurrentView(
+    BuildContext context,
+    List<NearbyUser> users,
+    Function(NearbyUser) onUserTap,
+    Function(String) onManualDetection,
+    RadarSettings settings,
+    bool isRadarEnabled,
+    RadarView currentView,
+  ) {
+    switch (currentView) {
+      case RadarView.radar:
+        return _buildRadarView(context, users, onUserTap, settings, isRadarEnabled);
+      case RadarView.list:
+        return _buildUserList(context, users, onUserTap, onManualDetection, settings);
+      case RadarView.map:
+        return _buildMapView(context, users, onUserTap, isRadarEnabled);
+    }
+  }
+
   Widget _buildRadarView(
     BuildContext context,
     List<NearbyUser> users,
     Function(NearbyUser) onUserTap,
     RadarSettings settings,
-    bool isScanning,
+    bool isRadarEnabled,
   ) {
     return Center(
       child: Column(
@@ -346,7 +403,7 @@ class RadarScreen extends HookWidget {
           RadarWidget(
             users: users,
             maxRangeKm: settings.detectionRangeKm,
-            isScanning: isScanning,
+            isScanning: isRadarEnabled,
             onUserTap: onUserTap,
           ),
           const SizedBox(height: 24),
@@ -391,6 +448,19 @@ class RadarScreen extends HookWidget {
     );
   }
 
+  Widget _buildMapView(
+    BuildContext context,
+    List<NearbyUser> users,
+    Function(NearbyUser) onUserTap,
+    bool isRadarEnabled,
+  ) {
+    return MapWidget(
+      users: users,
+      isScanning: isRadarEnabled,
+      onUserTap: onUserTap,
+    );
+  }
+
   Widget _buildLegendItem(String label, Color color) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -428,7 +498,7 @@ class RadarScreen extends HookWidget {
     bool isLoading,
     int userCount,
     bool isRefreshing,
-    bool isScanning,
+    bool isRadarEnabled,
     RadarSettings settings,
   ) {
     return Container(
@@ -482,7 +552,7 @@ class RadarScreen extends HookWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ] else if (isScanning) ...[
+          ] else if (isRadarEnabled) ...[
             Container(
               width: 16,
               height: 16,
@@ -503,7 +573,7 @@ class RadarScreen extends HookWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'Scanning (${(settings.detectionRangeKm * 1000).round()}m range)',
+              'Radar Active (${(settings.detectionRangeKm * 1000).round()}m range)',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -524,15 +594,15 @@ class RadarScreen extends HookWidget {
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.pause,
-                color: Colors.white,
-                size: 16,
-              ),
+                              child: Icon(
+                  Icons.radar,
+                  color: Colors.white,
+                  size: 16,
+                ),
             ),
             const SizedBox(width: 8),
             Text(
-              'Scanning paused',
+              'Radar Disabled',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -545,7 +615,7 @@ class RadarScreen extends HookWidget {
     ).animate().fadeIn(duration: const Duration(milliseconds: 300));
   }
 
-  Widget _buildLoadingState(BuildContext context, AnimationController radarController, bool isScanning) {
+  Widget _buildLoadingState(BuildContext context, AnimationController radarController, bool isRadarEnabled) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -586,7 +656,7 @@ class RadarScreen extends HookWidget {
           ),
           const SizedBox(height: 32),
           Text(
-            isScanning ? 'Scanning for nearby users...' : 'Initializing radar...',
+            isRadarEnabled ? 'Scanning for nearby users...' : 'Initializing radar...',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -595,7 +665,7 @@ class RadarScreen extends HookWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            isScanning ? 'This may take a few seconds' : 'Setting up detection system',
+            isRadarEnabled ? 'This may take a few seconds' : 'Setting up detection system',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
@@ -606,7 +676,7 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, bool isScanning) {
+  Widget _buildEmptyState(BuildContext context, bool isRadarEnabled) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -626,21 +696,21 @@ class RadarScreen extends HookWidget {
               ],
             ),
             child: Icon(
-              isScanning ? Icons.people_outline : Icons.pause_circle_outline,
+              isRadarEnabled ? Icons.people_outline : Icons.radar,
               color: Colors.white,
               size: 60,
             ),
           ),
           const SizedBox(height: 24),
           Text(
-            isScanning ? 'No users found in range' : 'Radar is paused',
+            isRadarEnabled ? 'No users found in range' : 'Radar is disabled',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            isScanning ? 'Try increasing the detection range' : 'Tap the scan button to resume',
+            isRadarEnabled ? 'Try increasing the detection range' : 'Enable radar to start detecting users',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
@@ -913,20 +983,20 @@ class RadarScreen extends HookWidget {
 
   Widget _buildFloatingActionButton(
     BuildContext context,
-    bool isScanning,
-    VoidCallback onToggleScanning,
+    bool isRadarEnabled,
+    VoidCallback onToggleRadar,
     SoundService soundService,
   ) {
     return FloatingActionButton.extended(
-      onPressed: onToggleScanning,
-      backgroundColor: isScanning ? Colors.red : AppTheme.electricAurora,
+      onPressed: onToggleRadar,
+      backgroundColor: isRadarEnabled ? Colors.red : AppTheme.electricAurora,
       foregroundColor: Colors.white,
       icon: Icon(
-        isScanning ? Icons.pause : Icons.radar,
+        isRadarEnabled ? Icons.radar : Icons.radar,
         color: Colors.white,
       ),
       label: Text(
-        isScanning ? 'Pause Scan' : 'Resume Scan',
+        isRadarEnabled ? 'Disable Radar' : 'Enable Radar',
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,
@@ -1066,4 +1136,10 @@ class RadarScreen extends HookWidget {
       ),
     );
   }
+}
+
+enum RadarView {
+  radar,
+  list,
+  map,
 }
