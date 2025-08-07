@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
-import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:math';
 import '../../services/sound_service.dart';
@@ -10,8 +9,6 @@ import '../../theme/app_theme.dart';
 import 'models/user_model.dart';
 import 'services/radar_service.dart';
 import 'widgets/radar_widget.dart';
-import 'widgets/empty_state_widget.dart';
-import 'widgets/loading_widget.dart';
 import 'widgets/radar_settings_widget.dart';
 import 'widgets/map_widget.dart';
 
@@ -23,21 +20,17 @@ class RadarScreen extends HookWidget {
     final radarService = useMemoized(() => RadarService());
     final nearbyUsers = useState<List<NearbyUser>>([]);
     final isLoading = useState(true);
-    final isRefreshing = useState(false);
     final isRadarEnabled = useState(true);
     final showSettings = useState(false);
     final currentView = useState<RadarView>(RadarView.radar);
     final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 3)));
     final soundService = useMemoized(() => SoundService());
-    final pulseController = useAnimationController(duration: const Duration(seconds: 2));
-    final fadeController = useAnimationController(duration: const Duration(milliseconds: 300));
-    final radarRotationController = useAnimationController(duration: const Duration(seconds: 10));
     final settings = useState<RadarSettings>(const RadarSettings());
     final showTutorial = useState(true);
     final selectedUser = useState<NearbyUser?>(null);
     final showUserDetails = useState(false);
 
-    // Initialize radar service and start scanning automatically
+    // Initialize radar service
     useEffect(() {
       radarService.initialize().then((_) {
         radarService.updateSettings(settings.value);
@@ -54,7 +47,6 @@ class RadarScreen extends HookWidget {
           isLoading.value = false;
         }
       });
-
       return () => subscription.cancel();
     }, []);
 
@@ -68,15 +60,7 @@ class RadarScreen extends HookWidget {
           soundService.playRadarPingSound();
         }
       });
-
       return () => subscription.cancel();
-    }, []);
-
-    // Start animations
-    useEffect(() {
-      pulseController.repeat();
-      radarRotationController.repeat();
-      return null;
     }, []);
 
     Future<void> handleToggleRadar() async {
@@ -91,19 +75,6 @@ class RadarScreen extends HookWidget {
         await radarService.updateSettings(settings.value);
         await radarService.startScanning();
       }
-    }
-
-    Future<void> handleRefresh() async {
-      if (isRefreshing.value) return;
-      
-      isRefreshing.value = true;
-      soundService.playSwipeSound();
-      
-      await radarService.stopScanning();
-      await radarService.updateSettings(settings.value);
-      await radarService.startScanning();
-      
-      isRefreshing.value = false;
     }
 
     void handleUserTap(NearbyUser user) {
@@ -142,324 +113,110 @@ class RadarScreen extends HookWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: _buildEnhancedAppBar(
-        context, 
-        soundService, 
-        handleRefresh, 
-        isRefreshing, 
-        isRadarEnabled,
-        () => showSettings.value = !showSettings.value,
-        currentView,
-        handleViewChanged,
-        nearbyUsers.value.length,
-        settings.value,
-      ),
-      body: Stack(
-        children: [
-          // Main content with enhanced transitions
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.1),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: isLoading.value
-                ? _buildEnhancedLoadingState(context, radarRotationController, isRadarEnabled.value)
-                : nearbyUsers.value.isEmpty
-                    ? _buildEnhancedEmptyState(context, isRadarEnabled.value)
-                    : _buildCurrentView(context, nearbyUsers.value, handleUserTap, handleManualDetection, settings.value, isRadarEnabled.value, currentView.value),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.background,
+              Theme.of(context).colorScheme.background.withOpacity(0.95),
+              Theme.of(context).colorScheme.background.withOpacity(0.9),
+            ],
+            stops: const [0.0, 0.7, 1.0],
           ),
-          
-          // Enhanced status indicator
-          Positioned(
-            top: 16,
-            left: 16,
-            right: 16,
-            child: _buildEnhancedStatusIndicator(context, isLoading.value, nearbyUsers.value.length, isRefreshing.value, isRadarEnabled.value, settings.value),
-          ),
-          
-          // Enhanced settings overlay
-          if (showSettings.value)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.7),
-                child: Center(
-                  child: Container(
-                    margin: const EdgeInsets.all(20),
-                    child: RadarSettingsWidget(
-                      currentSettings: settings.value,
-                      onSettingsChanged: handleSettingsChanged,
+        ),
+        child: Stack(
+          children: [
+            // Main content
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 600),
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.1),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    )),
+                    child: child,
+                  ),
+                );
+              },
+              child: isLoading.value
+                  ? _buildPerfectLoadingState(context, isRadarEnabled.value)
+                  : nearbyUsers.value.isEmpty
+                      ? _buildPerfectEmptyState(context, isRadarEnabled.value)
+                      : _buildCurrentView(context, nearbyUsers.value, handleUserTap, handleManualDetection, settings.value, isRadarEnabled.value, currentView.value),
+            ),
+            
+            // Perfect status indicator
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              left: 16,
+              right: 16,
+              child: _buildPerfectStatusIndicator(context, isLoading.value, nearbyUsers.value.length, isRadarEnabled.value, settings.value),
+            ),
+            
+            // Perfect settings overlay
+            if (showSettings.value)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.8),
+                  child: Center(
+                    child: Container(
+                      margin: const EdgeInsets.all(20),
+                      child: RadarSettingsWidget(
+                        currentSettings: settings.value,
+                        onSettingsChanged: handleSettingsChanged,
+                      ),
                     ),
                   ),
                 ),
+              ).animate().fadeIn(duration: const Duration(milliseconds: 500)),
+            
+            // Perfect confetti overlay
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: confettiController,
+                blastDirection: pi / 2,
+                maxBlastForce: 10,
+                minBlastForce: 4,
+                emissionFrequency: 0.02,
+                numberOfParticles: 100,
+                gravity: 0.06,
+                colors: [
+                  AppTheme.electricAurora,
+                  AppTheme.purpleAurora,
+                  AppTheme.pinkAurora,
+                  AppTheme.orangeAurora,
+                  AppTheme.greenAurora,
+                ],
               ),
-            ).animate().fadeIn(duration: const Duration(milliseconds: 400)),
-          
-          // Enhanced confetti overlay
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: confettiController,
-              blastDirection: pi / 2,
-              maxBlastForce: 8,
-              minBlastForce: 3,
-              emissionFrequency: 0.03,
-              numberOfParticles: 80,
-              gravity: 0.08,
-              colors: [
-                AppTheme.electricAurora,
-                AppTheme.purpleAurora,
-                AppTheme.pinkAurora,
-                AppTheme.orangeAurora,
-                AppTheme.greenAurora,
-              ],
             ),
-          ),
 
-          // Tutorial overlay
-          if (showTutorial.value)
-            _buildTutorialOverlay(context, () => showTutorial.value = false),
+            // Perfect tutorial overlay
+            if (showTutorial.value)
+              _buildPerfectTutorialOverlay(context, () => showTutorial.value = false),
 
-          // Enhanced user details modal
-          if (showUserDetails.value && selectedUser.value != null)
-            _buildEnhancedUserDetailsModal(context, selectedUser.value!, radarService, () {
-              showUserDetails.value = false;
-              selectedUser.value = null;
-            }),
-        ],
+            // Perfect user details modal
+            if (showUserDetails.value && selectedUser.value != null)
+              _buildPerfectUserDetailsModal(context, selectedUser.value!, radarService, () {
+                showUserDetails.value = false;
+                selectedUser.value = null;
+              }),
+          ],
+        ),
       ),
-      floatingActionButton: _buildEnhancedFloatingActionButton(
+      floatingActionButton: _buildPerfectFloatingActionButton(
         context,
         isRadarEnabled.value,
         handleToggleRadar,
         soundService,
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildEnhancedAppBar(
-    BuildContext context,
-    SoundService soundService,
-    VoidCallback onRefresh,
-    ValueNotifier<bool> isRefreshing,
-    ValueNotifier<bool> isRadarEnabled,
-    VoidCallback onSettingsTap,
-    ValueNotifier<RadarView> currentView,
-    Function(RadarView) onViewChanged,
-    int userCount,
-    RadarSettings settings,
-  ) {
-    return AppBar(
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: AppTheme.auroraGradient,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.electricAurora.withOpacity(0.4),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.radar,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Radar',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-              ),
-              Text(
-                '${userCount} users nearby',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      elevation: 0,
-      actions: [
-        // Enhanced view toggle buttons
-        _buildEnhancedViewToggleButton(
-          context,
-          RadarView.radar,
-          Icons.radar,
-          'Radar',
-          currentView.value == RadarView.radar,
-          onViewChanged,
-          soundService,
-        ),
-        _buildEnhancedViewToggleButton(
-          context,
-          RadarView.list,
-          Icons.list,
-          'List',
-          currentView.value == RadarView.list,
-          onViewChanged,
-          soundService,
-        ),
-        _buildEnhancedViewToggleButton(
-          context,
-          RadarView.map,
-          Icons.map,
-          'Map',
-          currentView.value == RadarView.map,
-          onViewChanged,
-          soundService,
-        ),
-        // Enhanced refresh button
-        _buildEnhancedRefreshButton(context, isRefreshing, onRefresh, soundService),
-        // Enhanced settings button
-        _buildEnhancedSettingsButton(context, onSettingsTap, soundService),
-      ],
-    );
-  }
-
-  Widget _buildEnhancedViewToggleButton(
-    BuildContext context,
-    RadarView view,
-    IconData icon,
-    String label,
-    bool isSelected,
-    Function(RadarView) onViewChanged,
-    SoundService soundService,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: isSelected ? AppTheme.auroraGradient : LinearGradient(
-                colors: [Colors.grey.withOpacity(0.3), Colors.grey.withOpacity(0.1)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: (isSelected ? AppTheme.electricAurora : Colors.grey).withOpacity(0.4),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: Icon(
-                icon,
-                color: isSelected ? Colors.white : Colors.grey[600],
-                size: 20,
-              ),
-              onPressed: () {
-                soundService.playButtonClickSound();
-                onViewChanged(view);
-              },
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: isSelected ? AppTheme.electricAurora : Colors.grey[600],
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEnhancedRefreshButton(
-    BuildContext context,
-    ValueNotifier<bool> isRefreshing,
-    VoidCallback onRefresh,
-    SoundService soundService,
-  ) {
-    return AnimatedBuilder(
-      animation: isRefreshing.value ? const AlwaysStoppedAnimation(1.0) : const AlwaysStoppedAnimation(0.0),
-      builder: (context, child) {
-        return Transform.rotate(
-          angle: isRefreshing.value ? 2 * pi : 0,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: AppTheme.auroraGradient,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.electricAurora.withOpacity(0.4),
-                  blurRadius: 12,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: Icon(
-                isRefreshing.value ? Icons.refresh : Icons.refresh,
-                color: Colors.white,
-                size: 20,
-              ),
-              onPressed: isRefreshing.value ? null : () async {
-                soundService.playButtonClickSound();
-                onRefresh();
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildEnhancedSettingsButton(
-    BuildContext context,
-    VoidCallback onSettingsTap,
-    SoundService soundService,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        gradient: AppTheme.auroraGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.purpleAurora.withOpacity(0.4),
-            blurRadius: 12,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: const Icon(
-          Icons.settings,
-          color: Colors.white,
-          size: 20,
-        ),
-        onPressed: () {
-          soundService.playButtonClickSound();
-          onSettingsTap();
-        },
       ),
     );
   }
@@ -475,15 +232,15 @@ class RadarScreen extends HookWidget {
   ) {
     switch (currentView) {
       case RadarView.radar:
-        return _buildEnhancedRadarView(context, users, onUserTap, settings, isRadarEnabled);
+        return _buildPerfectRadarView(context, users, onUserTap, settings, isRadarEnabled);
       case RadarView.list:
-        return _buildEnhancedUserList(context, users, onUserTap, onManualDetection, settings);
+        return _buildPerfectUserList(context, users, onUserTap, onManualDetection, settings);
       case RadarView.map:
         return _buildMapView(context, users, onUserTap, isRadarEnabled);
     }
   }
 
-  Widget _buildEnhancedRadarView(
+  Widget _buildPerfectRadarView(
     BuildContext context,
     List<NearbyUser> users,
     Function(NearbyUser) onUserTap,
@@ -501,95 +258,99 @@ class RadarScreen extends HookWidget {
           ],
         ),
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Enhanced radar widget
-            RadarWidget(
-              users: users,
-              maxRangeKm: settings.detectionRangeKm,
-              isScanning: isRadarEnabled,
-              onUserTap: onUserTap,
+      child: Column(
+        children: [
+          const SizedBox(height: 100),
+          // Perfect radar widget
+          RadarWidget(
+            users: users,
+            maxRangeKm: settings.detectionRangeKm,
+            isScanning: isRadarEnabled,
+            onUserTap: onUserTap,
+          ),
+          const SizedBox(height: 40),
+          // Perfect legend
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: AppTheme.auroraGradient,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.electricAurora.withOpacity(0.5),
+                  blurRadius: 25,
+                  spreadRadius: 5,
+                ),
+                BoxShadow(
+                  color: AppTheme.purpleAurora.withOpacity(0.3),
+                  blurRadius: 35,
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-            const SizedBox(height: 32),
-            // Enhanced legend
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: AppTheme.auroraGradient,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.electricAurora.withOpacity(0.4),
-                    blurRadius: 20,
-                    spreadRadius: 4,
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.legend_toggle,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.legend_toggle,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Signal Strength Legend',
+                      style: const TextStyle(
                         color: Colors.white,
-                        size: 20,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Signal Strength Legend',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildEnhancedLegendItem('Strong', AppTheme.greenAurora, '80-100%'),
-                      _buildEnhancedLegendItem('Medium', AppTheme.orangeAurora, '50-80%'),
-                      _buildEnhancedLegendItem('Weak', AppTheme.pinkAurora, '20-50%'),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildPerfectLegendItem('Strong', AppTheme.greenAurora, '80-100%'),
+                    _buildPerfectLegendItem('Medium', AppTheme.orangeAurora, '50-80%'),
+                    _buildPerfectLegendItem('Weak', AppTheme.pinkAurora, '20-50%'),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEnhancedLegendItem(String label, Color color, String range) {
+  Widget _buildPerfectLegendItem(String label, Color color, String range) {
     return Column(
       children: [
         Container(
-          width: 16,
-          height: 16,
+          width: 20,
+          height: 20,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
                 color: color.withOpacity(0.8),
-                blurRadius: 8,
-                spreadRadius: 2,
+                blurRadius: 12,
+                spreadRadius: 3,
               ),
             ],
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         Text(
           label,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -597,7 +358,7 @@ class RadarScreen extends HookWidget {
           range,
           style: TextStyle(
             color: Colors.white.withOpacity(0.7),
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -605,7 +366,7 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  Widget _buildEnhancedUserList(
+  Widget _buildPerfectUserList(
     BuildContext context,
     List<NearbyUser> users,
     Function(NearbyUser) onUserTap,
@@ -624,26 +385,27 @@ class RadarScreen extends HookWidget {
         ),
       ),
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 80, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 100, 16, 16),
         itemCount: users.length,
         itemBuilder: (context, index) {
           final user = users[index];
           return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: _buildEnhancedUserCard(context, user, onUserTap, onManualDetection, settings),
+            margin: const EdgeInsets.only(bottom: 20),
+            child: _buildPerfectUserCard(context, user, onUserTap, onManualDetection, settings),
           ).animate().fadeIn(
-            delay: Duration(milliseconds: index * 150),
-            duration: const Duration(milliseconds: 400),
+            delay: Duration(milliseconds: index * 200),
+            duration: const Duration(milliseconds: 500),
           ).slideY(
             begin: 0.3,
-            duration: const Duration(milliseconds: 400),
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutCubic,
           );
         },
       ),
     );
   }
 
-  Widget _buildEnhancedUserCard(
+  Widget _buildPerfectUserCard(
     BuildContext context,
     NearbyUser user,
     Function(NearbyUser) onUserTap,
@@ -651,11 +413,11 @@ class RadarScreen extends HookWidget {
     RadarSettings settings,
   ) {
     return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -666,52 +428,52 @@ class RadarScreen extends HookWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.electricAurora.withOpacity(0.3),
-              blurRadius: 20,
-              spreadRadius: 2,
-              offset: const Offset(0, 8),
+              color: AppTheme.electricAurora.withOpacity(0.4),
+              blurRadius: 25,
+              spreadRadius: 3,
+              offset: const Offset(0, 10),
             ),
             BoxShadow(
-              color: AppTheme.purpleAurora.withOpacity(0.2),
-              blurRadius: 30,
+              color: AppTheme.purpleAurora.withOpacity(0.3),
+              blurRadius: 35,
               spreadRadius: 0,
-              offset: const Offset(0, 12),
+              offset: const Offset(0, 15),
             ),
           ],
         ),
         child: InkWell(
           onTap: () => onUserTap(user),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Row(
               children: [
-                // Enhanced avatar with effects
+                // Perfect avatar with effects
                 Stack(
                   children: [
                     Container(
-                      width: 70,
-                      height: 70,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
                         gradient: AppTheme.sunsetGradient,
-                        borderRadius: BorderRadius.circular(35),
+                        borderRadius: BorderRadius.circular(40),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.orangeAurora.withOpacity(0.6),
-                            blurRadius: 20,
-                            spreadRadius: 3,
+                            color: AppTheme.orangeAurora.withOpacity(0.7),
+                            blurRadius: 25,
+                            spreadRadius: 4,
                           ),
                           BoxShadow(
-                            color: AppTheme.pinkAurora.withOpacity(0.4),
-                            blurRadius: 30,
-                            spreadRadius: 2,
+                            color: AppTheme.pinkAurora.withOpacity(0.5),
+                            blurRadius: 35,
+                            spreadRadius: 3,
                           ),
                         ],
                       ),
                       child: Center(
                         child: Text(
                           user.avatar,
-                          style: const TextStyle(fontSize: 28),
+                          style: const TextStyle(fontSize: 32),
                         ),
                       ),
                     ),
@@ -720,17 +482,17 @@ class RadarScreen extends HookWidget {
                         right: 0,
                         bottom: 0,
                         child: Container(
-                          width: 20,
-                          height: 20,
+                          width: 24,
+                          height: 24,
                           decoration: BoxDecoration(
                             color: AppTheme.greenAurora,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white, width: 3),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white, width: 4),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.greenAurora.withOpacity(0.8),
-                                blurRadius: 10,
-                                spreadRadius: 2,
+                                color: AppTheme.greenAurora.withOpacity(0.9),
+                                blurRadius: 12,
+                                spreadRadius: 3,
                               ),
                             ],
                           ),
@@ -738,20 +500,20 @@ class RadarScreen extends HookWidget {
                       ),
                     if (settings.showSignalStrength)
                       Positioned(
-                        left: -3,
-                        top: -3,
+                        left: -4,
+                        top: -4,
                         child: Container(
-                          width: 16,
-                          height: 16,
+                          width: 20,
+                          height: 20,
                           decoration: BoxDecoration(
                             color: _getSignalStrengthColor(user.signalStrength),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white, width: 2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: _getSignalStrengthColor(user.signalStrength).withOpacity(0.8),
-                                blurRadius: 8,
-                                spreadRadius: 2,
+                                color: _getSignalStrengthColor(user.signalStrength).withOpacity(0.9),
+                                blurRadius: 10,
+                                spreadRadius: 3,
                               ),
                             ],
                           ),
@@ -759,7 +521,7 @@ class RadarScreen extends HookWidget {
                       ),
                   ],
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 24),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -770,21 +532,21 @@ class RadarScreen extends HookWidget {
                             child: Text(
                               user.name,
                               style: const TextStyle(
-                                fontSize: 20,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
                               gradient: AppTheme.auroraGradient,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.electricAurora.withOpacity(0.4),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
+                                  color: AppTheme.electricAurora.withOpacity(0.5),
+                                  blurRadius: 12,
+                                  spreadRadius: 3,
                                 ),
                               ],
                             ),
@@ -792,62 +554,62 @@ class RadarScreen extends HookWidget {
                               '${(user.distanceKm * 1000).round()}m',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 14,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Text(
                         user.interests.join(' • '),
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                           color: Colors.grey[600],
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Container(
-                            width: 10,
-                            height: 10,
+                            width: 12,
+                            height: 12,
                             decoration: BoxDecoration(
                               color: user.isOnline ? AppTheme.greenAurora : Colors.grey[400],
-                              borderRadius: BorderRadius.circular(5),
+                              borderRadius: BorderRadius.circular(6),
                               boxShadow: user.isOnline ? [
                                 BoxShadow(
-                                  color: AppTheme.greenAurora.withOpacity(0.6),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
+                                  color: AppTheme.greenAurora.withOpacity(0.7),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
                                 ),
                               ] : null,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 10),
                           Text(
                             user.isOnline ? 'Online' : 'Offline',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 16,
                               color: user.isOnline ? AppTheme.greenAurora : Colors.grey[500],
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           if (settings.showSignalStrength) ...[
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 20),
                             Icon(
                               Icons.signal_cellular_alt,
-                              size: 16,
+                              size: 18,
                               color: _getSignalStrengthColor(user.signalStrength),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             Text(
                               '${(user.signalStrength * 100).round()}%',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 14,
                                 color: _getSignalStrengthColor(user.signalStrength),
                                 fontWeight: FontWeight.w600,
                               ),
@@ -862,12 +624,12 @@ class RadarScreen extends HookWidget {
                   Container(
                     decoration: BoxDecoration(
                       gradient: AppTheme.auroraGradient,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.electricAurora.withOpacity(0.4),
-                          blurRadius: 10,
-                          spreadRadius: 2,
+                          color: AppTheme.electricAurora.withOpacity(0.5),
+                          blurRadius: 12,
+                          spreadRadius: 3,
                         ),
                       ],
                     ),
@@ -875,16 +637,16 @@ class RadarScreen extends HookWidget {
                       icon: const Icon(
                         Icons.add_circle_outline,
                         color: Colors.white,
-                        size: 24,
+                        size: 28,
                       ),
                       onPressed: () => onManualDetection(user.id),
                     ),
                   ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Icon(
                   Icons.arrow_forward_ios,
                   color: Colors.grey[400],
-                  size: 18,
+                  size: 20,
                 ),
               ],
             ),
@@ -907,48 +669,47 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  Widget _buildEnhancedStatusIndicator(
+  Widget _buildPerfectStatusIndicator(
     BuildContext context,
     bool isLoading,
     int userCount,
-    bool isRefreshing,
     bool isRadarEnabled,
     RadarSettings settings,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         gradient: AppTheme.auroraGradient,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.electricAurora.withOpacity(0.5),
-            blurRadius: 20,
-            spreadRadius: 3,
-            offset: const Offset(0, 6),
+            color: AppTheme.electricAurora.withOpacity(0.6),
+            blurRadius: 25,
+            spreadRadius: 4,
+            offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: AppTheme.pinkAurora.withOpacity(0.3),
-            blurRadius: 30,
-            spreadRadius: 2,
-            offset: const Offset(0, 10),
+            color: AppTheme.pinkAurora.withOpacity(0.4),
+            blurRadius: 35,
+            spreadRadius: 3,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isLoading || isRefreshing) ...[
+          if (isLoading) ...[
             Container(
-              width: 20,
-              height: 20,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.electricAurora.withOpacity(0.8),
-                    blurRadius: 10,
-                    spreadRadius: 2,
+                    color: AppTheme.electricAurora.withOpacity(0.9),
+                    blurRadius: 12,
+                    spreadRadius: 3,
                   ),
                 ],
               ),
@@ -957,26 +718,26 @@ class RadarScreen extends HookWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Text(
-              isRefreshing ? 'Refreshing...' : 'Initializing radar...',
+              'Initializing radar...',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ] else if (isRadarEnabled) ...[
             Container(
-              width: 20,
-              height: 20,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.greenAurora.withOpacity(0.8),
-                    blurRadius: 10,
-                    spreadRadius: 2,
+                    color: AppTheme.greenAurora.withOpacity(0.9),
+                    blurRadius: 12,
+                    spreadRadius: 3,
                   ),
                 ],
               ),
@@ -985,51 +746,51 @@ class RadarScreen extends HookWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Text(
               'Radar Active (${(settings.detectionRangeKm * 1000).round()}m range)',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ] else ...[
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.red.withOpacity(0.6),
-                    blurRadius: 10,
-                    spreadRadius: 2,
+                    color: Colors.red.withOpacity(0.7),
+                    blurRadius: 12,
+                    spreadRadius: 3,
                   ),
                 ],
               ),
               child: const Icon(
                 Icons.radar,
                 color: Colors.white,
-                size: 18,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Text(
               'Radar Disabled',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ],
       ),
-    ).animate().fadeIn(duration: const Duration(milliseconds: 400));
+    ).animate().fadeIn(duration: const Duration(milliseconds: 500));
   }
 
-  Widget _buildEnhancedLoadingState(BuildContext context, AnimationController radarController, bool isRadarEnabled) {
+  Widget _buildPerfectLoadingState(BuildContext context, bool isRadarEnabled) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1045,54 +806,45 @@ class RadarScreen extends HookWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Enhanced animated radar
-            AnimatedBuilder(
-              animation: radarController,
-              builder: (context, child) {
-                return Transform.rotate(
-                  angle: radarController.value * 2 * pi,
-                  child: Container(
-                    width: 250,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.auroraGradient,
-                      borderRadius: BorderRadius.circular(125),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.electricAurora.withOpacity(0.6),
-                          blurRadius: 30,
-                          spreadRadius: 4,
-                        ),
-                        BoxShadow(
-                          color: AppTheme.purpleAurora.withOpacity(0.4),
-                          blurRadius: 50,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.radar,
-                      color: Colors.white,
-                      size: 100,
-                    ),
+            Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                gradient: AppTheme.auroraGradient,
+                borderRadius: BorderRadius.circular(150),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.electricAurora.withOpacity(0.7),
+                    blurRadius: 40,
+                    spreadRadius: 5,
                   ),
-                );
-              },
+                  BoxShadow(
+                    color: AppTheme.purpleAurora.withOpacity(0.5),
+                    blurRadius: 60,
+                    spreadRadius: 3,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.radar,
+                color: Colors.white,
+                size: 120,
+              ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 50),
             Text(
               isRadarEnabled ? 'Scanning for nearby users...' : 'Initializing radar...',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 24,
                 color: Colors.grey[700],
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               isRadarEnabled ? 'This may take a few seconds' : 'Setting up detection system',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 color: Colors.grey[500],
               ),
             ),
@@ -1102,7 +854,7 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  Widget _buildEnhancedEmptyState(BuildContext context, bool isRadarEnabled) {
+  Widget _buildPerfectEmptyState(BuildContext context, bool isRadarEnabled) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1119,33 +871,33 @@ class RadarScreen extends HookWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 150,
-              height: 150,
+              width: 200,
+              height: 200,
               decoration: BoxDecoration(
                 gradient: AppTheme.auroraGradient,
-                borderRadius: BorderRadius.circular(75),
+                borderRadius: BorderRadius.circular(100),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.electricAurora.withOpacity(0.6),
-                    blurRadius: 30,
-                    spreadRadius: 4,
+                    color: AppTheme.electricAurora.withOpacity(0.7),
+                    blurRadius: 40,
+                    spreadRadius: 5,
                   ),
                 ],
               ),
               child: Icon(
                 isRadarEnabled ? Icons.people_outline : Icons.radar,
                 color: Colors.white,
-                size: 80,
+                size: 100,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             Text(
               isRadarEnabled ? 'No users found in range' : 'Radar is disabled',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               isRadarEnabled ? 'Try increasing the detection range' : 'Enable radar to start detecting users',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -1158,21 +910,21 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  Widget _buildTutorialOverlay(BuildContext context, VoidCallback onDismiss) {
+  Widget _buildPerfectTutorialOverlay(BuildContext context, VoidCallback onDismiss) {
     return Container(
-      color: Colors.black.withOpacity(0.8),
+      color: Colors.black.withOpacity(0.9),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(32),
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
             gradient: AppTheme.auroraGradient,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.electricAurora.withOpacity(0.5),
-                blurRadius: 30,
-                spreadRadius: 4,
+                color: AppTheme.electricAurora.withOpacity(0.6),
+                blurRadius: 40,
+                spreadRadius: 5,
               ),
             ],
           ),
@@ -1182,37 +934,37 @@ class RadarScreen extends HookWidget {
               const Icon(
                 Icons.lightbulb,
                 color: Colors.white,
-                size: 48,
+                size: 64,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               const Text(
                 'Welcome to Radar!',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               const Text(
                 '• Switch between Radar, List, and Map views\n• Enable/disable radar detection\n• Tap users to view details\n• Adjust settings for optimal detection',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: 18,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: onDismiss,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: AppTheme.electricAurora,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 child: const Text(
                   'Got it!',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -1222,25 +974,25 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  Widget _buildEnhancedUserDetailsModal(
+  Widget _buildPerfectUserDetailsModal(
     BuildContext context,
     NearbyUser user,
     RadarService radarService,
     VoidCallback onClose,
   ) {
     return Container(
-      color: Colors.black.withOpacity(0.7),
+      color: Colors.black.withOpacity(0.8),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: AppTheme.auroraGradient,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.electricAurora.withOpacity(0.5),
-                blurRadius: 30,
-                spreadRadius: 4,
+                color: AppTheme.electricAurora.withOpacity(0.6),
+                blurRadius: 40,
+                spreadRadius: 5,
               ),
             ],
           ),
@@ -1249,31 +1001,31 @@ class RadarScreen extends HookWidget {
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(32),
                 child: Row(
                   children: [
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
                         gradient: AppTheme.sunsetGradient,
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(40),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.orangeAurora.withOpacity(0.6),
-                            blurRadius: 15,
-                            spreadRadius: 2,
+                            color: AppTheme.orangeAurora.withOpacity(0.7),
+                            blurRadius: 20,
+                            spreadRadius: 3,
                           ),
                         ],
                       ),
                       child: Center(
                         child: Text(
                           user.avatar,
-                          style: const TextStyle(fontSize: 24),
+                          style: const TextStyle(fontSize: 32),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 24),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1282,7 +1034,7 @@ class RadarScreen extends HookWidget {
                             user.name,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 20,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1290,7 +1042,7 @@ class RadarScreen extends HookWidget {
                             '${(user.distanceKm * 1000).round()}m away',
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
+                              fontSize: 16,
                             ),
                           ),
                         ],
@@ -1301,7 +1053,7 @@ class RadarScreen extends HookWidget {
                       icon: const Icon(
                         Icons.close,
                         color: Colors.white,
-                        size: 24,
+                        size: 28,
                       ),
                     ),
                   ],
@@ -1309,7 +1061,7 @@ class RadarScreen extends HookWidget {
               ),
               // Content
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1317,24 +1069,24 @@ class RadarScreen extends HookWidget {
                       'Interests:',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: 12,
+                      runSpacing: 12,
                       children: user.interests.map((interest) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.electricAurora.withOpacity(0.3),
-                              blurRadius: 8,
-                              spreadRadius: 1,
+                              color: AppTheme.electricAurora.withOpacity(0.4),
+                              blurRadius: 12,
+                              spreadRadius: 2,
                             ),
                           ],
                         ),
@@ -1342,27 +1094,27 @@ class RadarScreen extends HookWidget {
                           interest,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       )).toList(),
                     ),
                     if (user.signalStrength > 0) ...[
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       Row(
                         children: [
                           Icon(
                             Icons.signal_cellular_alt,
-                            size: 20,
+                            size: 24,
                             color: _getSignalStrengthColor(user.signalStrength),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Text(
                             'Signal: ${(user.signalStrength * 100).round()}%',
                             style: TextStyle(
                               color: _getSignalStrengthColor(user.signalStrength),
-                              fontSize: 16,
+                              fontSize: 18,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1374,7 +1126,7 @@ class RadarScreen extends HookWidget {
               ),
               // Actions
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(32),
                 child: Row(
                   children: [
                     Expanded(
@@ -1383,13 +1135,13 @@ class RadarScreen extends HookWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.white,
                           side: const BorderSide(color: Colors.white),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         child: const Text('Close'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
@@ -1399,8 +1151,8 @@ class RadarScreen extends HookWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: AppTheme.electricAurora,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         child: const Text(
                           'Start Chat',
@@ -1425,7 +1177,7 @@ class RadarScreen extends HookWidget {
     return Colors.grey;
   }
 
-  Widget _buildEnhancedFloatingActionButton(
+  Widget _buildPerfectFloatingActionButton(
     BuildContext context,
     bool isRadarEnabled,
     VoidCallback onToggleRadar,
@@ -1438,19 +1190,19 @@ class RadarScreen extends HookWidget {
       icon: Icon(
         isRadarEnabled ? Icons.radar : Icons.radar,
         color: Colors.white,
-        size: 24,
+        size: 28,
       ),
       label: Text(
         isRadarEnabled ? 'Disable Radar' : 'Enable Radar',
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,
-          fontSize: 16,
+          fontSize: 18,
         ),
       ),
-      elevation: 12,
+      elevation: 16,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
     );
   }
