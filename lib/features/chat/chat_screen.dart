@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
+import 'dart:async'; // Added for Timer
 
 class ChatScreen extends HookWidget {
   const ChatScreen({super.key});
@@ -70,27 +71,17 @@ class ChatScreen extends HookWidget {
       },
     ];
 
+    // Load data on first build
     useEffect(() {
-      bool mounted = true;
-      
-      // Simulate loading
-      Future.delayed(const Duration(milliseconds: 1500), () async {
-        if (mounted) {
-          try {
-            await soundService.playSuccessSound();
-            if (mounted) {
-              conversations.value = mockConversations;
-              isLoading.value = false;
-            }
-          } catch (e) {
-            // Handle error silently
-          }
-        }
+      // Simulate loading with a simple timer
+      Timer(const Duration(milliseconds: 1500), () {
+        conversations.value = mockConversations;
+        isLoading.value = false;
+        // Play success sound
+        soundService.playSuccessSound();
       });
       
-      return () {
-        mounted = false;
-      };
+      return null;
     }, []);
 
     // Filter conversations based on search
@@ -157,35 +148,29 @@ class ChatScreen extends HookWidget {
               Icons.search,
               color: AppTheme.primaryBlue,
             ),
-            onPressed: () async {
-              await soundService.playButtonClickSound();
+            onPressed: () {
+              soundService.playButtonClickSound();
               isSearching.value = true;
             },
-            tooltip: 'Search',
           ),
           IconButton(
             icon: Icon(
               Icons.more_vert,
               color: AppTheme.primaryBlue,
             ),
-            onPressed: () async {
-              await soundService.playButtonClickSound();
-              _showMoreOptions(context);
+            onPressed: () {
+              soundService.playButtonClickSound();
+              _showMoreOptions(context, soundService);
             },
-            tooltip: 'More options',
           ),
         ] else ...[
           IconButton(
-            icon: Icon(
-              Icons.close,
-              color: AppTheme.primaryBlue,
-            ),
-            onPressed: () async {
-              await soundService.playButtonClickSound();
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              soundService.playButtonClickSound();
               isSearching.value = false;
               searchQuery.value = '';
             },
-            tooltip: 'Close search',
           ),
         ],
       ],
@@ -194,39 +179,49 @@ class ChatScreen extends HookWidget {
 
   Widget _buildLoadingState(BuildContext context) {
     return ListView.builder(
+      padding: const EdgeInsets.all(16),
       itemCount: 5,
       itemBuilder: (context, index) {
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: ListTile(
-            leading: Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: const CircleAvatar(radius: 25),
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
             ),
-            title: Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: Container(
-                height: 16,
-                width: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(25),
+                  ),
                 ),
-              ),
-            ),
-            subtitle: Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: Container(
-                height: 12,
-                width: 200,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 16,
+                        width: double.infinity,
+                        color: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 12,
+                        width: 200,
+                        color: Colors.grey[300],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         );
@@ -234,35 +229,39 @@ class ChatScreen extends HookWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, bool isSearching) {
+  Widget _buildEmptyState(BuildContext context, bool isSearch) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            isSearching ? Icons.search_off : Icons.chat_bubble_outline,
+            isSearch ? Icons.search_off : Icons.chat_bubble_outline,
             size: 80,
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
           Text(
-            isSearching ? 'No conversations found' : 'No conversations yet',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            isSearch ? 'No conversations found' : 'No conversations yet',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
               color: Colors.grey[600],
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            isSearching
+            isSearch 
                 ? 'Try adjusting your search terms'
-                : 'Start chatting with people you meet!',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                : 'Start a conversation to connect with others',
+            style: TextStyle(
+              fontSize: 14,
               color: Colors.grey[500],
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
-    ).animate().fadeIn(duration: const Duration(milliseconds: 500));
+    );
   }
 
   Widget _buildConversationsList(
@@ -271,99 +270,136 @@ class ChatScreen extends HookWidget {
     SoundService soundService,
   ) {
     return ListView.builder(
+      padding: const EdgeInsets.all(16),
       itemCount: conversations.length,
       itemBuilder: (context, index) {
         final conversation = conversations[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: ListTile(
-            leading: Stack(
-              children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                  child: Text(
-                    conversation['avatar'],
-                    style: const TextStyle(fontSize: 20),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: _buildConversationTile(context, conversation, soundService),
+        ).animate().fadeIn(delay: Duration(milliseconds: index * 100));
+      },
+    );
+  }
+
+  Widget _buildConversationTile(
+    BuildContext context,
+    Map<String, dynamic> conversation,
+    SoundService soundService,
+  ) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: Stack(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Center(
+                child: Text(
+                  conversation['avatar'],
+                  style: const TextStyle(fontSize: 20),
+                ),
+              ),
+            ),
+            if (conversation['isOnline'])
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
                 ),
-                if (conversation['isOnline'])
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentGreen,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-              ],
+              ),
+          ],
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                conversation['name'],
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
             ),
-            title: Row(
+            Text(
+              conversation['timestamp'],
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
               children: [
                 Expanded(
                   child: Text(
-                    conversation['name'],
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    conversation['lastMessage'],
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Text(
-                  conversation['timestamp'],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-            subtitle: Text(
-              conversation['lastMessage'],
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: conversation['unreadCount'] > 0
-                ? Container(
+                if (conversation['unreadCount'] > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      gradient: AppTheme.primaryGradient,
+                      color: AppTheme.primaryBlue,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       conversation['unreadCount'].toString(),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  )
-                : null,
-            onTap: () async {
-              await soundService.playTapSound();
-              _openConversation(context, conversation);
-            },
-          ),
-        ).animate().fadeIn(
-          duration: const Duration(milliseconds: 300),
-          delay: Duration(milliseconds: index * 100),
-        );
-      },
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+        onTap: () {
+          soundService.playTapSound();
+          _openConversation(context, conversation);
+        },
+      ),
     );
   }
 
   Widget _buildFloatingActionButton(BuildContext context, SoundService soundService) {
     return FloatingActionButton(
-      onPressed: () async {
-        await soundService.playButtonClickSound();
-        _showNewConversationDialog(context);
+      onPressed: () {
+        soundService.playButtonClickSound();
+        _showNewConversationDialog(context, soundService);
       },
       backgroundColor: AppTheme.primaryBlue,
-      child: const Icon(Icons.chat, color: Colors.white),
-    ).animate().scale(duration: const Duration(milliseconds: 300));
+      child: const Icon(Icons.add, color: Colors.white),
+    ).animate().scale(duration: const Duration(milliseconds: 200));
   }
 
   void _openConversation(BuildContext context, Map<String, dynamic> conversation) {
@@ -375,39 +411,42 @@ class ChatScreen extends HookWidget {
     );
   }
 
-  void _showMoreOptions(BuildContext context) {
+  void _showMoreOptions(BuildContext context, SoundService soundService) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.archive),
-              title: const Text('Archive all'),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement archive functionality
-              },
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             ListTile(
-              leading: const Icon(Icons.delete),
-              title: const Text('Clear all'),
+              leading: const Icon(Icons.add),
+              title: const Text('New Conversation'),
               onTap: () {
+                soundService.playButtonClickSound();
                 Navigator.pop(context);
-                // TODO: Implement clear functionality
+                _showNewConversationDialog(context, soundService);
               },
             ),
             ListTile(
               leading: const Icon(Icons.settings),
-              title: const Text('Chat settings'),
+              title: const Text('Chat Settings'),
               onTap: () {
+                soundService.playButtonClickSound();
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings');
               },
             ),
           ],
@@ -416,15 +455,18 @@ class ChatScreen extends HookWidget {
     );
   }
 
-  void _showNewConversationDialog(BuildContext context) {
+  void _showNewConversationDialog(BuildContext context, SoundService soundService) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('New Conversation'),
-        content: const Text('This feature is coming soon!'),
+        content: const Text('This feature will be available soon!'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              soundService.playButtonClickSound();
+              Navigator.pop(context);
+            },
             child: const Text('OK'),
           ),
         ],
@@ -474,43 +516,45 @@ class _ConversationDetailScreen extends HookWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-              child: Text(
-                conversation['avatar'],
-                style: const TextStyle(fontSize: 16),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Text(
+                  conversation['avatar'],
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
             const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  conversation['name'],
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  conversation['isOnline'] ? 'Online' : 'Offline',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    conversation['name'],
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    conversation['isOnline'] ? 'Online' : 'Offline',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: conversation['isOnline'] ? Colors.green : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.call),
-            onPressed: () async {
-              await soundService.playButtonClickSound();
-              // TODO: Implement call functionality
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.video_call),
-            onPressed: () async {
-              await soundService.playButtonClickSound();
-              // TODO: Implement video call functionality
-            },
+            icon: const Icon(Icons.more_vert),
+            onPressed: () => soundService.playButtonClickSound(),
           ),
         ],
       ),
@@ -522,7 +566,7 @@ class _ConversationDetailScreen extends HookWidget {
               itemCount: messages.value.length,
               itemBuilder: (context, index) {
                 final message = messages.value[index];
-                return _buildMessageBubble(context, message);
+                return _buildMessageBubble(context, message, soundService);
               },
             ),
           ),
@@ -532,66 +576,115 @@ class _ConversationDetailScreen extends HookWidget {
     );
   }
 
-  Widget _buildMessageBubble(BuildContext context, Map<String, dynamic> message) {
+  Widget _buildMessageBubble(
+    BuildContext context,
+    Map<String, dynamic> message,
+    SoundService soundService,
+  ) {
     final isMe = message['isMe'] as bool;
     
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: isMe ? AppTheme.primaryGradient : AppTheme.secondaryGradient,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          message['text'],
-          style: const TextStyle(color: Colors.white),
-        ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!isMe) ...[
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Text(
+                  conversation['avatar'],
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: isMe ? AppTheme.primaryGradient : AppTheme.secondaryGradient,
+                borderRadius: BorderRadius.circular(20).copyWith(
+                  bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(4),
+                  bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
+                ),
+              ),
+              child: Text(
+                message['text'],
+                style: TextStyle(
+                  color: isMe ? Colors.white : Colors.black87,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+          if (isMe) const SizedBox(width: 8),
+        ],
       ),
     ).animate().fadeIn(duration: const Duration(milliseconds: 300));
   }
 
   Widget _buildMessageInput(
     BuildContext context,
-    TextEditingController controller,
+    TextEditingController textController,
     ValueNotifier<List<Map<String, dynamic>>> messages,
     SoundService soundService,
   ) {
     return Container(
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: Colors.grey[300]!),
+        ),
+      ),
       child: Row(
         children: [
           Expanded(
             child: TextField(
-              controller: controller,
+              controller: textController,
               decoration: InputDecoration(
                 hintText: 'Type a message...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(25),
+                  borderSide: BorderSide.none,
                 ),
+                filled: true,
+                fillColor: Colors.grey[100],
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          FloatingActionButton(
-            onPressed: () async {
-              if (controller.text.isNotEmpty) {
-                await soundService.playMessageSound();
-                messages.value = [
-                  ...messages.value,
-                  {
-                    'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                    'text': controller.text,
-                    'isMe': true,
-                    'timestamp': DateTime.now(),
-                  },
-                ];
-                controller.clear();
-              }
-            },
-            backgroundColor: AppTheme.primaryBlue,
-            child: const Icon(Icons.send, color: Colors.white),
+          Container(
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: IconButton(
+              onPressed: () {
+                if (textController.text.trim().isNotEmpty) {
+                  soundService.playMessageSound();
+                  messages.value = [
+                    ...messages.value,
+                    {
+                      'id': DateTime.now().toString(),
+                      'text': textController.text.trim(),
+                      'isMe': true,
+                      'timestamp': DateTime.now(),
+                    },
+                  ];
+                  textController.clear();
+                }
+              },
+              icon: const Icon(Icons.send, color: Colors.white),
+            ),
           ),
         ],
       ),
