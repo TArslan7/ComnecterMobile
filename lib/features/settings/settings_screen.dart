@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
+import 'dart:math';
 import 'models/app_settings.dart';
 import 'services/settings_service.dart';
 import '../../services/sound_service.dart';
@@ -348,7 +349,7 @@ class SettingsScreen extends HookWidget {
                     context,
                     'Privacy Policy',
                     'Read our privacy policy',
-                    Icons.privacy,
+                    Icons.security,
                     () async {
                       await soundService.playButtonClickSound();
                       _showPrivacyDialog(context);
