@@ -8,134 +8,60 @@ import 'dart:math';
 import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
 import 'models/user_model.dart';
+import 'services/radar_service.dart';
 import 'widgets/radar_widget.dart';
 import 'widgets/empty_state_widget.dart';
 import 'widgets/loading_widget.dart';
+import 'widgets/radar_settings_widget.dart';
 
 class RadarScreen extends HookWidget {
   const RadarScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final radarService = useMemoized(() => RadarService());
     final nearbyUsers = useState<List<NearbyUser>>([]);
     final isLoading = useState(true);
     final isRefreshing = useState(false);
+    final isScanning = useState(false);
+    final showSettings = useState(false);
     final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 2)));
     final soundService = useMemoized(() => SoundService());
     final pulseController = useAnimationController(duration: const Duration(seconds: 2));
     final fadeController = useAnimationController(duration: const Duration(milliseconds: 300));
     final radarRotationController = useAnimationController(duration: const Duration(seconds: 10));
+    final settings = useState<RadarSettings>(const RadarSettings());
 
-    // Mock data for nearby users with more variety
-    final mockUsers = [
-      NearbyUser(
-        id: '1',
-        name: 'Sarah Johnson',
-        distanceKm: 0.05,
-        avatar: '👩‍🦰',
-        status: 'Online',
-        interests: ['Music', 'Travel', 'Photography', 'Coffee'],
-        lastSeen: DateTime.now(),
-        angleDegrees: 45,
-      ),
-      NearbyUser(
-        id: '2',
-        name: 'Mike Chen',
-        distanceKm: 0.12,
-        avatar: '👨‍💼',
-        status: 'Away',
-        interests: ['Technology', 'Gaming', 'Coffee', 'Fitness'],
-        lastSeen: DateTime.now().subtract(const Duration(minutes: 30)),
-        angleDegrees: 120,
-      ),
-      NearbyUser(
-        id: '3',
-        name: 'Emma Wilson',
-        distanceKm: 0.08,
-        avatar: '👩‍🎨',
-        status: 'Online',
-        interests: ['Art', 'Design', 'Fashion', 'Photography'],
-        lastSeen: DateTime.now(),
-        angleDegrees: 200,
-      ),
-      NearbyUser(
-        id: '4',
-        name: 'David Brown',
-        distanceKm: 0.15,
-        avatar: '👨‍🎓',
-        status: 'Online',
-        interests: ['Reading', 'Writing', 'Philosophy', 'Tea'],
-        lastSeen: DateTime.now(),
-        angleDegrees: 280,
-      ),
-      NearbyUser(
-        id: '5',
-        name: 'Lisa Garcia',
-        distanceKm: 0.03,
-        avatar: '👩‍💻',
-        status: 'Online',
-        interests: ['Coding', 'Tech', 'Startups', 'Innovation'],
-        lastSeen: DateTime.now(),
-        angleDegrees: 90,
-      ),
-    ];
-
-    Future<void> fetchNearbyUsers() async {
-      try {
-        // Simulate network delay
-        await Future.delayed(const Duration(milliseconds: 2000));
-        
-        // Simulate finding users
-        soundService.playRadarPingSound();
-        
-        // Add users gradually for better UX
-        for (int i = 0; i < mockUsers.length; i++) {
-          await Future.delayed(const Duration(milliseconds: 500));
-          nearbyUsers.value = [...nearbyUsers.value, mockUsers[i]];
-          soundService.playUserFoundSound();
-          confettiController.play();
-        }
-        
-        soundService.playNotificationSound();
-      } catch (e) {
-        soundService.playErrorSound();
-      }
-    }
-
-    Future<void> handleRefresh() async {
-      if (isRefreshing.value) return;
-      
-      isRefreshing.value = true;
-      soundService.playSwipeSound();
-      
-      // Clear existing users
-      nearbyUsers.value = [];
-      
-      // Fetch new users
-      await fetchNearbyUsers();
-      
-      isRefreshing.value = false;
-    }
-
-    void handleUserTap(NearbyUser user) {
-      soundService.playTapSound();
-      _buildUserDetailsDialog(context, user);
-    }
-
-    // Initial load
+    // Initialize radar service
     useEffect(() {
-      fetchNearbyUsers();
-      
-      // Auto-refresh every 5 seconds
-      final timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-        if (!isRefreshing.value) {
-          handleRefresh();
+      radarService.initialize();
+      return null;
+    }, []);
+
+    // Listen to radar service updates
+    useEffect(() {
+      final subscription = radarService.usersStream.listen((users) {
+        nearbyUsers.value = users;
+        if (isLoading.value) {
+          isLoading.value = false;
         }
       });
-      
-      return () {
-        timer.cancel();
-      };
+
+      return () => subscription.cancel();
+    }, []);
+
+    // Listen to detection events
+    useEffect(() {
+      final subscription = radarService.detectionStream.listen((detection) {
+        if (detection.isManual) {
+          confettiController.play();
+          soundService.playSuccessSound();
+        } else {
+          soundService.playRadarPingSound();
+        }
+      });
+
+      return () => subscription.cancel();
     }, []);
 
     // Start animations
@@ -145,19 +71,86 @@ class RadarScreen extends HookWidget {
       return null;
     }, []);
 
+    Future<void> handleStartScanning() async {
+      if (isScanning.value) return;
+      
+      isScanning.value = true;
+      isLoading.value = true;
+      soundService.playButtonClickSound();
+      
+      await radarService.updateSettings(settings.value);
+      await radarService.startScanning();
+    }
+
+    Future<void> handleStopScanning() async {
+      if (!isScanning.value) return;
+      
+      isScanning.value = false;
+      soundService.playButtonClickSound();
+      
+      await radarService.stopScanning();
+    }
+
+    Future<void> handleRefresh() async {
+      if (isRefreshing.value) return;
+      
+      isRefreshing.value = true;
+      soundService.playSwipeSound();
+      
+      // Restart scanning with current settings
+      await radarService.stopScanning();
+      await radarService.updateSettings(settings.value);
+      await radarService.startScanning();
+      
+      isRefreshing.value = false;
+    }
+
+    void handleUserTap(NearbyUser user) {
+      soundService.playTapSound();
+      _buildUserDetailsDialog(context, user, radarService);
+    }
+
+    void handleManualDetection(String userId) async {
+      try {
+        await radarService.manuallyDetectUser(userId);
+        soundService.playSuccessSound();
+        confettiController.play();
+      } catch (e) {
+        soundService.playErrorSound();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('User is out of range: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    void handleSettingsChanged(RadarSettings newSettings) {
+      settings.value = newSettings;
+      radarService.updateSettings(newSettings);
+    }
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: _buildAppBar(context, soundService, handleRefresh, isRefreshing),
+      appBar: _buildAppBar(
+        context, 
+        soundService, 
+        handleRefresh, 
+        isRefreshing, 
+        isScanning,
+        () => showSettings.value = !showSettings.value,
+      ),
       body: Stack(
         children: [
           // Main content with smooth transitions
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: isLoading.value
-                ? _buildLoadingState(context, radarRotationController)
+                ? _buildLoadingState(context, radarRotationController, isScanning.value)
                 : nearbyUsers.value.isEmpty
-                    ? _buildEmptyState(context)
-                    : _buildUserList(context, nearbyUsers.value, handleUserTap),
+                    ? _buildEmptyState(context, isScanning.value)
+                    : _buildUserList(context, nearbyUsers.value, handleUserTap, handleManualDetection, settings.value),
           ),
           
           // Status indicator
@@ -165,8 +158,25 @@ class RadarScreen extends HookWidget {
             top: 16,
             left: 16,
             right: 16,
-            child: _buildStatusIndicator(context, isLoading.value, nearbyUsers.value.length, isRefreshing.value),
+            child: _buildStatusIndicator(context, isLoading.value, nearbyUsers.value.length, isRefreshing.value, isScanning.value, settings.value),
           ),
+          
+          // Settings overlay
+          if (showSettings.value)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.5),
+                child: Center(
+                  child: Container(
+                    margin: const EdgeInsets.all(20),
+                    child: RadarSettingsWidget(
+                      currentSettings: settings.value,
+                      onSettingsChanged: handleSettingsChanged,
+                    ),
+                  ),
+                ),
+              ),
+            ).animate().fadeIn(duration: const Duration(milliseconds: 300)),
           
           // Confetti overlay
           Align(
@@ -183,6 +193,13 @@ class RadarScreen extends HookWidget {
           ),
         ],
       ),
+      floatingActionButton: _buildFloatingActionButton(
+        context,
+        isScanning.value,
+        handleStartScanning,
+        handleStopScanning,
+        soundService,
+      ),
     );
   }
 
@@ -191,6 +208,8 @@ class RadarScreen extends HookWidget {
     SoundService soundService,
     VoidCallback onRefresh,
     ValueNotifier<bool> isRefreshing,
+    ValueNotifier<bool> isScanning,
+    VoidCallback onSettingsTap,
   ) {
     return AppBar(
       title: Row(
@@ -274,7 +293,7 @@ class RadarScreen extends HookWidget {
             ),
             onPressed: () {
               soundService.playButtonClickSound();
-              Navigator.pushNamed(context, '/settings');
+              onSettingsTap();
             },
           ),
         ),
@@ -287,6 +306,8 @@ class RadarScreen extends HookWidget {
     bool isLoading,
     int userCount,
     bool isRefreshing,
+    bool isScanning,
+    RadarSettings settings,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -325,7 +346,7 @@ class RadarScreen extends HookWidget {
                   ),
                 ],
               ),
-              child: CircularProgressIndicator(
+              child: const CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
@@ -333,6 +354,34 @@ class RadarScreen extends HookWidget {
             const SizedBox(width: 8),
             Text(
               isRefreshing ? 'Refreshing...' : 'Scanning for users...',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ] else if (isScanning) ...[
+            Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.greenAurora.withOpacity(0.6),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: const CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Scanning (${(settings.detectionRangeKm * 1000).round()}m range)',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -374,7 +423,7 @@ class RadarScreen extends HookWidget {
     ).animate().fadeIn(duration: const Duration(milliseconds: 300));
   }
 
-  Widget _buildLoadingState(BuildContext context, AnimationController radarController) {
+  Widget _buildLoadingState(BuildContext context, AnimationController radarController, bool isScanning) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -415,7 +464,7 @@ class RadarScreen extends HookWidget {
           ),
           const SizedBox(height: 32),
           Text(
-            'Scanning for nearby users...',
+            isScanning ? 'Scanning for nearby users...' : 'Initializing radar...',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -424,7 +473,7 @@ class RadarScreen extends HookWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'This may take a few seconds',
+            isScanning ? 'This may take a few seconds' : 'Setting up detection system',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
@@ -435,7 +484,7 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, bool isScanning) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -462,14 +511,14 @@ class RadarScreen extends HookWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'No users found nearby',
+            isScanning ? 'No users found in range' : 'Start scanning to find users',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Try refreshing or check back later!',
+            isScanning ? 'Try increasing the detection range' : 'Tap the scan button to begin',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
@@ -483,6 +532,8 @@ class RadarScreen extends HookWidget {
     BuildContext context,
     List<NearbyUser> users,
     Function(NearbyUser) onUserTap,
+    Function(String) onManualDetection,
+    RadarSettings settings,
   ) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 80, 16, 16),
@@ -491,7 +542,7 @@ class RadarScreen extends HookWidget {
         final user = users[index];
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          child: _buildUserCard(context, user, onUserTap),
+          child: _buildUserCard(context, user, onUserTap, onManualDetection, settings),
         ).animate().fadeIn(
           delay: Duration(milliseconds: index * 100),
           duration: const Duration(milliseconds: 300),
@@ -507,6 +558,8 @@ class RadarScreen extends HookWidget {
     BuildContext context,
     NearbyUser user,
     Function(NearbyUser) onUserTap,
+    Function(String) onManualDetection,
+    RadarSettings settings,
   ) {
     return Card(
       elevation: 6,
@@ -536,7 +589,7 @@ class RadarScreen extends HookWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Avatar with online indicator
+                // Avatar with online indicator and signal strength
                 Stack(
                   children: [
                     Container(
@@ -580,6 +633,27 @@ class RadarScreen extends HookWidget {
                               BoxShadow(
                                 color: AppTheme.greenAurora.withOpacity(0.6),
                                 blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (settings.showSignalStrength)
+                      Positioned(
+                        left: -2,
+                        top: -2,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: _getSignalStrengthColor(user.signalStrength),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.white, width: 1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _getSignalStrengthColor(user.signalStrength).withOpacity(0.6),
+                                blurRadius: 4,
                                 spreadRadius: 1,
                               ),
                             ],
@@ -665,11 +739,36 @@ class RadarScreen extends HookWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
+                          if (settings.showSignalStrength) ...[
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.signal_cellular_alt,
+                              size: 12,
+                              color: _getSignalStrengthColor(user.signalStrength),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${(user.signalStrength * 100).round()}%',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: _getSignalStrengthColor(user.signalStrength),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],
                   ),
                 ),
+                if (settings.enableManualDetection && !user.isDetected)
+                  IconButton(
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      color: AppTheme.electricAurora,
+                    ),
+                    onPressed: () => onManualDetection(user.id),
+                  ),
                 Icon(
                   Icons.arrow_forward_ios,
                   color: Colors.grey[400],
@@ -683,7 +782,50 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  void _buildUserDetailsDialog(BuildContext context, NearbyUser user) {
+  Color _getSignalStrengthColor(double signalStrength) {
+    if (signalStrength > 0.8) return AppTheme.greenAurora;
+    if (signalStrength > 0.5) return AppTheme.orangeAurora;
+    if (signalStrength > 0.2) return AppTheme.pinkAurora;
+    return Colors.grey;
+  }
+
+  Widget _buildFloatingActionButton(
+    BuildContext context,
+    bool isScanning,
+    VoidCallback onStartScanning,
+    VoidCallback onStopScanning,
+    SoundService soundService,
+  ) {
+    return FloatingActionButton.extended(
+      onPressed: () {
+        soundService.playButtonClickSound();
+        if (isScanning) {
+          onStopScanning();
+        } else {
+          onStartScanning();
+        }
+      },
+      backgroundColor: isScanning ? Colors.red : AppTheme.electricAurora,
+      foregroundColor: Colors.white,
+      icon: Icon(
+        isScanning ? Icons.stop : Icons.radar,
+        color: Colors.white,
+      ),
+      label: Text(
+        isScanning ? 'Stop Scan' : 'Start Scan',
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    );
+  }
+
+  void _buildUserDetailsDialog(BuildContext context, NearbyUser user, RadarService radarService) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -766,6 +908,28 @@ class RadarScreen extends HookWidget {
                 ),
               )).toList(),
             ),
+            if (user.signalStrength > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.signal_cellular_alt,
+                      size: 16,
+                      color: _getSignalStrengthColor(user.signalStrength),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Signal: ${(user.signalStrength * 100).round()}%',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _getSignalStrengthColor(user.signalStrength),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
         actions: [
