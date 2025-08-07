@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math';
 import '../../../theme/app_theme.dart';
 import '../models/user_model.dart';
@@ -9,29 +10,33 @@ class RadarWidget extends HookWidget {
   final double maxRangeKm;
   final bool isScanning;
   final Function(NearbyUser)? onUserTap;
-  final Function(String)? onManualDetection;
 
   const RadarWidget({
     super.key,
     required this.users,
-    this.maxRangeKm = 0.5,
-    this.isScanning = true,
+    required this.maxRangeKm,
+    required this.isScanning,
     this.onUserTap,
-    this.onManualDetection,
   });
 
   @override
   Widget build(BuildContext context) {
     final scanAnimation = useAnimationController(duration: const Duration(seconds: 2));
     final rotationAnimation = useAnimationController(duration: const Duration(seconds: 10));
+    final pulseAnimation = useAnimationController(duration: const Duration(seconds: 1));
+    final userPulseAnimation = useAnimationController(duration: const Duration(milliseconds: 1500));
 
     useEffect(() {
       if (isScanning) {
         scanAnimation.repeat();
         rotationAnimation.repeat();
+        pulseAnimation.repeat();
+        userPulseAnimation.repeat();
       } else {
         scanAnimation.stop();
         rotationAnimation.stop();
+        pulseAnimation.stop();
+        userPulseAnimation.stop();
       }
       return null;
     }, [isScanning]);
@@ -42,7 +47,7 @@ class RadarWidget extends HookWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Radar background with rings
+          // Enhanced radar background with multiple layers
           CustomPaint(
             size: const Size(300, 300),
             painter: RadarBackgroundPainter(
@@ -51,7 +56,7 @@ class RadarWidget extends HookWidget {
             ),
           ),
           
-          // Scanning animation
+          // Scanning animation with enhanced effects
           if (isScanning)
             AnimatedBuilder(
               animation: scanAnimation,
@@ -66,72 +71,103 @@ class RadarWidget extends HookWidget {
               },
             ),
           
-          // User dots
-          ...users.map((user) => _buildUserDot(user)),
+          // Enhanced user dots with animations
+          ...users.map((user) => _buildEnhancedUserDot(user, userPulseAnimation)),
           
-          // Center indicator
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              gradient: AppTheme.auroraGradient,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.electricAurora.withOpacity(0.6),
-                  blurRadius: 10,
-                  spreadRadius: 2,
+          // Enhanced center indicator with pulse effect
+          AnimatedBuilder(
+            animation: pulseAnimation,
+            builder: (context, child) {
+              return Container(
+                width: 20 + (pulseAnimation.value * 10),
+                height: 20 + (pulseAnimation.value * 10),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.auroraGradient,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.electricAurora.withOpacity(0.6 - pulseAnimation.value * 0.3),
+                      blurRadius: 10 + (pulseAnimation.value * 20),
+                      spreadRadius: 2 + (pulseAnimation.value * 5),
+                    ),
+                    BoxShadow(
+                      color: AppTheme.purpleAurora.withOpacity(0.4 - pulseAnimation.value * 0.2),
+                      blurRadius: 20 + (pulseAnimation.value * 30),
+                      spreadRadius: 1 + (pulseAnimation.value * 3),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 12,
-            ),
+                child: const Icon(
+                  Icons.person,
+                  color: Colors.white,
+                  size: 12,
+                ),
+              );
+            },
           ),
           
-          // Range indicator
+          // Enhanced range indicator
           Positioned(
             top: 10,
             left: 10,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 gradient: AppTheme.auroraGradient,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.electricAurora.withOpacity(0.4),
-                    blurRadius: 8,
+                    color: AppTheme.electricAurora.withOpacity(0.5),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                  BoxShadow(
+                    color: AppTheme.purpleAurora.withOpacity(0.3),
+                    blurRadius: 20,
                     spreadRadius: 1,
                   ),
                 ],
               ),
-              child: Text(
-                '${(maxRangeKm * 1000).round()}m',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.radar,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${(maxRangeKm * 1000).round()}m',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           
-          // User count indicator
+          // Enhanced user count indicator
           Positioned(
             top: 10,
             right: 10,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 gradient: AppTheme.auroraGradient,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.electricAurora.withOpacity(0.4),
-                    blurRadius: 8,
+                    color: AppTheme.electricAurora.withOpacity(0.5),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                  BoxShadow(
+                    color: AppTheme.purpleAurora.withOpacity(0.3),
+                    blurRadius: 20,
                     spreadRadius: 1,
                   ),
                 ],
@@ -142,9 +178,9 @@ class RadarWidget extends HookWidget {
                   const Icon(
                     Icons.people,
                     color: Colors.white,
-                    size: 12,
+                    size: 14,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 6),
                   Text(
                     '${users.length}',
                     style: const TextStyle(
@@ -157,68 +193,132 @@ class RadarWidget extends HookWidget {
               ),
             ),
           ),
+          
+          // Enhanced scanning status indicator
+          if (isScanning)
+            Positioned(
+              bottom: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.auroraGradient,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.electricAurora.withOpacity(0.5),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedBuilder(
+                      animation: scanAnimation,
+                      builder: (context, child) {
+                        return Transform.rotate(
+                          angle: scanAnimation.value * 2 * pi,
+                          child: const Icon(
+                            Icons.radar,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Scanning...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildUserDot(NearbyUser user) {
-    final centerX = 150.0;
-    final centerY = 150.0;
-    final maxRadius = 120.0;
-    
-    // Calculate position based on distance and angle
-    final distanceRatio = user.distanceKm / maxRangeKm;
-    final radius = distanceRatio * maxRadius;
-    final angleRadians = user.angleDegrees * pi / 180;
-    
-    final x = centerX + radius * cos(angleRadians);
-    final y = centerY + radius * sin(angleRadians);
+  Widget _buildEnhancedUserDot(NearbyUser user, AnimationController pulseAnimation) {
+    final angle = user.angleDegrees * pi / 180;
+    final distance = (user.distanceKm / maxRangeKm).clamp(0.0, 1.0);
+    final radius = 150.0 * distance;
     
     return Positioned(
-      left: x - 15,
-      top: y - 15,
+      left: 150.0 + cos(angle) * radius - 12.0,
+      top: 150.0 + sin(angle) * radius - 12.0,
       child: GestureDetector(
-        onTap: () => onUserTap?.call(user),
-        child: Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            gradient: _getUserGradient(user),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: _getUserColor(user).withOpacity(0.6),
-                blurRadius: 8,
-                spreadRadius: 2,
+        onTap: () {
+          if (onUserTap != null) {
+            onUserTap!(user);
+          }
+        },
+        child: AnimatedBuilder(
+          animation: pulseAnimation,
+          builder: (context, child) {
+            final pulseValue = (sin(pulseAnimation.value * 2 * pi) + 1) / 2;
+            final signalColor = _getSignalStrengthColor(user.signalStrength);
+            
+            return Container(
+              width: 24 + (pulseValue * 8),
+              height: 24 + (pulseValue * 8),
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [
+                    signalColor.withOpacity(0.8 + pulseValue * 0.2),
+                    signalColor.withOpacity(0.4 + pulseValue * 0.3),
+                    signalColor.withOpacity(0.1 + pulseValue * 0.1),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: signalColor.withOpacity(0.6 + pulseValue * 0.3),
+                    blurRadius: 12 + (pulseValue * 8),
+                    spreadRadius: 2 + (pulseValue * 3),
+                  ),
+                  BoxShadow(
+                    color: signalColor.withOpacity(0.3 + pulseValue * 0.2),
+                    blurRadius: 20 + (pulseValue * 15),
+                    spreadRadius: 1 + (pulseValue * 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Center(
-            child: Text(
-              user.avatar,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
+              child: Center(
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.8),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Color _getUserColor(NearbyUser user) {
-    if (user.signalStrength > 0.8) return AppTheme.greenAurora;
-    if (user.signalStrength > 0.5) return AppTheme.orangeAurora;
-    if (user.signalStrength > 0.2) return AppTheme.pinkAurora;
+  Color _getSignalStrengthColor(double signalStrength) {
+    if (signalStrength > 0.8) return AppTheme.greenAurora;
+    if (signalStrength > 0.5) return AppTheme.orangeAurora;
+    if (signalStrength > 0.2) return AppTheme.pinkAurora;
     return Colors.grey;
-  }
-
-  LinearGradient _getUserGradient(NearbyUser user) {
-    final color = _getUserColor(user);
-    return LinearGradient(
-      colors: [color, color.withOpacity(0.7)],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
   }
 }
 
@@ -234,37 +334,50 @@ class RadarBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final maxRadius = size.width / 2 - 20;
-    
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0
-      ..color = Colors.white.withOpacity(0.3);
+    final radius = size.width / 2;
 
-    // Draw distance rings
-    for (int i = 1; i <= 5; i++) {
-      final radius = maxRadius * i / 5;
-      canvas.drawCircle(center, radius, paint);
+    // Draw multiple concentric circles with enhanced styling
+    for (int i = 1; i <= 4; i++) {
+      final circleRadius = radius * (i / 4);
+      final paint = Paint()
+        ..color = AppTheme.electricAurora.withOpacity(0.1 - (i * 0.02))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+
+      canvas.drawCircle(center, circleRadius, paint);
     }
 
-    // Draw angle lines
+    // Draw radial lines with enhanced styling
     for (int i = 0; i < 8; i++) {
-      final angle = i * pi / 4;
-      final endX = center.dx + maxRadius * cos(angle);
-      final endY = center.dy + maxRadius * sin(angle);
-      canvas.drawLine(center, Offset(endX, endY), paint);
+      final angle = (i * pi / 4);
+      final startPoint = center;
+      final endPoint = Offset(
+        center.dx + cos(angle) * radius,
+        center.dy + sin(angle) * radius,
+      );
+
+      final paint = Paint()
+        ..color = AppTheme.electricAurora.withOpacity(0.15)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.5;
+
+      canvas.drawLine(startPoint, endPoint, paint);
     }
 
-    // Draw outer circle
-    final outerPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..color = AppTheme.electricAurora.withOpacity(0.6);
-    canvas.drawCircle(center, maxRadius, outerPaint);
+    // Draw enhanced grid pattern
+    for (int i = 1; i <= 3; i++) {
+      final gridRadius = radius * (i / 4);
+      final paint = Paint()
+        ..color = AppTheme.purpleAurora.withOpacity(0.05)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.5;
+
+      canvas.drawCircle(center, gridRadius, paint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class RadarScanPainter extends CustomPainter {
@@ -279,37 +392,61 @@ class RadarScanPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final maxRadius = size.width / 2 - 20;
+    final radius = size.width / 2;
+
+    // Draw scanning sweep with enhanced effects
+    final sweepAngle = progress * 2 * pi;
     
-    // Create scanning sweep effect
+    // Create gradient sweep
     final sweepPaint = Paint()
-      ..style = PaintingStyle.fill
       ..shader = RadialGradient(
         colors: [
-          AppTheme.electricAurora.withOpacity(0.3),
-          AppTheme.electricAurora.withOpacity(0.1),
+          AppTheme.electricAurora.withOpacity(0.8),
+          AppTheme.electricAurora.withOpacity(0.4),
+          AppTheme.purpleAurora.withOpacity(0.2),
           Colors.transparent,
         ],
-        stops: const [0.0, 0.5, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: maxRadius));
+        stops: const [0.0, 0.3, 0.7, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
 
-    // Draw scanning sweep
-    final sweepAngle = progress * 2 * pi;
-    final path = Path();
-    path.moveTo(center.dx, center.dy);
-    path.lineTo(
-      center.dx + maxRadius * cos(sweepAngle),
-      center.dy + maxRadius * sin(sweepAngle),
-    );
-    path.arcTo(
-      Rect.fromCircle(center: center, radius: maxRadius),
-      0,
-      sweepAngle,
-      false,
-    );
-    path.close();
-    
+    // Draw the sweep sector
+    final path = Path()
+      ..moveTo(center.dx, center.dy)
+      ..lineTo(
+        center.dx + cos(sweepAngle) * radius,
+        center.dy + sin(sweepAngle) * radius,
+      )
+      ..arcTo(
+        Rect.fromCircle(center: center, radius: radius),
+        0,
+        -sweepAngle,
+        false,
+      )
+      ..close();
+
     canvas.drawPath(path, sweepPaint);
+
+    // Draw scanning line
+    final linePaint = Paint()
+      ..color = AppTheme.electricAurora
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..strokeCap = StrokeCap.round;
+
+    final lineEnd = Offset(
+      center.dx + cos(sweepAngle) * radius,
+      center.dy + sin(sweepAngle) * radius,
+    );
+
+    canvas.drawLine(center, lineEnd, linePaint);
+
+    // Draw scanning pulse effect
+    final pulsePaint = Paint()
+      ..color = AppTheme.electricAurora.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    canvas.drawLine(center, lineEnd, pulsePaint);
   }
 
   @override
