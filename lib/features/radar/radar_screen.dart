@@ -25,6 +25,7 @@ class RadarScreen extends HookWidget {
     final isRefreshing = useState(false);
     final isScanning = useState(true); // Start scanning by default
     final showSettings = useState(false);
+    final showRadarView = useState(true); // Toggle between radar and list view
     final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 2)));
     final soundService = useMemoized(() => SoundService());
     final pulseController = useAnimationController(duration: const Duration(seconds: 2));
@@ -140,6 +141,8 @@ class RadarScreen extends HookWidget {
         isRefreshing, 
         isScanning,
         () => showSettings.value = !showSettings.value,
+        showRadarView,
+        () => showRadarView.value = !showRadarView.value,
       ),
       body: Stack(
         children: [
@@ -150,7 +153,9 @@ class RadarScreen extends HookWidget {
                 ? _buildLoadingState(context, radarRotationController, isScanning.value)
                 : nearbyUsers.value.isEmpty
                     ? _buildEmptyState(context, isScanning.value)
-                    : _buildUserList(context, nearbyUsers.value, handleUserTap, handleManualDetection, settings.value),
+                    : showRadarView.value
+                        ? _buildRadarView(context, nearbyUsers.value, handleUserTap, settings.value, isScanning.value)
+                        : _buildUserList(context, nearbyUsers.value, handleUserTap, handleManualDetection, settings.value),
           ),
           
           // Status indicator
@@ -209,6 +214,8 @@ class RadarScreen extends HookWidget {
     ValueNotifier<bool> isRefreshing,
     ValueNotifier<bool> isScanning,
     VoidCallback onSettingsTap,
+    ValueNotifier<bool> showRadarView,
+    VoidCallback onToggleView,
   ) {
     return AppBar(
       title: Row(
@@ -242,6 +249,30 @@ class RadarScreen extends HookWidget {
       backgroundColor: Theme.of(context).colorScheme.surface,
       elevation: 0,
       actions: [
+        // View toggle button
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.orangeAurora.withOpacity(0.3),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: Icon(
+              showRadarView.value ? Icons.list : Icons.radar,
+              color: AppTheme.orangeAurora,
+            ),
+            onPressed: () {
+              soundService.playButtonClickSound();
+              onToggleView();
+            },
+          ),
+        ),
         // Animated refresh button
         AnimatedBuilder(
           animation: isRefreshing.value ? const AlwaysStoppedAnimation(1.0) : const AlwaysStoppedAnimation(0.0),
@@ -294,6 +325,98 @@ class RadarScreen extends HookWidget {
               soundService.playButtonClickSound();
               onSettingsTap();
             },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRadarView(
+    BuildContext context,
+    List<NearbyUser> users,
+    Function(NearbyUser) onUserTap,
+    RadarSettings settings,
+    bool isScanning,
+  ) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Radar widget
+          RadarWidget(
+            users: users,
+            maxRangeKm: settings.detectionRangeKm,
+            isScanning: isScanning,
+            onUserTap: onUserTap,
+          ),
+          const SizedBox(height: 24),
+          // Legend
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: AppTheme.auroraGradient,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.electricAurora.withOpacity(0.3),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Signal Strength Legend',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildLegendItem('Strong', AppTheme.greenAurora),
+                    _buildLegendItem('Medium', AppTheme.orangeAurora),
+                    _buildLegendItem('Weak', AppTheme.pinkAurora),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.6),
+                blurRadius: 4,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
