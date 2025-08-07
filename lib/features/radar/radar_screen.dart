@@ -24,8 +24,9 @@ class RadarScreen extends HookWidget {
     final soundService = useMemoized(() => SoundService());
     final pulseController = useAnimationController(duration: const Duration(seconds: 2));
     final fadeController = useAnimationController(duration: const Duration(milliseconds: 300));
+    final radarRotationController = useAnimationController(duration: const Duration(seconds: 10));
 
-    // Mock data for nearby users
+    // Mock data for nearby users with more variety
     final mockUsers = [
       NearbyUser(
         id: '1',
@@ -33,7 +34,7 @@ class RadarScreen extends HookWidget {
         distanceKm: 0.05,
         avatar: '👩‍🦰',
         status: 'Online',
-        interests: ['Music', 'Travel', 'Photography'],
+        interests: ['Music', 'Travel', 'Photography', 'Coffee'],
         lastSeen: DateTime.now(),
         angleDegrees: 45,
       ),
@@ -43,7 +44,7 @@ class RadarScreen extends HookWidget {
         distanceKm: 0.12,
         avatar: '👨‍💼',
         status: 'Away',
-        interests: ['Technology', 'Gaming', 'Coffee'],
+        interests: ['Technology', 'Gaming', 'Coffee', 'Fitness'],
         lastSeen: DateTime.now().subtract(const Duration(minutes: 30)),
         angleDegrees: 120,
       ),
@@ -53,9 +54,29 @@ class RadarScreen extends HookWidget {
         distanceKm: 0.08,
         avatar: '👩‍🎨',
         status: 'Online',
-        interests: ['Art', 'Design', 'Fashion'],
+        interests: ['Art', 'Design', 'Fashion', 'Photography'],
         lastSeen: DateTime.now(),
         angleDegrees: 200,
+      ),
+      NearbyUser(
+        id: '4',
+        name: 'David Brown',
+        distanceKm: 0.15,
+        avatar: '👨‍🎓',
+        status: 'Online',
+        interests: ['Reading', 'Writing', 'Philosophy', 'Tea'],
+        lastSeen: DateTime.now(),
+        angleDegrees: 280,
+      ),
+      NearbyUser(
+        id: '5',
+        name: 'Lisa Garcia',
+        distanceKm: 0.03,
+        avatar: '👩‍💻',
+        status: 'Online',
+        interests: ['Coding', 'Tech', 'Startups', 'Innovation'],
+        lastSeen: DateTime.now(),
+        angleDegrees: 90,
       ),
     ];
 
@@ -105,21 +126,22 @@ class RadarScreen extends HookWidget {
     useEffect(() {
       fetchNearbyUsers();
       
-             // Auto-refresh every 5 seconds
-       final timer = Timer.periodic(const Duration(seconds: 5), (timer) {
-         if (!isRefreshing.value) {
-           handleRefresh();
-         }
-       });
+      // Auto-refresh every 5 seconds
+      final timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        if (!isRefreshing.value) {
+          handleRefresh();
+        }
+      });
       
       return () {
         timer.cancel();
       };
     }, []);
 
-    // Start pulse animation
+    // Start animations
     useEffect(() {
       pulseController.repeat();
+      radarRotationController.repeat();
       return null;
     }, []);
 
@@ -132,7 +154,7 @@ class RadarScreen extends HookWidget {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: isLoading.value
-                ? _buildLoadingState(context)
+                ? _buildLoadingState(context, radarRotationController)
                 : nearbyUsers.value.isEmpty
                     ? _buildEmptyState(context)
                     : _buildUserList(context, nearbyUsers.value, handleUserTap),
@@ -173,12 +195,26 @@ class RadarScreen extends HookWidget {
     return AppBar(
       title: Row(
         children: [
-          Icon(
-            Icons.radar,
-            color: AppTheme.primaryBlue,
-            size: 28,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: AppTheme.auroraGradient,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.electricAurora.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.radar,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           const Text(
             'Radar',
             style: TextStyle(fontWeight: FontWeight.bold),
@@ -219,15 +255,28 @@ class RadarScreen extends HookWidget {
             );
           },
         ),
-        IconButton(
-          icon: Icon(
-            Icons.settings,
-            color: AppTheme.primaryBlue,
+        Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.purpleAurora.withOpacity(0.3),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
           ),
-          onPressed: () {
-            soundService.playButtonClickSound();
-            Navigator.pushNamed(context, '/settings');
-          },
+          child: IconButton(
+            icon: Icon(
+              Icons.settings,
+              color: AppTheme.purpleAurora,
+            ),
+            onPressed: () {
+              soundService.playButtonClickSound();
+              Navigator.pushNamed(context, '/settings');
+            },
+          ),
         ),
       ],
     );
@@ -325,19 +374,44 @@ class RadarScreen extends HookWidget {
     ).animate().fadeIn(duration: const Duration(milliseconds: 300));
   }
 
-  Widget _buildLoadingState(BuildContext context) {
+  Widget _buildLoadingState(BuildContext context, AnimationController radarController) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Radar animation
-          Container(
-            width: 200,
-            height: 200,
-            child: RadarWidget(
-              onUserTap: (user) {},
-              users: [],
-            ),
+          // Animated radar with rotation
+          AnimatedBuilder(
+            animation: radarController,
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: radarController.value * 2 * pi,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.auroraGradient,
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.electricAurora.withOpacity(0.4),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: AppTheme.purpleAurora.withOpacity(0.3),
+                        blurRadius: 40,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.radar,
+                    color: Colors.white,
+                    size: 80,
+                  ),
+                ),
+              );
+            },
           ),
           const SizedBox(height: 32),
           Text(
@@ -362,7 +436,47 @@ class RadarScreen extends HookWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return const EmptyStateWidget();
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: AppTheme.auroraGradient,
+              borderRadius: BorderRadius.circular(60),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.electricAurora.withOpacity(0.4),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.people_outline,
+              color: Colors.white,
+              size: 60,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No users found nearby',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try refreshing or check back later!',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildUserList(
@@ -389,7 +503,7 @@ class RadarScreen extends HookWidget {
     );
   }
 
-    Widget _buildUserCard(
+  Widget _buildUserCard(
     BuildContext context,
     NearbyUser user,
     Function(NearbyUser) onUserTap,
@@ -490,12 +604,26 @@ class RadarScreen extends HookWidget {
                               ),
                             ),
                           ),
-                          Text(
-                            '${(user.distanceKm * 1000).round()}m',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              gradient: AppTheme.auroraGradient,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.electricAurora.withOpacity(0.3),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              '${(user.distanceKm * 1000).round()}m',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -509,6 +637,35 @@ class RadarScreen extends HookWidget {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: user.isOnline ? AppTheme.greenAurora : Colors.grey[400],
+                              borderRadius: BorderRadius.circular(4),
+                              boxShadow: user.isOnline ? [
+                                BoxShadow(
+                                  color: AppTheme.greenAurora.withOpacity(0.5),
+                                  blurRadius: 4,
+                                  spreadRadius: 1,
+                                ),
+                              ] : null,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            user.isOnline ? 'Online' : 'Offline',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: user.isOnline ? AppTheme.greenAurora : Colors.grey[500],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -537,8 +694,15 @@ class RadarScreen extends HookWidget {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
+                gradient: AppTheme.auroraGradient,
                 borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.electricAurora.withOpacity(0.4),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
               child: Center(
                 child: Text(
@@ -556,13 +720,13 @@ class RadarScreen extends HookWidget {
                     user.name,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                                     Text(
-                     '${(user.distanceKm * 1000).round()}m away',
-                     style: TextStyle(
-                       fontSize: 12,
-                       color: Colors.grey[600],
-                     ),
-                   ),
+                  Text(
+                    '${(user.distanceKm * 1000).round()}m away',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -579,9 +743,27 @@ class RadarScreen extends HookWidget {
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              children: user.interests.map((interest) => Chip(
-                label: Text(interest),
-                backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+              children: user.interests.map((interest) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.auroraGradient,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.electricAurora.withOpacity(0.3),
+                      blurRadius: 6,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  interest,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               )).toList(),
             ),
           ],
@@ -597,7 +779,7 @@ class RadarScreen extends HookWidget {
               // TODO: Implement chat functionality
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppTheme.electricAurora,
               foregroundColor: Colors.white,
             ),
             child: const Text('Start Chat'),

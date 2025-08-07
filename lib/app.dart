@@ -15,8 +15,8 @@ class ComnecterApp extends ConsumerStatefulWidget {
 }
 
 class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProviderStateMixin {
-  late AnimationController _splashController;
-  late Animation<double> _splashAnimation;
+  AnimationController? _splashController;
+  Animation<double>? _splashAnimation;
   bool _isInitialized = false;
 
   @override
@@ -47,12 +47,12 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
         begin: 0.0,
         end: 1.0,
       ).animate(CurvedAnimation(
-        parent: _splashController,
+        parent: _splashController!,
         curve: Curves.easeInOut,
       ));
       
       // Start splash animation
-      await _splashController.forward();
+      await _splashController!.forward();
       
       // Play startup sound
       await SoundService().playSuccessSound();
@@ -74,7 +74,7 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
 
   @override
   void dispose() {
-    _splashController.dispose();
+    _splashController?.dispose();
     super.dispose();
   }
 
@@ -102,52 +102,54 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
     return Scaffold(
       backgroundColor: isDarkMode ? AppTheme.darkTheme.colorScheme.background : AppTheme.lightTheme.colorScheme.background,
       body: Center(
-        child: FadeTransition(
-          opacity: _splashAnimation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // App logo with aurora gradient
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  gradient: AppTheme.auroraGradient,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.electricAurora.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
+        child: _splashAnimation != null
+            ? FadeTransition(
+                opacity: _splashAnimation!,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // App logo with aurora gradient
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.auroraGradient,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.electricAurora.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.people,
+                        color: Colors.white,
+                        size: 60,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Comnecter',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Connect with people nearby',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                      ),
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.people,
-                  color: Colors.white,
-                  size: 60,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Comnecter',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Connect with people nearby',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
+              )
+            : const CircularProgressIndicator(),
       ),
     );
   }
