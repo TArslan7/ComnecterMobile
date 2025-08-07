@@ -23,7 +23,7 @@ class RadarScreen extends HookWidget {
     final nearbyUsers = useState<List<NearbyUser>>([]);
     final isLoading = useState(true);
     final isRefreshing = useState(false);
-    final isScanning = useState(false);
+    final isScanning = useState(true); // Start scanning by default
     final showSettings = useState(false);
     final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 2)));
     final soundService = useMemoized(() => SoundService());
@@ -32,9 +32,13 @@ class RadarScreen extends HookWidget {
     final radarRotationController = useAnimationController(duration: const Duration(seconds: 10));
     final settings = useState<RadarSettings>(const RadarSettings());
 
-    // Initialize radar service
+    // Initialize radar service and start scanning automatically
     useEffect(() {
-      radarService.initialize();
+      radarService.initialize().then((_) {
+        // Start scanning automatically when screen loads
+        radarService.updateSettings(settings.value);
+        radarService.startScanning();
+      });
       return null;
     }, []);
 
@@ -71,24 +75,20 @@ class RadarScreen extends HookWidget {
       return null;
     }, []);
 
-    Future<void> handleStartScanning() async {
-      if (isScanning.value) return;
-      
-      isScanning.value = true;
-      isLoading.value = true;
-      soundService.playButtonClickSound();
-      
-      await radarService.updateSettings(settings.value);
-      await radarService.startScanning();
-    }
-
-    Future<void> handleStopScanning() async {
-      if (!isScanning.value) return;
-      
-      isScanning.value = false;
-      soundService.playButtonClickSound();
-      
-      await radarService.stopScanning();
+    Future<void> handleToggleScanning() async {
+      if (isScanning.value) {
+        // Stop scanning
+        isScanning.value = false;
+        soundService.playButtonClickSound();
+        await radarService.stopScanning();
+      } else {
+        // Start scanning
+        isScanning.value = true;
+        isLoading.value = true;
+        soundService.playButtonClickSound();
+        await radarService.updateSettings(settings.value);
+        await radarService.startScanning();
+      }
     }
 
     Future<void> handleRefresh() async {
@@ -196,8 +196,7 @@ class RadarScreen extends HookWidget {
       floatingActionButton: _buildFloatingActionButton(
         context,
         isScanning.value,
-        handleStartScanning,
-        handleStopScanning,
+        handleToggleScanning,
         soundService,
       ),
     );
@@ -353,7 +352,7 @@ class RadarScreen extends HookWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              isRefreshing ? 'Refreshing...' : 'Scanning for users...',
+              isRefreshing ? 'Refreshing...' : 'Initializing radar...',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -396,21 +395,21 @@ class RadarScreen extends HookWidget {
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.greenAurora.withOpacity(0.5),
+                    color: Colors.red.withOpacity(0.5),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
                 ],
               ),
               child: Icon(
-                Icons.people,
+                Icons.pause,
                 color: Colors.white,
                 size: 16,
               ),
             ),
             const SizedBox(width: 8),
             Text(
-              '$userCount users nearby',
+              'Scanning paused',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -503,22 +502,22 @@ class RadarScreen extends HookWidget {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.people_outline,
+            child: Icon(
+              isScanning ? Icons.people_outline : Icons.pause_circle_outline,
               color: Colors.white,
               size: 60,
             ),
           ),
           const SizedBox(height: 24),
           Text(
-            isScanning ? 'No users found in range' : 'Start scanning to find users',
+            isScanning ? 'No users found in range' : 'Radar is paused',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            isScanning ? 'Try increasing the detection range' : 'Tap the scan button to begin',
+            isScanning ? 'Try increasing the detection range' : 'Tap the scan button to resume',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.grey[600],
             ),
@@ -792,27 +791,19 @@ class RadarScreen extends HookWidget {
   Widget _buildFloatingActionButton(
     BuildContext context,
     bool isScanning,
-    VoidCallback onStartScanning,
-    VoidCallback onStopScanning,
+    VoidCallback onToggleScanning,
     SoundService soundService,
   ) {
     return FloatingActionButton.extended(
-      onPressed: () {
-        soundService.playButtonClickSound();
-        if (isScanning) {
-          onStopScanning();
-        } else {
-          onStartScanning();
-        }
-      },
+      onPressed: onToggleScanning,
       backgroundColor: isScanning ? Colors.red : AppTheme.electricAurora,
       foregroundColor: Colors.white,
       icon: Icon(
-        isScanning ? Icons.stop : Icons.radar,
+        isScanning ? Icons.pause : Icons.radar,
         color: Colors.white,
       ),
       label: Text(
-        isScanning ? 'Stop Scan' : 'Start Scan',
+        isScanning ? 'Pause Scan' : 'Resume Scan',
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,
