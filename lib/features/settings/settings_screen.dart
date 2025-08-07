@@ -170,6 +170,22 @@ class SettingsScreen extends HookWidget {
                 'App Settings',
                 Icons.app_settings_alt,
                 [
+                  _buildToggleSetting(
+                    context,
+                    'Dark Mode',
+                    'Switch between light and dark themes',
+                    Icons.dark_mode,
+                    currentSettings.darkModeEnabled,
+                    (value) async {
+                      final settingsService = SettingsService();
+                      await settingsService.updateDarkModeEnabled(value);
+                      settings.value = await settingsService.getSettings();
+                      soundService.playToggleEffect();
+                      confettiController.play();
+                    },
+                    soundService,
+                  ),
+                  const SizedBox(height: 16),
                   _buildActionSetting(
                     context,
                     'Notifications',

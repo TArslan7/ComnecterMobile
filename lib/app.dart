@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
+import 'features/settings/services/settings_service.dart';
 import 'services/sound_service.dart';
 
 class ComnecterApp extends ConsumerStatefulWidget {
@@ -16,6 +17,7 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
   late AnimationController _splashController;
   late Animation<double> _splashAnimation;
   bool _isInitialized = false;
+  bool _isDarkMode = false;
 
   @override
   void initState() {
@@ -27,6 +29,11 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
     try {
       // Initialize sound service
       await SoundService().initialize();
+      
+      // Load dark mode setting
+      final settingsService = SettingsService();
+      final settings = await settingsService.getSettings();
+      _isDarkMode = settings.darkModeEnabled;
       
       // Initialize splash animation
       _splashController = AnimationController(
@@ -41,7 +48,7 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
         parent: _splashController,
         curve: Curves.easeInOut,
       ));
-
+      
       // Start splash animation
       await _splashController.forward();
       
@@ -71,108 +78,69 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final router = createRouter();
-
     if (!_isInitialized) {
       return MaterialApp(
         home: _buildSplashScreen(),
-        debugShowCheckedModeBanner: false,
+        theme: _isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
       );
     }
 
     return MaterialApp.router(
       title: 'Comnecter',
+      theme: _isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
+      routerConfig: createRouter(),
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      routerConfig: router,
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: const TextScaler.linear(1.0),
-          ),
-          child: child!,
-        );
-      },
     );
   }
 
   Widget _buildSplashScreen() {
     return Scaffold(
-      backgroundColor: AppTheme.primaryBlue,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.primaryGradient,
-        ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _splashAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _splashAnimation.value,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // App icon/logo
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.radar,
-                        size: 60,
-                        color: AppTheme.primaryBlue,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    
-                    // App name
-                    const Text(
-                      'Comnecter',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    // Tagline
-                    const Text(
-                      'Connect with people nearby',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 48),
-                    
-                    // Loading indicator
-                    const SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        strokeWidth: 3,
-                      ),
+      backgroundColor: _isDarkMode ? AppTheme.darkTheme.colorScheme.background : AppTheme.lightTheme.colorScheme.background,
+      body: Center(
+        child: FadeTransition(
+          opacity: _splashAnimation,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // App logo with aurora gradient
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.auroraGradient,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.electricAurora.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-              );
-            },
+                child: const Icon(
+                  Icons.people,
+                  color: Colors.white,
+                  size: 60,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Comnecter',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: _isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Connect with people nearby',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                ),
+              ),
+            ],
           ),
         ),
       ),
