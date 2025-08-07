@@ -6,6 +6,9 @@ import 'theme/app_theme.dart';
 import 'features/settings/services/settings_service.dart';
 import 'services/sound_service.dart';
 
+// Provider for dark mode state
+final darkModeProvider = StateProvider<bool>((ref) => false);
+
 class ComnecterApp extends ConsumerStatefulWidget {
   const ComnecterApp({super.key});
 
@@ -17,7 +20,6 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
   late AnimationController _splashController;
   late Animation<double> _splashAnimation;
   bool _isInitialized = false;
-  bool _isDarkMode = false;
 
   @override
   void initState() {
@@ -33,7 +35,9 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
       // Load dark mode setting
       final settingsService = SettingsService();
       final settings = await settingsService.getSettings();
-      _isDarkMode = settings.darkModeEnabled;
+      
+      // Update the provider with the loaded setting
+      ref.read(darkModeProvider.notifier).state = settings.darkModeEnabled;
       
       // Initialize splash animation
       _splashController = AnimationController(
@@ -78,24 +82,27 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    // Watch the dark mode provider for changes
+    final isDarkMode = ref.watch(darkModeProvider);
+    
     if (!_isInitialized) {
       return MaterialApp(
-        home: _buildSplashScreen(),
-        theme: _isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
+        home: _buildSplashScreen(isDarkMode),
+        theme: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
       );
     }
 
     return MaterialApp.router(
       title: 'Comnecter',
-      theme: _isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
+      theme: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
       routerConfig: createRouter(),
       debugShowCheckedModeBanner: false,
     );
   }
 
-  Widget _buildSplashScreen() {
+  Widget _buildSplashScreen(bool isDarkMode) {
     return Scaffold(
-      backgroundColor: _isDarkMode ? AppTheme.darkTheme.colorScheme.background : AppTheme.lightTheme.colorScheme.background,
+      backgroundColor: isDarkMode ? AppTheme.darkTheme.colorScheme.background : AppTheme.lightTheme.colorScheme.background,
       body: Center(
         child: FadeTransition(
           opacity: _splashAnimation,
@@ -129,7 +136,7 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: _isDarkMode ? Colors.white : Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
               const SizedBox(height: 8),
@@ -137,7 +144,7 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
                 'Connect with people nearby',
                 style: TextStyle(
                   fontSize: 16,
-                  color: _isDarkMode ? Colors.grey[300] : Colors.grey[600],
+                  color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
                 ),
               ),
             ],

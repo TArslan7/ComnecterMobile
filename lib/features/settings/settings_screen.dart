@@ -3,43 +3,69 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
 import 'models/app_settings.dart';
 import 'services/settings_service.dart';
 
-class SettingsScreen extends HookWidget {
+// Import the dark mode provider from app.dart
+final darkModeProvider = StateProvider<bool>((ref) => false);
+
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProviderStateMixin {
+  AppSettings? settings;
+  bool isLoading = true;
+  late ConfettiController confettiController;
+  late SoundService soundService;
+
+  @override
+  void initState() {
+    super.initState();
+    confettiController = ConfettiController(duration: const Duration(seconds: 2));
+    soundService = SoundService();
+    _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    confettiController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() {
+      isLoading = true;
+    });
+    await Future.delayed(const Duration(milliseconds: 500));
+    final settingsService = SettingsService();
+    final loadedSettings = await settingsService.getSettings();
+    setState(() {
+      settings = loadedSettings;
+      isLoading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final settings = useState<AppSettings?>(null);
-    final isLoading = useState(true);
-    final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 2)));
-    final soundService = useMemoized(() => SoundService());
+    // Watch the dark mode provider
+    final isDarkMode = ref.watch(darkModeProvider);
 
-    Future<void> _loadSettings() async {
-      isLoading.value = true;
-      await Future.delayed(const Duration(milliseconds: 500));
-      final settingsService = SettingsService();
-      settings.value = await settingsService.getSettings();
-      isLoading.value = false;
-    }
-
-    useEffect(() {
-      _loadSettings();
-      return null;
-    }, []);
-
-    if (isLoading.value || settings.value == null) {
+    if (isLoading || settings == null) {
       return Scaffold(
         appBar: AppBar(
           title: Row(
             children: [
               Icon(
                 Icons.settings,
-                color: AppTheme.primaryBlue,
+                color: AppTheme.electricAurora,
                 size: 28,
               ),
               const SizedBox(width: 8),
@@ -58,7 +84,7 @@ class SettingsScreen extends HookWidget {
       );
     }
 
-    final currentSettings = settings.value!;
+    final currentSettings = settings!;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
@@ -67,7 +93,7 @@ class SettingsScreen extends HookWidget {
           children: [
             Icon(
               Icons.settings,
-              color: AppTheme.primaryBlue,
+              color: AppTheme.electricAurora,
               size: 28,
             ),
             const SizedBox(width: 8),
@@ -83,7 +109,7 @@ class SettingsScreen extends HookWidget {
           IconButton(
             icon: Icon(
               Icons.help_outline,
-              color: AppTheme.primaryBlue,
+              color: AppTheme.electricAurora,
             ),
             onPressed: () async {
               await soundService.playButtonClickSound();
@@ -127,7 +153,10 @@ class SettingsScreen extends HookWidget {
                       await soundService.toggleSound();
                       final settingsService = SettingsService();
                       await settingsService.updateSoundEnabled(value);
-                      settings.value = await settingsService.getSettings();
+                      final updatedSettings = await settingsService.getSettings();
+                      setState(() {
+                        settings = updatedSettings;
+                      });
                     },
                     soundService,
                   ),
@@ -143,7 +172,10 @@ class SettingsScreen extends HookWidget {
                       await soundService.setVolume(value);
                       final settingsService = SettingsService();
                       await settingsService.updateSoundVolume(value);
-                      settings.value = await settingsService.getSettings();
+                      final updatedSettings = await settingsService.getSettings();
+                      setState(() {
+                        settings = updatedSettings;
+                      });
                     },
                   ),
                   const SizedBox(height: 16),
@@ -156,7 +188,10 @@ class SettingsScreen extends HookWidget {
                     (value) async {
                       final settingsService = SettingsService();
                       await settingsService.updateHapticFeedbackEnabled(value);
-                      settings.value = await settingsService.getSettings();
+                      final updatedSettings = await settingsService.getSettings();
+                      setState(() {
+                        settings = updatedSettings;
+                      });
                     },
                     soundService,
                   ),
@@ -175,11 +210,17 @@ class SettingsScreen extends HookWidget {
                     'Dark Mode',
                     'Switch between light and dark themes',
                     Icons.dark_mode,
-                    currentSettings.darkModeEnabled,
+                    isDarkMode, // Use the provider value instead of settings
                     (value) async {
+                      // Update the provider immediately for real-time theme change
+                      ref.read(darkModeProvider.notifier).state = value;
+                      
                       final settingsService = SettingsService();
                       await settingsService.updateDarkModeEnabled(value);
-                      settings.value = await settingsService.getSettings();
+                      final updatedSettings = await settingsService.getSettings();
+                      setState(() {
+                        settings = updatedSettings;
+                      });
                       soundService.playToggleEffect();
                       confettiController.play();
                     },
