@@ -262,114 +262,159 @@ class ChatScreen extends HookWidget {
     SoundService soundService,
   ) {
     return Card(
-      elevation: 2,
+      elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () async {
-          await soundService.playTapSound();
-          _showConversationDetail(context, conversation);
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Avatar with online indicator
-              Stack(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.oceanGradient,
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    child: Center(
-                      child: Text(
-                        conversation['avatar'],
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
-                  ),
-                  if (conversation['isOnline'])
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: AppTheme.greenAurora,
-                          borderRadius: BorderRadius.circular(7),
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.electricAurora.withOpacity(0.3),
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: AppTheme.purpleAurora.withOpacity(0.2),
+              blurRadius: 20,
+              spreadRadius: 0,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: () async {
+            await soundService.playTapSound();
+            _showConversationDetail(context, conversation);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Avatar with online indicator
+                Stack(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            conversation['name'],
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.oceanGradient,
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.tealAurora.withOpacity(0.5),
+                            blurRadius: 15,
+                            spreadRadius: 2,
                           ),
-                        ),
-                        Text(
-                          conversation['timestamp'],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                          BoxShadow(
+                            color: AppTheme.electricAurora.withOpacity(0.3),
+                            blurRadius: 25,
+                            spreadRadius: 1,
                           ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          conversation['avatar'],
+                          style: const TextStyle(fontSize: 20),
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            conversation['lastMessage'],
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    if (conversation['isOnline'])
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: AppTheme.greenAurora,
+                            borderRadius: BorderRadius.circular(7),
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.greenAurora.withOpacity(0.6),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
                         ),
-                        if (conversation['unreadCount'] > 0) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.auroraGradient,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                      ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
                             child: Text(
-                              conversation['unreadCount'].toString(),
+                              conversation['name'],
                               style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
+                          Text(
+                            conversation['timestamp'],
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
                         ],
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              conversation['lastMessage'],
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (conversation['unreadCount'] > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.auroraGradient,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.electricAurora.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                conversation['unreadCount'].toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -377,13 +422,32 @@ class ChatScreen extends HookWidget {
   }
 
   Widget _buildFloatingActionButton(BuildContext context, SoundService soundService) {
-    return FloatingActionButton(
-      onPressed: () async {
-        await soundService.playButtonClickSound();
-        _showNewChatDialog(context);
-      },
-      backgroundColor: AppTheme.electricAurora,
-      child: const Icon(Icons.add, color: Colors.white),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.electricAurora.withOpacity(0.4),
+            blurRadius: 15,
+            spreadRadius: 2,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: AppTheme.purpleAurora.withOpacity(0.3),
+            blurRadius: 25,
+            spreadRadius: 1,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        onPressed: () async {
+          await soundService.playButtonClickSound();
+          _showNewChatDialog(context);
+        },
+        backgroundColor: AppTheme.electricAurora,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     ).animate().scale(duration: const Duration(milliseconds: 200));
   }
 

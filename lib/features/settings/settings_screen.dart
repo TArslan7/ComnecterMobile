@@ -382,73 +382,106 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
     VoidCallback onTap,
   ) {
     return Card(
-      elevation: isRecommended ? 4 : 2,
+      elevation: isRecommended ? 6 : 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: isRecommended 
             ? BorderSide(color: AppTheme.electricAurora, width: 2)
             : BorderSide.none,
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isRecommended ? [
+            BoxShadow(
+              color: AppTheme.electricAurora.withOpacity(0.4),
+              blurRadius: 15,
+              spreadRadius: 2,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: AppTheme.purpleAurora.withOpacity(0.3),
+              blurRadius: 25,
+              spreadRadius: 1,
+              offset: const Offset(0, 12),
+            ),
+          ] : [
+            BoxShadow(
+              color: AppTheme.electricAurora.withOpacity(0.2),
+              blurRadius: 8,
+              spreadRadius: 1,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
-                        ),
-                                                 if (isRecommended) ...[
-                           const SizedBox(width: 8),
-                           Container(
-                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                             decoration: BoxDecoration(
-                               gradient: AppTheme.auroraGradient,
-                               borderRadius: BorderRadius.circular(12),
-                             ),
-                             child: const Text(
-                               'RECOMMENDED',
-                               style: TextStyle(
-                                 color: Colors.white,
-                                 fontSize: 10,
-                                 fontWeight: FontWeight.bold,
-                               ),
-                             ),
-                           ),
-                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
+                          if (isRecommended) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.auroraGradient,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.electricAurora.withOpacity(0.5),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: const Text(
+                                'RECOMMENDED',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-                             Text(
-                 price,
-                 style: TextStyle(
-                   fontWeight: FontWeight.bold,
-                   fontSize: 16,
-                   color: isRecommended ? AppTheme.electricAurora : Colors.grey[700],
-                 ),
-               ),
-            ],
+                Text(
+                  price,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isRecommended ? AppTheme.electricAurora : Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

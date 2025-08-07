@@ -194,15 +194,27 @@ class RadarScreen extends HookWidget {
           builder: (context, child) {
             return Transform.rotate(
               angle: isRefreshing.value ? 2 * pi : 0,
-              child: IconButton(
-                icon: Icon(
-                  isRefreshing.value ? Icons.refresh : Icons.refresh,
-                  color: AppTheme.primaryBlue,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.electricAurora.withOpacity(0.3),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
-                onPressed: isRefreshing.value ? null : () async {
-                  soundService.playButtonClickSound();
-                  onRefresh();
-                },
+                child: IconButton(
+                  icon: Icon(
+                    isRefreshing.value ? Icons.refresh : Icons.refresh,
+                    color: AppTheme.electricAurora,
+                  ),
+                  onPressed: isRefreshing.value ? null : () async {
+                    soundService.playButtonClickSound();
+                    onRefresh();
+                  },
+                ),
               ),
             );
           },
@@ -234,9 +246,16 @@ class RadarScreen extends HookWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.electricAurora.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: AppTheme.electricAurora.withOpacity(0.4),
+            blurRadius: 15,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: AppTheme.pinkAurora.withOpacity(0.3),
+            blurRadius: 25,
+            spreadRadius: 1,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -244,9 +263,19 @@ class RadarScreen extends HookWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isLoading || isRefreshing) ...[
-            SizedBox(
+            Container(
               width: 16,
               height: 16,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.electricAurora.withOpacity(0.6),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -262,10 +291,24 @@ class RadarScreen extends HookWidget {
               ),
             ),
           ] else ...[
-            Icon(
-              Icons.people,
-              color: Colors.white,
-              size: 16,
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.greenAurora.withOpacity(0.5),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.people,
+                color: Colors.white,
+                size: 16,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
@@ -346,54 +389,91 @@ class RadarScreen extends HookWidget {
     );
   }
 
-  Widget _buildUserCard(
+    Widget _buildUserCard(
     BuildContext context,
     NearbyUser user,
     Function(NearbyUser) onUserTap,
   ) {
     return Card(
-      elevation: 4,
+      elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () => onUserTap(user),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Avatar with online indicator
-              Stack(
-                children: [
-                                     Container(
-                     width: 60,
-                     height: 60,
-                     decoration: BoxDecoration(
-                       gradient: AppTheme.sunsetGradient,
-                       borderRadius: BorderRadius.circular(30),
-                     ),
-                     child: Center(
-                       child: Text(
-                         user.avatar,
-                         style: const TextStyle(fontSize: 24),
-                       ),
-                     ),
-                   ),
-                  if (user.isOnline)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white, width: 2),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.electricAurora.withOpacity(0.3),
+              blurRadius: 12,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: AppTheme.purpleAurora.withOpacity(0.2),
+              blurRadius: 20,
+              spreadRadius: 0,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: InkWell(
+          onTap: () => onUserTap(user),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Avatar with online indicator
+                Stack(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.sunsetGradient,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.orangeAurora.withOpacity(0.5),
+                            blurRadius: 15,
+                            spreadRadius: 2,
+                          ),
+                          BoxShadow(
+                            color: AppTheme.pinkAurora.withOpacity(0.3),
+                            blurRadius: 25,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          user.avatar,
+                          style: const TextStyle(fontSize: 24),
                         ),
                       ),
                     ),
-                ],
-              ),
+                    if (user.isOnline)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: AppTheme.greenAurora,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.greenAurora.withOpacity(0.6),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
