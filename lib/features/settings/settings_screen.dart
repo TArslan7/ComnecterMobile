@@ -546,10 +546,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.1),
+              color: AppTheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: AppTheme.primaryBlue, size: 20),
+            child: Icon(icon, color: AppTheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -579,7 +579,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
               soundService.playToggleEffect();
               onChanged(newValue);
             },
-            activeColor: AppTheme.primaryBlue,
+            activeColor: AppTheme.primary,
           ),
         ],
       ),
@@ -610,10 +610,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue.withOpacity(0.1),
+                  color: AppTheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.volume_up, color: AppTheme.primaryBlue, size: 20),
+                child: const Icon(Icons.volume_up, color: AppTheme.primary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -652,7 +652,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
             min: min,
             max: max,
             onChanged: onChanged,
-            activeColor: AppTheme.primaryBlue,
+            activeColor: AppTheme.primary,
             inactiveColor: Colors.grey[300],
           ),
         ],
@@ -682,10 +682,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.primaryBlue.withOpacity(0.1),
+                color: AppTheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, color: AppTheme.primaryBlue, size: 20),
+              child: Icon(icon, color: AppTheme.primary, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -741,10 +741,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withOpacity(0.1),
+                    color: AppTheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, color: AppTheme.primaryBlue),
+                  child: Icon(icon, color: AppTheme.primary),
                 ),
                 const SizedBox(width: 12),
                 Text(

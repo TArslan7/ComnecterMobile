@@ -1,559 +1,400 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:shimmer/shimmer.dart';
-import '../../services/sound_service.dart';
+import 'dart:math';
 import '../../theme/app_theme.dart';
-import 'dart:async'; // Added for Timer
 
 class ChatScreen extends HookWidget {
   const ChatScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final conversations = useState<List<Map<String, dynamic>>>([]);
-    final isLoading = useState(true);
-    final searchQuery = useState('');
-    final isSearching = useState(false);
-    final soundService = useMemoized(() => SoundService());
+    final messages = useState<List<ChatMessage>>([
+      ChatMessage(
+        id: '1',
+        text: 'Hey! How are you doing?',
+        isMe: false,
+        timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+        senderName: 'Sarah',
+        senderAvatar: '👩',
+      ),
+      ChatMessage(
+        id: '2',
+        text: 'I\'m doing great! Just finished a workout. How about you?',
+        isMe: true,
+        timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
+        senderName: 'You',
+        senderAvatar: '👤',
+      ),
+      ChatMessage(
+        id: '3',
+        text: 'That sounds awesome! I\'ve been working on some new projects.',
+        isMe: false,
+        timestamp: DateTime.now().subtract(const Duration(minutes: 3)),
+        senderName: 'Sarah',
+        senderAvatar: '👩',
+      ),
+      ChatMessage(
+        id: '4',
+        text: 'What kind of projects? I\'d love to hear about them!',
+        isMe: true,
+        timestamp: DateTime.now().subtract(const Duration(minutes: 2)),
+        senderName: 'You',
+        senderAvatar: '👤',
+      ),
+      ChatMessage(
+        id: '5',
+        text: 'Mostly mobile app development. I\'m learning Flutter right now!',
+        isMe: false,
+        timestamp: DateTime.now().subtract(const Duration(minutes: 1)),
+        senderName: 'Sarah',
+        senderAvatar: '👩',
+      ),
+    ]);
 
-    // Mock conversations data
-    final mockConversations = [
-      {
-        'id': '1',
-        'name': 'Sarah Johnson',
-        'lastMessage': 'Hey! How are you doing?',
-        'timestamp': '2 min ago',
-        'unreadCount': 2,
-        'avatar': '👩‍🦰',
-        'isOnline': true,
-      },
-      {
-        'id': '2',
-        'name': 'Mike Chen',
-        'lastMessage': 'Thanks for the connection!',
-        'timestamp': '1 hour ago',
-        'unreadCount': 0,
-        'avatar': '👨‍💼',
-        'isOnline': false,
-      },
-      {
-        'id': '3',
-        'name': 'Emma Wilson',
-        'lastMessage': 'Let\'s meet up soon!',
-        'timestamp': '3 hours ago',
-        'unreadCount': 1,
-        'avatar': '👩‍🎨',
-        'isOnline': true,
-      },
-      {
-        'id': '4',
-        'name': 'David Brown',
-        'lastMessage': 'Great to connect with you!',
-        'timestamp': '1 day ago',
-        'unreadCount': 0,
-        'avatar': '👨‍🎓',
-        'isOnline': false,
-      },
-      {
-        'id': '5',
-        'name': 'Lisa Garcia',
-        'lastMessage': 'Love your profile!',
-        'timestamp': '2 days ago',
-        'unreadCount': 0,
-        'avatar': '👩‍💻',
-        'isOnline': true,
-      },
-    ];
+    final textController = useTextEditingController();
+    final scrollController = useScrollController();
 
-    // Filter conversations based on search query
-    final filteredConversations = useMemoized(() {
-      if (searchQuery.value.isEmpty) {
-        return mockConversations;
+    void sendMessage() {
+      if (textController.text.trim().isNotEmpty) {
+        final newMessage = ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          text: textController.text.trim(),
+          isMe: true,
+          timestamp: DateTime.now(),
+          senderName: 'You',
+          senderAvatar: '👤',
+        );
+
+        messages.value = [...messages.value, newMessage];
+        textController.clear();
+
+        // Auto-scroll to bottom
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (scrollController.hasClients) {
+            scrollController.animateTo(
+              scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
       }
-      return mockConversations.where((conversation) {
-        return (conversation['name'] as String).toLowerCase().contains(searchQuery.value.toLowerCase()) ||
-               (conversation['lastMessage'] as String).toLowerCase().contains(searchQuery.value.toLowerCase());
-      }).toList();
-    }, [searchQuery.value]);
-
-    // Simulate loading
-    useEffect(() {
-      final timer = Timer(const Duration(milliseconds: 1500), () {
-        conversations.value = mockConversations;
-        isLoading.value = false;
-      });
-      
-      return () => timer.cancel();
-    }, []);
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: _buildAppBar(context, searchQuery, isSearching, soundService),
-      body: isLoading.value
-          ? _buildLoadingState(context)
-          : filteredConversations.isEmpty
-              ? _buildEmptyState(context)
-              : _buildConversationsList(context, filteredConversations, soundService),
-      floatingActionButton: _buildFloatingActionButton(context, soundService),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(
-    BuildContext context,
-    ValueNotifier<String> searchQuery,
-    ValueNotifier<bool> isSearching,
-    SoundService soundService,
-  ) {
-    return AppBar(
-      title: Row(
-        children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            color: AppTheme.electricAurora,
-            size: 28,
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            'Chats',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      elevation: 0,
-      actions: [
-        IconButton(
-          icon: Icon(
-            isSearching.value ? Icons.close : Icons.search,
-            color: AppTheme.electricAurora,
-          ),
-          onPressed: () async {
-            await soundService.playButtonClickSound();
-            isSearching.value = !isSearching.value;
-            if (!isSearching.value) {
-              searchQuery.value = '';
-            }
-          },
-        ),
-        IconButton(
-          icon: Icon(
-            Icons.more_vert,
-            color: AppTheme.electricAurora,
-          ),
-          onPressed: () async {
-            await soundService.playButtonClickSound();
-            _showMoreOptionsDialog(context);
-          },
-        ),
-      ],
-      bottom: isSearching.value
-          ? PreferredSize(
-              preferredSize: const Size.fromHeight(60),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextField(
-                  onChanged: (value) => searchQuery.value = value,
-                  decoration: InputDecoration(
-                    hintText: 'Search conversations...',
-                    prefixIcon: Icon(Icons.search, color: AppTheme.electricAurora),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppTheme.electricAurora, width: 2),
-                    ),
-                  ),
-                ),
-              ),
-            )
-          : null,
-    );
-  }
-
-  Widget _buildLoadingState(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
-            child: Container(
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: AppTheme.auroraGradient,
-              borderRadius: BorderRadius.circular(60),
-            ),
-            child: const Icon(
-              Icons.chat_bubble_outline,
-              color: Colors.white,
-              size: 60,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'No conversations yet',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start connecting with people nearby!',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConversationsList(
-    BuildContext context,
-    List<Map<String, dynamic>> conversations,
-    SoundService soundService,
-  ) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: conversations.length,
-      itemBuilder: (context, index) {
-        final conversation = conversations[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: _buildConversationTile(context, conversation, soundService),
-        ).animate().fadeIn(
-          delay: Duration(milliseconds: index * 100),
-          duration: const Duration(milliseconds: 300),
-        ).slideY(
-          begin: 0.3,
-          duration: const Duration(milliseconds: 300),
-        );
-      },
-    );
-  }
-
-  Widget _buildConversationTile(
-    BuildContext context,
-    Map<String, dynamic> conversation,
-    SoundService soundService,
-  ) {
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.electricAurora.withOpacity(0.3),
-              blurRadius: 12,
-              spreadRadius: 1,
-              offset: const Offset(0, 4),
-            ),
-            BoxShadow(
-              color: AppTheme.purpleAurora.withOpacity(0.2),
-              blurRadius: 20,
-              spreadRadius: 0,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: InkWell(
-          onTap: () async {
-            await soundService.playTapSound();
-            _showConversationDetail(context, conversation);
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Avatar with online indicator
-                Stack(
-                  children: [
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.oceanGradient,
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.tealAurora.withOpacity(0.5),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                          ),
-                          BoxShadow(
-                            color: AppTheme.electricAurora.withOpacity(0.3),
-                            blurRadius: 25,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          conversation['avatar'],
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
-                    ),
-                    if (conversation['isOnline'])
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: AppTheme.greenAurora,
-                            borderRadius: BorderRadius.circular(7),
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.greenAurora.withOpacity(0.6),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              conversation['name'],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            conversation['timestamp'],
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              conversation['lastMessage'],
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (conversation['unreadCount'] > 0) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                gradient: AppTheme.auroraGradient,
-                                borderRadius: BorderRadius.circular(10),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.electricAurora.withOpacity(0.4),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                conversation['unreadCount'].toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFloatingActionButton(BuildContext context, SoundService soundService) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.electricAurora.withOpacity(0.4),
-            blurRadius: 15,
-            spreadRadius: 2,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: AppTheme.purpleAurora.withOpacity(0.3),
-            blurRadius: 25,
-            spreadRadius: 1,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () async {
-          await soundService.playButtonClickSound();
-          _showNewChatDialog(context);
-        },
-        backgroundColor: AppTheme.electricAurora,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    ).animate().scale(duration: const Duration(milliseconds: 200));
-  }
-
-  void _showConversationDetail(BuildContext context, Map<String, dynamic> conversation) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
+      appBar: AppBar(
         title: Row(
           children: [
             Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                gradient: AppTheme.oceanGradient,
+                gradient: AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.5),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-              child: Center(
+              child: const Center(
                 child: Text(
-                  conversation['avatar'],
-                  style: const TextStyle(fontSize: 16),
+                  '👩',
+                  style: TextStyle(fontSize: 20),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sarah Johnson',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  'Online',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.success,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.video_call,
+              color: AppTheme.primary,
+            ),
+            onPressed: () {
+              // TODO: Implement video call
+            },
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.call,
+              color: AppTheme.primary,
+            ),
+            onPressed: () {
+              // TODO: Implement voice call
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              padding: const EdgeInsets.all(16),
+              itemCount: messages.value.length,
+              itemBuilder: (context, index) {
+                final message = messages.value[index];
+                return _buildMessageBubble(context, message);
+              },
+            ),
+          ),
+          _buildMessageInput(context, textController, sendMessage),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageBubble(BuildContext context, ChatMessage message) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: message.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!message.isMe) ...[
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  message.senderAvatar,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: message.isMe 
+                    ? AppTheme.primaryGradient
+                    : LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.surface,
+                          Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                        ],
+                      ),
+                borderRadius: BorderRadius.circular(20).copyWith(
+                  bottomLeft: message.isMe ? const Radius.circular(20) : const Radius.circular(4),
+                  bottomRight: message.isMe ? const Radius.circular(4) : const Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: message.isMe 
+                        ? AppTheme.primary.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    conversation['name'],
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    conversation['isOnline'] ? 'Online' : 'Offline',
+                    message.text,
                     style: TextStyle(
+                      color: message.isMe ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatTime(message.timestamp),
+                    style: TextStyle(
+                      color: message.isMe 
+                          ? Colors.white.withOpacity(0.7)
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       fontSize: 12,
-                      color: conversation['isOnline'] ? AppTheme.greenAurora : Colors.grey[600],
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+          if (message.isMe) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  '👤',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
           ],
-        ),
-        content: const Text('Chat interface will be available soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+        ],
+      ),
+    ).animate().fadeIn(
+      duration: const Duration(milliseconds: 300),
+    ).slideX(
+      begin: message.isMe ? 0.3 : -0.3,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Widget _buildMessageInput(BuildContext context, TextEditingController controller, VoidCallback onSend) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, -2),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement chat functionality
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.electricAurora,
-              foregroundColor: Colors.white,
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(
+                  color: AppTheme.primary.withOpacity(0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary.withOpacity(0.1),
+                    blurRadius: 8,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: 'Type a message...',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+                maxLines: null,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => onSend(),
+              ),
             ),
-            child: const Text('Start Chat'),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              gradient: AppTheme.primaryGradient,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primary.withOpacity(0.3),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: onSend,
+              icon: const Icon(
+                Icons.send,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _showMoreOptionsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('More Options'),
-        content: const Text('Additional chat options will be available soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
 
-  void _showNewChatDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New Chat'),
-        content: const Text('Start a new conversation. This feature will be available soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement new chat functionality
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.electricAurora,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Start'),
-          ),
-        ],
-      ),
-    );
+    if (difference.inDays > 0) {
+      return '${time.day}/${time.month}/${time.year}';
+    } else if (difference.inHours > 0) {
+      return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
   }
+}
+
+class ChatMessage {
+  final String id;
+  final String text;
+  final bool isMe;
+  final DateTime timestamp;
+  final String senderName;
+  final String senderAvatar;
+
+  ChatMessage({
+    required this.id,
+    required this.text,
+    required this.isMe,
+    required this.timestamp,
+    required this.senderName,
+    required this.senderAvatar,
+  });
 }
