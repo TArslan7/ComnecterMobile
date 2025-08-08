@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../features/radar/radar_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/friends/friends_screen.dart';
+import '../features/subscription/subscription_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/settings/settings_screen.dart';
 
@@ -27,6 +28,11 @@ GoRouter createRouter() {
             path: '/friends',
             name: 'friends',
             builder: (context, state) => const FriendsScreen(),
+          ),
+          GoRoute(
+            path: '/subscription',
+            name: 'subscription',
+            builder: (context, state) => const SubscriptionScreen(),
           ),
           GoRoute(
             path: '/profile',
@@ -67,9 +73,12 @@ class RootNavigation extends StatelessWidget {
               context.go('/friends');
               break;
             case 3:
-              context.go('/profile');
+              context.go('/subscription');
               break;
             case 4:
+              context.go('/profile');
+              break;
+            case 5:
               context.go('/settings');
               break;
           }
@@ -78,6 +87,7 @@ class RootNavigation extends StatelessWidget {
           NavigationDestination(icon: Icon(Icons.radar), label: 'Radar'),
           NavigationDestination(icon: Icon(Icons.chat_bubble), label: 'Chat'),
           NavigationDestination(icon: Icon(Icons.people), label: 'Friends'),
+          NavigationDestination(icon: Icon(Icons.star), label: 'Premium'),
           NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
           NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
         ],
@@ -88,8 +98,9 @@ class RootNavigation extends StatelessWidget {
   int _calculateSelectedIndex(String location) {
     if (location.startsWith('/chat')) return 1;
     if (location.startsWith('/friends')) return 2;
-    if (location.startsWith('/profile')) return 3;
-    if (location.startsWith('/settings')) return 4;
+    if (location.startsWith('/subscription')) return 3;
+    if (location.startsWith('/profile')) return 4;
+    if (location.startsWith('/settings')) return 5;
     return 0;
   }
 }
