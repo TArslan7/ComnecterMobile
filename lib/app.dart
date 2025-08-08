@@ -4,6 +4,7 @@ import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
 import 'features/settings/services/settings_service.dart';
 import 'services/sound_service.dart';
+import 'services/notification_service.dart';
 import 'providers/theme_provider.dart';
 
 class ComnecterApp extends ConsumerStatefulWidget {
@@ -28,6 +29,9 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
     try {
       // Initialize sound service
       await SoundService().initialize();
+      
+      // Initialize notification service
+      await NotificationService().initialize();
       
       // Load dark mode setting
       final settingsService = SettingsService();

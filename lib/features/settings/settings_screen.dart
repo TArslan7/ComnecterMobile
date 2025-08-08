@@ -5,6 +5,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../../services/sound_service.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/theme_provider.dart';
 import 'models/app_settings.dart';
@@ -812,18 +813,162 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
   }
 
   void _showNotificationsDialog(BuildContext context) {
+    final notificationService = NotificationService();
+    final currentSettings = notificationService.settings;
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Notifications'),
-        content: const Text('Manage your notification preferences. This feature will be available soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.notifications, color: AppTheme.primary),
+                const SizedBox(width: 8),
+                const Text('Notification Settings'),
+              ],
+            ),
+            content: Container(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildNotificationToggle(
+                    'Enable Notifications',
+                    'Turn all notifications on/off',
+                    currentSettings.enabled,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(enabled: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'Sound Effects',
+                    'Play sound for notifications',
+                    currentSettings.soundEnabled,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(soundEnabled: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'Vibration',
+                    'Vibrate for notifications',
+                    currentSettings.vibrationEnabled,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(vibrationEnabled: value));
+                      });
+                    },
+                  ),
+                  const Divider(height: 32),
+                  _buildNotificationToggle(
+                    'Friend Requests',
+                    'Notify when someone sends a friend request',
+                    currentSettings.friendRequests,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(friendRequests: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'Messages',
+                    'Notify when you receive messages',
+                    currentSettings.messages,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(messages: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'Radar Detections',
+                    'Notify when users are detected nearby',
+                    currentSettings.radarDetections,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(radarDetections: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'System Updates',
+                    'Notify about app updates and news',
+                    currentSettings.systemUpdates,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(systemUpdates: value));
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  soundService.playButtonClickSound();
+                  notificationService.sendSystemNotification(
+                    'Test Notification',
+                    'This is a test notification to verify your settings!',
+                  );
+                },
+                child: const Text('Test Notification'),
+              ),
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildNotificationToggle(
+    String title,
+    String subtitle,
+    bool value,
+    Function(bool) onChanged,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: AppTheme.primary,
+        ),
+      ],
     );
   }
 
