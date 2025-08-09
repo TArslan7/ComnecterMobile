@@ -261,18 +261,18 @@ class ChatScreen extends HookWidget {
                           Expanded(
                             child: Text(
                               conversation.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.textDark,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
                           Text(
                             _formatTime(conversation.timestamp),
-                            style: TextStyle(
+                               style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.textMedium,
+                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
                         ],
@@ -283,9 +283,9 @@ class ChatScreen extends HookWidget {
                           Expanded(
                             child: Text(
                               conversation.lastMessage,
-                              style: TextStyle(
+                               style: TextStyle(
                                 fontSize: 14,
-                                color: AppTheme.textMedium,
+                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
