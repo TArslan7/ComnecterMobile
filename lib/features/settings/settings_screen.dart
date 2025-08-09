@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../../services/sound_service.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/theme_provider.dart';
 import 'models/app_settings.dart';
@@ -202,6 +203,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                 'App Settings',
                 Icons.app_settings_alt,
                 [
+                  _buildActionSetting(
+                    context,
+                    'Privacy',
+                    'Control your privacy settings',
+                    Icons.privacy_tip,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showPrivacyDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 16),
                   _buildToggleSetting(
                     context,
                     'Dark Mode',
@@ -232,6 +244,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                     () async {
                       await soundService.playButtonClickSound();
                       _showNotificationsDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildActionSetting(
+                    context,
+                    'Help & Support',
+                    'Get help and contact support',
+                    Icons.help,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showHelpDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildActionSetting(
+                    context,
+                    'About',
+                    'App version and information',
+                    Icons.info,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showAboutDialog(context);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -333,7 +367,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           ),
         ),
         const SizedBox(height: 12),
-        _buildSubscriptionCard(
+          _buildSubscriptionCard(
           context,
           'Free Plan',
           'Basic features',
@@ -341,11 +375,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           false,
           () async {
             await soundService.playButtonClickSound();
-            _showSubscriptionDialog(context, 'Free Plan');
+              if (!mounted) return;
+              if (context.mounted) context.push('/subscription');
           },
         ),
         const SizedBox(height: 8),
-        _buildSubscriptionCard(
+          _buildSubscriptionCard(
           context,
           'Premium Plan',
           'Ad-free experience + advanced features',
@@ -353,11 +388,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           true,
           () async {
             await soundService.playButtonClickSound();
-            _showSubscriptionDialog(context, 'Premium Plan');
+              if (!mounted) return;
+              if (context.mounted) context.push('/subscription');
           },
         ),
         const SizedBox(height: 8),
-        _buildSubscriptionCard(
+          _buildSubscriptionCard(
           context,
           'Pro Plan',
           'Everything + priority support',
@@ -365,7 +401,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           false,
           () async {
             await soundService.playButtonClickSound();
-            _showSubscriptionDialog(context, 'Pro Plan');
+              if (!mounted) return;
+              if (context.mounted) context.push('/subscription');
           },
         ),
       ],
@@ -763,21 +800,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
     ).animate().fadeIn(duration: const Duration(milliseconds: 400)).slideY(begin: 0.2, duration: const Duration(milliseconds: 400));
   }
 
-  void _showSubscriptionDialog(BuildContext context, String plan) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('$plan Subscription'),
-        content: Text('This feature will be available soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Removed legacy subscription dialog; navigation to '/subscription' is handled directly from cards.
 
   void _showAdSettingsDialog(BuildContext context, bool showAds) {
     showDialog(
@@ -812,18 +835,162 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
   }
 
   void _showNotificationsDialog(BuildContext context) {
+    final notificationService = NotificationService();
+    final currentSettings = notificationService.settings;
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Notifications'),
-        content: const Text('Manage your notification preferences. This feature will be available soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.notifications, color: AppTheme.primary),
+                const SizedBox(width: 8),
+                const Text('Notification Settings'),
+              ],
+            ),
+            content: Container(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildNotificationToggle(
+                    'Enable Notifications',
+                    'Turn all notifications on/off',
+                    currentSettings.enabled,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(enabled: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'Sound Effects',
+                    'Play sound for notifications',
+                    currentSettings.soundEnabled,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(soundEnabled: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'Vibration',
+                    'Vibrate for notifications',
+                    currentSettings.vibrationEnabled,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(vibrationEnabled: value));
+                      });
+                    },
+                  ),
+                  const Divider(height: 32),
+                  _buildNotificationToggle(
+                    'Friend Requests',
+                    'Notify when someone sends a friend request',
+                    currentSettings.friendRequests,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(friendRequests: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'Messages',
+                    'Notify when you receive messages',
+                    currentSettings.messages,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(messages: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'Radar Detections',
+                    'Notify when users are detected nearby',
+                    currentSettings.radarDetections,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(radarDetections: value));
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNotificationToggle(
+                    'System Updates',
+                    'Notify about app updates and news',
+                    currentSettings.systemUpdates,
+                    (value) {
+                      setState(() {
+                        notificationService.updateSettings(currentSettings.copyWith(systemUpdates: value));
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  soundService.playButtonClickSound();
+                  notificationService.sendSystemNotification(
+                    'Test Notification',
+                    'This is a test notification to verify your settings!',
+                  );
+                },
+                child: const Text('Test Notification'),
+              ),
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildNotificationToggle(
+    String title,
+    String subtitle,
+    bool value,
+    Function(bool) onChanged,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: AppTheme.primary,
+        ),
+      ],
     );
   }
 

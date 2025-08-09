@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
 import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
+import 'package:go_router/go_router.dart';
 
 class ProfileScreen extends HookWidget {
   const ProfileScreen({super.key});
@@ -60,20 +61,12 @@ class ProfileScreen extends HookWidget {
     SoundService soundService,
   ) {
     return AppBar(
-      title: Row(
-        children: [
-          Icon(
-            Icons.person,
-            color: AppTheme.primary,
-            size: 28,
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            'Profile',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
+      leading: IconButton(
+        icon: const Icon(Icons.settings, color: AppTheme.primary),
+        onPressed: () => context.push('/settings'),
+        tooltip: 'Settings',
       ),
+      // no title per request
       backgroundColor: Theme.of(context).colorScheme.surface,
       elevation: 0,
       actions: [
@@ -91,17 +84,6 @@ class ProfileScreen extends HookWidget {
             }
           },
           tooltip: isEditing.value ? 'Save' : 'Edit',
-        ),
-        IconButton(
-          icon: Icon(
-            Icons.settings,
-            color: AppTheme.primary,
-          ),
-          onPressed: () async {
-            await soundService.playButtonClickSound();
-            Navigator.pushNamed(context, '/settings');
-          },
-          tooltip: 'Settings',
         ),
       ],
     );
@@ -375,47 +357,7 @@ class ProfileScreen extends HookWidget {
           'Manage your friends and connections',
           () async {
             await soundService.playButtonClickSound();
-            _showFriendsDialog(context);
-          },
-        ),
-        _buildSectionCard(
-          context,
-          'Privacy',
-          Icons.privacy_tip,
-          'Control your privacy settings',
-          () async {
-            await soundService.playButtonClickSound();
-            Navigator.pushNamed(context, '/settings');
-          },
-        ),
-        _buildSectionCard(
-          context,
-          'Notifications',
-          Icons.notifications,
-          'Manage your notification preferences',
-          () async {
-            await soundService.playButtonClickSound();
-            Navigator.pushNamed(context, '/settings');
-          },
-        ),
-        _buildSectionCard(
-          context,
-          'Help & Support',
-          Icons.help,
-          'Get help and contact support',
-          () async {
-            await soundService.playButtonClickSound();
-            _showHelpDialog(context);
-          },
-        ),
-        _buildSectionCard(
-          context,
-          'About',
-          Icons.info,
-          'App version and information',
-          () async {
-            await soundService.playButtonClickSound();
-            _showAboutDialog(context);
+            _showFriendsBottomSheet(context);
           },
         ),
       ],
@@ -531,17 +473,44 @@ class ProfileScreen extends HookWidget {
   }
 
   void _showFriendsDialog(BuildContext context) {
-    showDialog(
+    // Deprecated by _showFriendsBottomSheet
+  }
+
+  void _showFriendsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Friends'),
-        content: const Text('Friends management feature coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_add),
+              title: const Text('Add Friend'),
+              subtitle: const Text('Send a friend request'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Add Friend is coming soon!')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.search),
+              title: const Text('Search Friends'),
+              subtitle: const Text('Find people to connect with'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Search Friends is coming soon!')),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

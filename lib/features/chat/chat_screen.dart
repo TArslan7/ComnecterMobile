@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_theme.dart';
+import 'package:go_router/go_router.dart';
 
 class ChatScreen extends HookWidget {
   const ChatScreen({super.key});
@@ -84,16 +85,52 @@ class ChatScreen extends HookWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        title: const Text(
-          'Chats',
-          style: TextStyle(
-            color: AppTheme.textDark,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         backgroundColor: AppTheme.surfaceLight,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.settings, color: AppTheme.primary),
+          onPressed: () => context.push('/settings'),
+          tooltip: 'Settings',
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt_1, color: AppTheme.primary),
+            tooltip: 'Add friend by username',
+            onPressed: () {
+              final controller = TextEditingController();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Add Friend'),
+                  content: TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      hintText: 'Enter username',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        final name = controller.text.trim();
+                        Navigator.pop(context);
+                        if (name.isNotEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Friend request to @$name coming soon!')),
+                          );
+                        }
+                      },
+                      child: const Text('Send'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(
               Icons.search,
@@ -274,6 +311,7 @@ class ChatScreen extends HookWidget {
                           ],
                         ],
                       ),
+                      
                     ],
                   ),
                 ),
@@ -529,6 +567,11 @@ class ChatConversationScreen extends HookWidget {
         ),
         backgroundColor: AppTheme.surfaceLight,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.settings, color: AppTheme.primary),
+          onPressed: () => context.push('/settings'),
+          tooltip: 'Settings',
+        ),
         actions: [
           IconButton(
             icon: Icon(
