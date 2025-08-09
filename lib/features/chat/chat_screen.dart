@@ -676,7 +676,9 @@ class ChatConversationScreen extends HookWidget {
                   Text(
                     message.text,
                     style: TextStyle(
-                      color: message.isMe ? Colors.white : AppTheme.textDark,
+                      color: message.isMe
+                          ? Colors.white
+                          : Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                     ),
                   ),
@@ -684,9 +686,9 @@ class ChatConversationScreen extends HookWidget {
                   Text(
                     _formatTime(message.timestamp),
                     style: TextStyle(
-                      color: message.isMe 
+                      color: message.isMe
                           ? Colors.white.withOpacity(0.7)
-                          : AppTheme.textMedium,
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       fontSize: 12,
                     ),
                   ),
