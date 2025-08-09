@@ -8,6 +8,7 @@ import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
 import 'models/friend_model.dart';
 import 'services/friend_service.dart';
+import 'package:go_router/go_router.dart';
 
 class FriendsScreen extends HookWidget {
   const FriendsScreen({super.key});
@@ -114,6 +115,16 @@ class FriendsScreen extends HookWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.settings, color: AppTheme.primary),
+          onPressed: () => context.push('/settings'),
+          tooltip: 'Settings',
+        ),
+        title: const Text('Community', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppTheme.surfaceLight,
+        elevation: 0,
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(

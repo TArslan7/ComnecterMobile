@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import 'models/user_model.dart';
 import 'services/radar_service.dart';
 import 'widgets/radar_widget.dart';
+import 'package:go_router/go_router.dart';
 
 class RadarScreen extends HookWidget {
   const RadarScreen({super.key});
@@ -111,6 +112,15 @@ class RadarScreen extends HookWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.settings, color: AppTheme.primary),
+          onPressed: () => context.push('/settings'),
+          tooltip: 'Settings',
+        ),
+        backgroundColor: AppTheme.surfaceLight,
+        elevation: 0,
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
