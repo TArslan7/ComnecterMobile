@@ -583,9 +583,9 @@ class ChatConversationScreen extends HookWidget {
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
-          onPressed: () => context.push('/settings'),
-          tooltip: 'Settings',
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
+          onPressed: () => Navigator.pop(context),
+          tooltip: 'Back to chats',
         ),
         actions: [
           IconButton(
