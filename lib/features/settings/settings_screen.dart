@@ -53,8 +53,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
-    // Watch the dark mode provider
-    final isDarkMode = ref.watch(darkModeProvider);
+    // Watch the theme mode provider
+    final currentThemeMode = ref.watch(themeModeProvider);
 
     if (isLoading || settings == null) {
       return Scaffold(
@@ -63,7 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
             children: [
               Icon(
                 Icons.settings,
-                color: AppTheme.electricAurora,
+                color: Theme.of(context).colorScheme.primary,
                 size: 28,
               ),
               const SizedBox(width: 8),
@@ -91,7 +91,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           children: [
             Icon(
               Icons.settings,
-              color: AppTheme.electricAurora,
+              color: Theme.of(context).colorScheme.primary,
               size: 28,
             ),
             const SizedBox(width: 8),
@@ -214,22 +214,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                     },
                   ),
                   const SizedBox(height: 16),
-                  _buildToggleSetting(
+                  _buildThemeModeSetting(
                     context,
-                    'Dark Mode',
-                    'Switch between light and dark themes',
+                    'Theme Mode',
+                    'Choose your preferred theme',
                     Icons.dark_mode,
-                    isDarkMode, // Use the provider value instead of settings
-                    (value) async {
-                      // Update the provider immediately for real-time theme change
-                      ref.read(darkModeProvider.notifier).state = value;
+                    currentThemeMode,
+                    (mode) async {
+                      // Update the theme mode provider
+                      ref.read(themeModeProvider.notifier).setThemeMode(mode);
                       
-                      final settingsService = SettingsService();
-                      await settingsService.updateDarkModeEnabled(value);
-                      final updatedSettings = await settingsService.getSettings();
-                      setState(() {
-                        settings = updatedSettings;
-                      });
                       soundService.playToggleEffect();
                       confettiController.play();
                     },
@@ -430,20 +424,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           borderRadius: BorderRadius.circular(12),
           boxShadow: isRecommended ? [
             BoxShadow(
-              color: AppTheme.electricAurora.withOpacity(0.4),
+                              color: AppTheme.electricAurora.withValues(alpha: 0.4),
               blurRadius: 15,
               spreadRadius: 2,
               offset: const Offset(0, 6),
             ),
             BoxShadow(
-              color: AppTheme.purpleAurora.withOpacity(0.3),
+                              color: AppTheme.purpleAurora.withValues(alpha: 0.3),
               blurRadius: 25,
               spreadRadius: 1,
               offset: const Offset(0, 12),
             ),
           ] : [
             BoxShadow(
-              color: AppTheme.electricAurora.withOpacity(0.2),
+                              color: AppTheme.electricAurora.withValues(alpha: 0.2),
               blurRadius: 8,
               spreadRadius: 1,
               offset: const Offset(0, 2),
@@ -463,11 +457,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                     children: [
                       Row(
                         children: [
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                           if (isRecommended) ...[
@@ -479,7 +475,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppTheme.electricAurora.withOpacity(0.5),
+                                    color: AppTheme.electricAurora.withValues(alpha: 0.5),
                                     blurRadius: 8,
                                     spreadRadius: 1,
                                   ),
@@ -562,6 +558,147 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
     );
   }
 
+  Widget _buildThemeModeSetting(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    AppThemeMode currentMode,
+    Function(AppThemeMode) onChanged,
+    SoundService soundService,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppTheme.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child:                   _buildThemeModeOption(
+                    context,
+                    'Light',
+                    Icons.light_mode,
+                    AppThemeMode.light,
+                    currentMode,
+                    onChanged,
+                  ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child:                   _buildThemeModeOption(
+                    context,
+                    'System',
+                    Icons.brightness_auto,
+                    AppThemeMode.system,
+                    currentMode,
+                    onChanged,
+                  ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child:                   _buildThemeModeOption(
+                    context,
+                    'Dark',
+                    Icons.brightness_auto,
+                    AppThemeMode.dark,
+                    currentMode,
+                    onChanged,
+                  ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeModeOption(
+    BuildContext context,
+    String label,
+    IconData icon,
+    AppThemeMode mode,
+    AppThemeMode currentMode,
+    Function(AppThemeMode) onChanged,
+  ) {
+    final isSelected = currentMode == mode;
+    return InkWell(
+      onTap: () => onChanged(mode),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? AppTheme.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppTheme.primary : Colors.grey[600],
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? AppTheme.primary : Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildToggleSetting(
     BuildContext context,
     String title,
@@ -583,7 +720,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.1),
+              color: AppTheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: AppTheme.primary, size: 20),
@@ -647,7 +784,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
+                  color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.volume_up, color: AppTheme.primary, size: 20),
@@ -719,7 +856,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.1),
+                color: AppTheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: AppTheme.primary, size: 20),
@@ -778,7 +915,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.1),
+                    color: AppTheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: AppTheme.primary),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:math';
 
 class RadarScreen extends HookWidget {
@@ -37,11 +38,11 @@ class RadarScreen extends HookWidget {
         backgroundColor: Theme.of(context).colorScheme.surface,
         leading: IconButton(
           onPressed: () {
-            // TODO: Navigate to settings or show settings overlay
+            context.push('/settings');
           },
           icon: Icon(
             Icons.settings,
-            color: Theme.of(context).colorScheme.onSurface,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
         actions: [
@@ -61,7 +62,7 @@ class RadarScreen extends HookWidget {
             end: Alignment.bottomCenter,
             colors: [
               Theme.of(context).colorScheme.background,
-              Theme.of(context).colorScheme.surface.withOpacity(0.3),
+                              Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
             ],
           ),
         ),

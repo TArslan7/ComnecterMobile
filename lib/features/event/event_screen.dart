@@ -8,15 +8,15 @@ class EventScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.settings, color: AppTheme.primary),
+          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
           onPressed: () => context.push('/settings'),
           tooltip: 'Settings',
         ),
         // no title per request
-        backgroundColor: AppTheme.surfaceLight,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
       ),
       body: Center(
@@ -27,11 +27,18 @@ class EventScreen extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
+                gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary,
+          ],
+        ),
                 borderRadius: BorderRadius.circular(60),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -48,7 +55,7 @@ class EventScreen extends StatelessWidget {
               'Events are coming soon! 🎉',
               style: TextStyle(
                 fontSize: 18,
-                color: AppTheme.textMedium,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],

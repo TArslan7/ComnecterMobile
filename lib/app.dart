@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routing/app_router.dart';
-import 'theme/app_theme.dart';
+import 'providers/theme_provider.dart';
 import 'features/settings/services/settings_service.dart';
 import 'services/sound_service.dart';
 import 'services/notification_service.dart';
-import 'providers/theme_provider.dart';
+import 'theme/app_theme.dart';
 
 class ComnecterApp extends ConsumerStatefulWidget {
   const ComnecterApp({super.key});
@@ -32,13 +32,6 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
       
       // Initialize notification service
       await NotificationService().initialize();
-      
-      // Load dark mode setting
-      final settingsService = SettingsService();
-      final settings = await settingsService.getSettings();
-      
-      // Update the provider with the loaded setting
-      ref.read(darkModeProvider.notifier).state = settings.darkModeEnabled;
       
       // Initialize splash animation
       _splashController = AnimationController(
@@ -83,27 +76,28 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    // Watch the dark mode provider for changes
-    final isDarkMode = ref.watch(darkModeProvider);
+    // Watch the theme data provider for changes
+    final themeData = ref.watch(themeDataProvider);
     
     if (!_isInitialized) {
       return MaterialApp(
-        home: _buildSplashScreen(isDarkMode),
-        theme: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
+        home: _buildSplashScreen(themeData),
+        theme: themeData,
       );
     }
 
     return MaterialApp.router(
       title: 'Comnecter',
-      theme: isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
+      theme: themeData,
       routerConfig: createRouter(),
       debugShowCheckedModeBanner: false,
     );
   }
 
-  Widget _buildSplashScreen(bool isDarkMode) {
+  Widget _buildSplashScreen(ThemeData themeData) {
+    final isDarkMode = themeData.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDarkMode ? AppTheme.darkTheme.colorScheme.background : AppTheme.lightTheme.colorScheme.background,
+      backgroundColor: themeData.colorScheme.background,
       body: Center(
         child: _splashAnimation != null
             ? FadeTransition(

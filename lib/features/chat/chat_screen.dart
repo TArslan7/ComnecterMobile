@@ -83,18 +83,18 @@ class ChatScreen extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.surfaceLight,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.settings, color: AppTheme.primary),
+          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
           onPressed: () => context.push('/settings'),
           tooltip: 'Settings',
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add_alt_1, color: AppTheme.primary),
+            icon: Icon(Icons.person_add_alt_1, color: Theme.of(context).colorScheme.primary),
             tooltip: 'Add friend by username',
             onPressed: () {
               final controller = TextEditingController();
@@ -134,7 +134,7 @@ class ChatScreen extends HookWidget {
           IconButton(
             icon: Icon(
               Icons.search,
-              color: AppTheme.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
             onPressed: () {
               // TODO: Implement search
@@ -143,7 +143,7 @@ class ChatScreen extends HookWidget {
           IconButton(
             icon: Icon(
               Icons.more_vert,
-              color: AppTheme.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
             onPressed: () {
               // TODO: Show more options
@@ -163,7 +163,7 @@ class ChatScreen extends HookWidget {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: startNewChat,
-        backgroundColor: AppTheme.primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(
           Icons.chat,
           color: Colors.white,
@@ -187,15 +187,15 @@ class ChatScreen extends HookWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceLight,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppTheme.primary.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.05),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
                   blurRadius: 8,
                   spreadRadius: 0,
                   offset: const Offset(0, 2),
@@ -211,11 +211,16 @@ class ChatScreen extends HookWidget {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
+                        gradient: LinearGradient(
+                          colors: [
+                            Theme.of(context).colorScheme.primary,
+                            Theme.of(context).colorScheme.secondary,
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary.withOpacity(0.3),
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                             blurRadius: 12,
                             spreadRadius: 2,
                           ),
@@ -240,11 +245,11 @@ class ChatScreen extends HookWidget {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.white, width: 2),
                             boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.success.withOpacity(0.5),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
+                                                          BoxShadow(
+                              color: AppTheme.success.withValues(alpha: 0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
                             ],
                           ),
                         ),
@@ -272,7 +277,7 @@ class ChatScreen extends HookWidget {
                             _formatTime(conversation.timestamp),
                                style: TextStyle(
                               fontSize: 12,
-                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
                           ),
                         ],
@@ -285,7 +290,7 @@ class ChatScreen extends HookWidget {
                               conversation.lastMessage,
                                style: TextStyle(
                                 fontSize: 14,
-                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -296,7 +301,7 @@ class ChatScreen extends HookWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppTheme.primary,
+                                color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -338,11 +343,16 @@ class ChatScreen extends HookWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ],
+              ),
               borderRadius: BorderRadius.circular(60),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -355,12 +365,12 @@ class ChatScreen extends HookWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'No conversations yet',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onBackground,
             ),
           ),
           const SizedBox(height: 12),
@@ -368,7 +378,7 @@ class ChatScreen extends HookWidget {
             'Start chatting with people you meet!',
             style: TextStyle(
               fontSize: 16,
-              color: AppTheme.textMedium,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 32),
@@ -377,7 +387,7 @@ class ChatScreen extends HookWidget {
               // TODO: Implement start new chat
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
@@ -517,7 +527,7 @@ class ChatConversationScreen extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: Row(
           children: [
@@ -525,11 +535,16 @@ class ChatConversationScreen extends HookWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.5),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                     blurRadius: 10,
                     spreadRadius: 2,
                   ),
@@ -557,7 +572,7 @@ class ChatConversationScreen extends HookWidget {
                   conversation.isOnline ? 'Online' : 'Offline',
                   style: TextStyle(
                     fontSize: 12,
-                    color: conversation.isOnline ? AppTheme.success : AppTheme.textMedium,
+                    color: conversation.isOnline ? AppTheme.success : Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -565,10 +580,10 @@ class ChatConversationScreen extends HookWidget {
             ),
           ],
         ),
-        backgroundColor: AppTheme.surfaceLight,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.settings, color: AppTheme.primary),
+          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
           onPressed: () => context.push('/settings'),
           tooltip: 'Settings',
         ),
@@ -576,7 +591,7 @@ class ChatConversationScreen extends HookWidget {
           IconButton(
             icon: Icon(
               Icons.video_call,
-              color: AppTheme.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
             onPressed: () {
               // TODO: Implement video call
@@ -585,7 +600,7 @@ class ChatConversationScreen extends HookWidget {
           IconButton(
             icon: Icon(
               Icons.call,
-              color: AppTheme.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
             onPressed: () {
               // TODO: Implement voice call
@@ -624,11 +639,16 @@ class ChatConversationScreen extends HookWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -648,11 +668,16 @@ class ChatConversationScreen extends HookWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 gradient: message.isMe 
-                    ? AppTheme.primaryGradient
+                    ? LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.secondary,
+                        ],
+                      )
                     : LinearGradient(
                         colors: [
-                          AppTheme.surfaceLight,
-                          AppTheme.surfaceLight.withOpacity(0.8),
+                          Theme.of(context).colorScheme.surface,
+                          Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
                         ],
                       ),
                 borderRadius: BorderRadius.circular(20).copyWith(
@@ -662,8 +687,8 @@ class ChatConversationScreen extends HookWidget {
                 boxShadow: [
                   BoxShadow(
                     color: message.isMe 
-                        ? AppTheme.primary.withOpacity(0.3)
-                        : Colors.black.withOpacity(0.1),
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.1),
                     blurRadius: 8,
                     spreadRadius: 1,
                     offset: const Offset(0, 2),
@@ -687,8 +712,8 @@ class ChatConversationScreen extends HookWidget {
                     _formatTime(message.timestamp),
                     style: TextStyle(
                       color: message.isMe
-                          ? Colors.white.withOpacity(0.7)
-                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ? Colors.white.withValues(alpha: 0.7)
+                          : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   ),
@@ -702,11 +727,16 @@ class ChatConversationScreen extends HookWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -735,10 +765,10 @@ class ChatConversationScreen extends HookWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, -2),
@@ -750,15 +780,15 @@ class ChatConversationScreen extends HookWidget {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: AppTheme.surfaceLight,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(25),
                 border: Border.all(
-                  color: AppTheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                     blurRadius: 8,
                     spreadRadius: 0,
                     offset: const Offset(0, 2),
@@ -781,11 +811,16 @@ class ChatConversationScreen extends HookWidget {
           const SizedBox(width: 12),
           Container(
             decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ],
+              ),
               borderRadius: BorderRadius.circular(25),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   blurRadius: 10,
                   spreadRadius: 2,
                   offset: const Offset(0, 4),

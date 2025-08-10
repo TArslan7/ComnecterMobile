@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../theme/app_theme.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -19,23 +18,23 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.settings, color: AppTheme.primary),
+          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
           onPressed: () => context.push('/settings'),
           tooltip: 'Settings',
         ),
-        backgroundColor: AppTheme.surfaceLight,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: AppTheme.primary),
+            icon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
             tooltip: 'Search communities',
             onPressed: _showSearchComingSoon,
           ),
           IconButton(
-            icon: const Icon(Icons.group_add, color: AppTheme.primary),
+            icon: Icon(Icons.group_add, color: Theme.of(context).colorScheme.primary),
             tooltip: 'Create community',
             onPressed: _openCreateCommunitySheet,
           ),
@@ -54,10 +53,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.primary.withOpacity(0.1),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.groups, color: AppTheme.primary),
+                      child: Icon(Icons.groups, color: Theme.of(context).colorScheme.primary),
                     ),
                     title: Text(name),
                     subtitle: const Text('Tap to open (coming soon)'),
@@ -69,7 +68,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreateCommunitySheet,
-        backgroundColor: AppTheme.primary,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('Create Community'),
@@ -86,11 +85,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ],
+              ),
               borderRadius: BorderRadius.circular(60),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -110,7 +114,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           const SizedBox(height: 8),
           Text(
             'Search for a community or create your own',
-            style: TextStyle(color: AppTheme.textMedium),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),
@@ -176,7 +180,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                   ),
                   icon: const Icon(Icons.check),

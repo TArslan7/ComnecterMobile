@@ -55,12 +55,12 @@ class AnimationService {
   ];
 
   static List<Effect> get scaleInEffect => [
-    const ScaleEffect(begin: Offset(0.8, 0.8), end: Offset.one, duration: normal),
+    const ScaleEffect(begin: Offset(0.8, 0.8), end: Offset(1.0, 1.0), duration: normal),
     const FadeEffect(duration: normal),
   ];
 
   static List<Effect> get bounceInEffect => [
-    const ScaleEffect(begin: Offset(0.3, 0.3), end: Offset.one, duration: slow, curve: bounceOut),
+    const ScaleEffect(begin: Offset(0.3, 0.3), end: Offset(1.0, 1.0), duration: slow, curve: bounceOut),
     const FadeEffect(duration: slow),
   ];
 
@@ -75,8 +75,8 @@ class AnimationService {
   ];
 
   static List<Effect> get pulseEffect => [
-    const ScaleEffect(begin: Offset.one, end: Offset(1.1, 1.1), duration: fast),
-    const ScaleEffect(begin: Offset(1.1, 1.1), end: Offset.one, duration: fast, delay: fast),
+    const ScaleEffect(begin: Offset(1.0, 1.0), end: Offset(1.1, 1.1), duration: fast),
+    const ScaleEffect(begin: Offset(1.1, 1.1), end: Offset(1.0, 1.0), duration: fast, delay: fast),
   ];
 
   static List<Effect> get shakeEffect => [
@@ -99,25 +99,25 @@ class AnimationService {
 
   // Radar specific animations
   static List<Effect> get radarPulseEffect => [
-    const ScaleEffect(begin: Offset.one, end: Offset(1.2, 1.2), duration: Duration(milliseconds: 1500), curve: Curves.easeOut),
+    const ScaleEffect(begin: Offset(1.0, 1.0), end: Offset(1.2, 1.2), duration: Duration(milliseconds: 1500), curve: Curves.easeOut),
     const FadeEffect(begin: 0.8, end: 0.0, duration: Duration(milliseconds: 1500), curve: Curves.easeOut),
   ];
 
   static List<Effect> get userFoundEffect => [
-    const ScaleEffect(begin: Offset(0.5, 0.5), end: Offset.one, duration: slow, curve: elasticOut),
+    const ScaleEffect(begin: Offset(0.5, 0.5), end: Offset(1.0, 1.0), duration: slow, curve: elasticOut),
     const FadeEffect(duration: slow),
   ];
 
   // Button animations
   static List<Effect> get buttonPressEffect => [
-    const ScaleEffect(begin: Offset.one, end: Offset(0.95, 0.95), duration: fast),
-    const ScaleEffect(begin: Offset(0.95, 0.95), end: Offset.one, duration: fast, delay: fast),
+    const ScaleEffect(begin: Offset(1.0, 1.0), end: Offset(0.95, 0.95), duration: fast),
+    const ScaleEffect(begin: Offset(0.95, 0.95), end: Offset(1.0, 1.0), duration: fast, delay: fast),
   ];
 
   // Success animations
   static List<Effect> get successEffect => [
-    const ScaleEffect(begin: Offset.one, end: Offset(1.1, 1.1), duration: fast),
-    const ScaleEffect(begin: Offset(1.1, 1.1), end: Offset.one, duration: fast, delay: fast),
+    const ScaleEffect(begin: Offset(1.0, 1.0), end: Offset(1.1, 1.1), duration: fast),
+    const ScaleEffect(begin: Offset(1.1, 1.1), end: Offset(1.0, 1.0), duration: fast, delay: fast),
     const ShakeEffect(duration: fast, delay: Duration(milliseconds: 200)),
   ];
 
@@ -139,11 +139,11 @@ class AnimationService {
 
   // Card animations
   static List<Effect> get cardHoverEffect => [
-    const ScaleEffect(begin: Offset.one, end: Offset(1.02, 1.02), duration: fast),
+    const ScaleEffect(begin: Offset(1.0, 1.0), end: Offset(1.02, 1.02), duration: fast),
   ];
 
   static List<Effect> get cardPressEffect => [
-    const ScaleEffect(begin: Offset.one, end: Offset(0.98, 0.98), duration: fast),
+    const ScaleEffect(begin: Offset(1.0, 1.0), end: Offset(0.98, 0.98), duration: fast),
   ];
 
   // List item animations
@@ -160,13 +160,13 @@ class AnimationService {
 
   // Modal animations
   static List<Effect> get modalEffect => [
-    const ScaleEffect(begin: Offset(0.8, 0.8), end: Offset.one, duration: normal, curve: elasticOut),
+    const ScaleEffect(begin: Offset(0.8, 0.8), end: Offset(1.0, 1.0), duration: normal, curve: elasticOut),
     const FadeEffect(duration: normal),
   ];
 
   // Floating action button animations
   static List<Effect> get fabEffect => [
-    const ScaleEffect(begin: Offset.zero, end: Offset.one, duration: slow, curve: elasticOut),
+    const ScaleEffect(begin: Offset.zero, end: Offset(1.0, 1.0), duration: slow, curve: elasticOut),
     const FadeEffect(duration: slow),
   ];
 
@@ -178,13 +178,13 @@ class AnimationService {
 
   // Profile image animations
   static List<Effect> get profileImageEffect => [
-    const ScaleEffect(begin: Offset(0.9, 0.9), end: Offset.one, duration: normal),
+    const ScaleEffect(begin: Offset(0.9, 0.9), end: Offset(1.0, 1.0), duration: normal),
     const FadeEffect(duration: normal),
   ];
 
   // Status indicator animations
   static List<Effect> get statusIndicatorEffect => [
-    const ScaleEffect(begin: Offset.zero, end: Offset.one, duration: fast, curve: elasticOut),
+    const ScaleEffect(begin: Offset.zero, end: Offset(1.0, 1.0), duration: fast, curve: elasticOut),
     const FadeEffect(duration: fast),
   ];
 
@@ -201,8 +201,8 @@ class AnimationService {
 
   // Settings toggle animations
   static List<Effect> get toggleEffect => [
-    const ScaleEffect(begin: Offset.one, end: Offset(1.1, 1.1), duration: fast),
-    const ScaleEffect(begin: Offset(1.1, 1.1), end: Offset.one, duration: fast, delay: fast),
+    const ScaleEffect(begin: Offset(1.0, 1.0), end: Offset(1.1, 1.1), duration: fast),
+    const ScaleEffect(begin: Offset(1.1, 1.1), end: Offset(1.0, 1.0), duration: fast, delay: fast),
   ];
 
   // Refresh animations
@@ -212,7 +212,7 @@ class AnimationService {
 
   // Confetti animations
   static List<Effect> get confettiEffect => [
-    const ScaleEffect(begin: Offset.zero, end: Offset.one, duration: slow, curve: elasticOut),
+    const ScaleEffect(begin: Offset.zero, end: Offset(1.0, 1.0), duration: slow, curve: elasticOut),
     const FadeEffect(begin: 1.0, end: 0.0, duration: Duration(seconds: 2), delay: Duration(seconds: 1)),
   ];
 }

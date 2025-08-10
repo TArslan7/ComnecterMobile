@@ -62,7 +62,7 @@ class ProfileScreen extends HookWidget {
   ) {
     return AppBar(
       leading: IconButton(
-        icon: const Icon(Icons.settings, color: AppTheme.primary),
+        icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
         onPressed: () => context.push('/settings'),
         tooltip: 'Settings',
       ),
@@ -73,7 +73,7 @@ class ProfileScreen extends HookWidget {
         IconButton(
           icon: Icon(
             isEditing.value ? Icons.save : Icons.edit,
-            color: AppTheme.primary,
+            color: Theme.of(context).colorScheme.primary,
           ),
           onPressed: () async {
             await soundService.playButtonClickSound();
@@ -117,11 +117,18 @@ class ProfileScreen extends HookWidget {
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.secondary,
+                      ],
+                    ),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primary.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -143,12 +150,12 @@ class ProfileScreen extends HookWidget {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: AppTheme.success,
+                      color: AppTheme.success, // Keep custom success color
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.success.withOpacity(0.3),
+                          color: AppTheme.success.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -177,7 +184,7 @@ class ProfileScreen extends HookWidget {
           Text(
             profile['username'],
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.textMedium,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -186,14 +193,14 @@ class ProfileScreen extends HookWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Text(
               profile['bio'],
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.primary,
+                color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -204,18 +211,18 @@ class ProfileScreen extends HookWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.location_on, size: 16, color: AppTheme.textMedium),
+              Icon(Icons.location_on, size: 16, color: Theme.of(context).colorScheme.onSurface),
               const SizedBox(width: 4),
               Text(
                 profile['location'],
-                style: TextStyle(color: AppTheme.textMedium),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
               const SizedBox(width: 16),
-              Icon(Icons.calendar_today, size: 16, color: AppTheme.textMedium),
+              Icon(Icons.calendar_today, size: 16, color: Theme.of(context).colorScheme.onSurface),
               const SizedBox(width: 4),
               Text(
                 'Joined ${profile['joinedDate']}',
-                style: TextStyle(color: AppTheme.textMedium),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
           ),
@@ -231,7 +238,14 @@ class ProfileScreen extends HookWidget {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.secondary,
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -255,11 +269,18 @@ class ProfileScreen extends HookWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary,
+          ],
+        ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -308,7 +329,7 @@ class ProfileScreen extends HookWidget {
     return Container(
       width: 1,
       height: 40,
-      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
     );
   }
 
@@ -377,10 +398,10 @@ class ProfileScreen extends HookWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppTheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: AppTheme.primary),
+          child: Icon(icon, color: Theme.of(context).colorScheme.primary),
         ),
         title: Text(title),
         subtitle: Text(subtitle),

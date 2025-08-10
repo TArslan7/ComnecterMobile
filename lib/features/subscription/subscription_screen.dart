@@ -93,7 +93,7 @@ class SubscriptionScreen extends HookWidget {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
               child: const Text('Yes, Cancel'),
             ),
           ],
@@ -117,16 +117,16 @@ class SubscriptionScreen extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppTheme.backgroundLight,
-              AppTheme.backgroundLight.withOpacity(0.95),
-              AppTheme.backgroundLight.withOpacity(0.9),
+                        Theme.of(context).colorScheme.background,
+                          Theme.of(context).colorScheme.background.withValues(alpha: 0.95),
+                Theme.of(context).colorScheme.background.withValues(alpha: 0.9),
             ],
             stops: const [0.0, 0.7, 1.0],
           ),
@@ -164,13 +164,13 @@ class SubscriptionScreen extends HookWidget {
                 emissionFrequency: 0.02,
                 numberOfParticles: 100,
                 gravity: 0.06,
-                colors: [
-                  AppTheme.primary,
-                  AppTheme.secondary,
-                  AppTheme.success,
-                  AppTheme.warning,
-                  AppTheme.error,
-                ],
+                        colors: [
+          Theme.of(context).colorScheme.primary,
+          Theme.of(context).colorScheme.secondary,
+          AppTheme.success,
+          AppTheme.warning,
+          Theme.of(context).colorScheme.error,
+        ],
               ),
             ),
 
@@ -190,10 +190,17 @@ class SubscriptionScreen extends HookWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary,
+          ],
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withOpacity(0.3),
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -224,7 +231,7 @@ class SubscriptionScreen extends HookWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -250,7 +257,7 @@ class SubscriptionScreen extends HookWidget {
                         Text(
                           '${subscription.daysRemaining} days remaining',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 14,
                           ),
                         ),
@@ -264,7 +271,7 @@ class SubscriptionScreen extends HookWidget {
             Text(
               'Choose your plan to unlock premium features',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 16,
               ),
               textAlign: TextAlign.center,
@@ -299,14 +306,14 @@ class SubscriptionScreen extends HookWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.surfaceLight,
-                    AppTheme.surfaceLight.withOpacity(0.8),
-                  ],
+                                  colors: [
+                  Theme.of(context).colorScheme.surface,
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 15,
                     spreadRadius: 2,
                     offset: const Offset(0, 5),
@@ -323,7 +330,14 @@ class SubscriptionScreen extends HookWidget {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            gradient: AppTheme.primaryGradient,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Theme.of(context).colorScheme.primary,
+                                Theme.of(context).colorScheme.secondary,
+                              ],
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -371,14 +385,14 @@ class SubscriptionScreen extends HookWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textDark,
+                                color: Theme.of(context).colorScheme.onBackground,
                               ),
                             ),
                             Text(
                               '${(subscription.progressPercentage * 100).round()}%',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: AppTheme.textMedium,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ],
@@ -386,8 +400,8 @@ class SubscriptionScreen extends HookWidget {
                         const SizedBox(height: 8),
                         LinearProgressIndicator(
                           value: subscription.progressPercentage,
-                          backgroundColor: AppTheme.surfaceDark,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                          backgroundColor: Theme.of(context).colorScheme.surface,
+                          valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                         ),
                       ],
                     ),
@@ -454,7 +468,7 @@ class SubscriptionScreen extends HookWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       AppTheme.surfaceLight,
-                      AppTheme.surfaceLight.withOpacity(0.8),
+                      AppTheme.surfaceLight.withValues(alpha: 0.8),
                     ],
                   ),
                 ),
@@ -545,8 +559,8 @@ class SubscriptionScreen extends HookWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              plan.color.withOpacity(0.1),
-              plan.color.withOpacity(0.05),
+              plan.color.withValues(alpha: 0.1),
+              plan.color.withValues(alpha: 0.05),
             ],
           ),
           border: Border.all(
@@ -566,7 +580,7 @@ class SubscriptionScreen extends HookWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [plan.color, plan.color.withOpacity(0.7)],
+                        colors: [plan.color, plan.color.withValues(alpha: 0.7)],
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -705,7 +719,7 @@ class SubscriptionScreen extends HookWidget {
     VoidCallback onCancel,
   ) {
     return Container(
-      color: Colors.black.withOpacity(0.8),
+      color: Colors.black.withValues(alpha: 0.8),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -714,7 +728,7 @@ class SubscriptionScreen extends HookWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primary.withOpacity(0.6),
+                color: AppTheme.primary.withValues(alpha: 0.6),
                 blurRadius: 40,
                 spreadRadius: 5,
               ),
@@ -757,7 +771,7 @@ class SubscriptionScreen extends HookWidget {
                 Text(
                   'Subscribe to ${plan.name} for ${plan.fullPrice}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 16,
                   ),
                   textAlign: TextAlign.center,
@@ -848,7 +862,7 @@ class SubscriptionScreen extends HookWidget {
               borderRadius: BorderRadius.circular(50),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.4),
+                  color: AppTheme.primary.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
