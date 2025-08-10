@@ -3,6 +3,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
+import '../friends/services/friend_service.dart';
+import '../friends/models/friend_model.dart';
 
 class ChatScreen extends HookWidget {
   const ChatScreen({super.key});
@@ -66,18 +68,186 @@ class ChatScreen extends HookWidget {
       );
     }
 
+    String _formatLastSeen(DateTime lastSeen) {
+      final now = DateTime.now();
+      final difference = now.difference(lastSeen);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    }
+
+    void _startChatWithFriend(Friend friend, BuildContext context) {
+      // Check if conversation already exists
+      final existingConversation = conversations.value.firstWhere(
+        (conv) => conv.name.toLowerCase() == friend.name.toLowerCase(),
+        orElse: () => ChatConversation(
+          id: '',
+          name: '',
+          avatar: '',
+          lastMessage: '',
+          timestamp: DateTime.now(),
+          unreadCount: 0,
+          isOnline: false,
+        ),
+      );
+
+      if (existingConversation.id.isNotEmpty) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('You already have a chat with ${friend.name}')),
+        );
+        return;
+      }
+
+      // Create new conversation
+      final newConversation = ChatConversation(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: friend.name,
+        avatar: friend.avatar,
+        lastMessage: 'Chat started',
+        timestamp: DateTime.now(),
+        unreadCount: 0,
+        isOnline: friend.isOnline,
+      );
+
+      conversations.value = [newConversation, ...conversations.value];
+
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Chat started with ${friend.name}')),
+      );
+
+      // Open the new conversation
+      openConversation(newConversation);
+    }
+
     void startNewChat() {
-      showDialog(
+      final friendService = FriendService();
+      final friends = friendService.getFriends().where((f) => f.status == FriendStatus.accepted).toList();
+      
+      if (friends.isEmpty) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('No Friends Available'),
+            content: const Text('You need to add friends first before you can start a chat.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      showModalBottomSheet(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Start New Chat'),
-          content: const Text('This feature is coming soon!'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) => Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Start New Chat',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Friends List
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: friends.length,
+                  itemBuilder: (context, index) {
+                    final friend = friends[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          child: Text(
+                            friend.avatar,
+                            style: const TextStyle(fontSize: 20),
+                          ),
+                        ),
+                        title: Text(
+                          friend.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        subtitle: Text(
+                          friend.isOnline ? 'Online' : 'Last seen ${_formatLastSeen(friend.lastSeen)}',
+                          style: TextStyle(
+                            color: friend.isOnline 
+                                ? Colors.green 
+                                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        trailing: Icon(
+                          Icons.chat_bubble_outline,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        onTap: () => _startChatWithFriend(friend, context),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -152,7 +322,7 @@ class ChatScreen extends HookWidget {
         ],
       ),
       body: conversations.value.isEmpty
-          ? _buildEmptyState(context)
+          ? _buildEmptyState(context, startNewChat)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: conversations.value.length,
@@ -333,7 +503,7 @@ class ChatScreen extends HookWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, VoidCallback startNewChat) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -382,9 +552,7 @@ class ChatScreen extends HookWidget {
           ),
           const SizedBox(height: 32),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Implement start new chat
-            },
+            onPressed: startNewChat,
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
