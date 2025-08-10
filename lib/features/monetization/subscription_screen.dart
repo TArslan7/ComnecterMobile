@@ -70,17 +70,17 @@ class SubscriptionScreen extends HookWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary),
-          onPressed: () => context.push('/friends'),
-          tooltip: 'Friends',
+          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
+          onPressed: () => context.push('/settings'),
+          tooltip: 'Settings',
         ),
         title: const Text('Subscription Plans'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
-            icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
-            onPressed: () => context.push('/settings'),
-            tooltip: 'Settings',
+            icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary),
+            onPressed: () => context.push('/friends'),
+            tooltip: 'Friends',
           ),
         ],
       ),

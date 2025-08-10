@@ -101,23 +101,40 @@ class RadarScreen extends HookWidget {
           children: [
             IconButton(
               onPressed: () {
-                context.push('/friends');
-              },
-              icon: Icon(
-                Icons.people,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              tooltip: 'Friends',
-            ),
-            IconButton(
-              onPressed: () {
                 context.push('/settings');
               },
               icon: Icon(
                 Icons.settings,
                 color: Theme.of(context).colorScheme.primary,
+                size: 22,
               ),
               tooltip: 'Settings',
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(
+                minWidth: 28,
+                minHeight: 28,
+                maxWidth: 28,
+                maxHeight: 28,
+              ),
+            ),
+            const SizedBox(width: 1),
+            IconButton(
+              onPressed: () {
+                context.push('/friends');
+              },
+              icon: Icon(
+                Icons.people,
+                color: Theme.of(context).colorScheme.primary,
+                size: 22,
+              ),
+              tooltip: 'Friends',
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(
+                minWidth: 28,
+                minHeight: 28,
+                maxWidth: 28,
+                maxHeight: 28,
+              ),
             ),
           ],
         ),

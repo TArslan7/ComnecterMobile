@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
-import 'dart:async';
 import 'dart:math';
 import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
@@ -84,10 +83,7 @@ class FriendsScreen extends HookWidget {
       soundService.playErrorSound();
     }
 
-    void handleUnblockFriend(String friendId) async {
-      await friendService.unblockFriend(friendId);
-      soundService.playSuccessSound();
-    }
+
 
     void handleFriendTap(Friend friend) {
       soundService.playTapSound();
@@ -116,14 +112,57 @@ class FriendsScreen extends HookWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.settings, color: AppTheme.primary),
-          onPressed: () => context.push('/settings'),
-          tooltip: 'Settings',
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
+              onPressed: () => context.pop(),
+              tooltip: 'Go Back',
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(
+                minWidth: 28,
+                minHeight: 28,
+                maxWidth: 28,
+                maxHeight: 28,
+              ),
+            ),
+            const SizedBox(width: 1),
+            IconButton(
+              icon: const Icon(Icons.settings, color: AppTheme.primary),
+              onPressed: () => context.push('/settings'),
+              tooltip: 'Settings',
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(
+                minWidth: 28,
+                minHeight: 28,
+                maxWidth: 28,
+                maxHeight: 28,
+              ),
+            ),
+            const SizedBox(width: 1),
+            IconButton(
+              icon: const Icon(Icons.people, color: AppTheme.primary),
+              onPressed: () => context.push('/friends'),
+              tooltip: 'Friends',
+              padding: const EdgeInsets.all(2),
+              constraints: const BoxConstraints(
+                minWidth: 28,
+                minHeight: 28,
+                maxWidth: 28,
+                maxHeight: 28,
+              ),
+            ),
+          ],
         ),
-        title: const Text('Community', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Friends',
+          style: TextStyle(fontWeight: FontWeight.bold),
+          overflow: TextOverflow.ellipsis,
+        ),
         backgroundColor: AppTheme.surfaceLight,
         elevation: 0,
+        centerTitle: true,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -132,8 +171,8 @@ class FriendsScreen extends HookWidget {
             end: Alignment.bottomCenter,
             colors: [
               AppTheme.backgroundLight,
-              AppTheme.backgroundLight.withOpacity(0.95),
-              AppTheme.backgroundLight.withOpacity(0.9),
+              AppTheme.backgroundLight.withValues(alpha: 0.95),
+              AppTheme.backgroundLight.withValues(alpha: 0.9),
             ],
             stops: const [0.0, 0.7, 1.0],
           ),
@@ -223,7 +262,7 @@ class FriendsScreen extends HookWidget {
         gradient: AppTheme.primaryGradient,
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primary.withOpacity(0.3),
+            color: AppTheme.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -239,24 +278,45 @@ class FriendsScreen extends HookWidget {
                 size: 32,
               ),
               const SizedBox(width: 12),
-              Text(
+              Expanded(
+                child:               Text(
                 'Friends',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
+                overflow: TextOverflow.ellipsis,
+              ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem('Total', stats.totalFriends.toString(), Icons.people),
-              _buildStatItem('Online', stats.onlineFriends.toString(), Icons.circle, color: AppTheme.success),
-              _buildStatItem('Requests', stats.pendingRequests.toString(), Icons.notifications),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Use Wrap for better responsiveness on small screens
+              if (constraints.maxWidth < 300) {
+                return Wrap(
+                  alignment: WrapAlignment.spaceEvenly,
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    _buildStatItem('Total', stats.totalFriends.toString(), Icons.people),
+                    _buildStatItem('Online', stats.onlineFriends.toString(), Icons.circle, color: AppTheme.success),
+                    _buildStatItem('Requests', stats.pendingRequests.toString(), Icons.notifications),
+                  ],
+                );
+              } else {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Expanded(child: _buildStatItem('Total', stats.totalFriends.toString(), Icons.people)),
+                    Expanded(child: _buildStatItem('Online', stats.onlineFriends.toString(), Icons.circle, color: AppTheme.success)),
+                    Expanded(child: _buildStatItem('Requests', stats.pendingRequests.toString(), Icons.notifications)),
+                  ],
+                );
+              }
+            },
           ),
         ],
       ),
@@ -264,30 +324,44 @@ class FriendsScreen extends HookWidget {
   }
 
   Widget _buildStatItem(String label, String value, IconData icon, {Color? color}) {
-    return Column(
-      children: [
-        Icon(
-          icon,
-          color: color ?? Colors.white,
-          size: 24,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 60,
+        maxWidth: 120,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: color ?? Colors.white,
+            size: 24,
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 12,
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
-        ),
-      ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ],
+      ),
     );
   }
 
@@ -306,20 +380,32 @@ class FriendsScreen extends HookWidget {
           ),
         ],
       ),
-      child: TextField(
-        onChanged: onSearch,
-        decoration: InputDecoration(
-          hintText: 'Search friends...',
-          hintStyle: TextStyle(color: AppTheme.textMedium),
-          border: InputBorder.none,
-          icon: Icon(Icons.search, color: AppTheme.primary),
-          suffixIcon: query.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.clear, color: AppTheme.textMedium),
-                  onPressed: () => onSearch(''),
-                )
-              : null,
-        ),
+      child: Row(
+        children: [
+          Icon(Icons.search, color: AppTheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              onChanged: onSearch,
+              decoration: InputDecoration(
+                hintText: 'Search friends...',
+                hintStyle: TextStyle(color: AppTheme.textMedium),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+            ),
+          ),
+          if (query.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.clear, color: AppTheme.textMedium),
+              onPressed: () => onSearch(''),
+              constraints: const BoxConstraints(
+                minWidth: 40,
+                minHeight: 40,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -371,6 +457,7 @@ class FriendsScreen extends HookWidget {
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
@@ -385,6 +472,9 @@ class FriendsScreen extends HookWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ],
         ),

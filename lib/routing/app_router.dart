@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../features/radar/radar_screen.dart';
 import '../features/radar/user_profile_screen.dart';
 import '../features/chat/chat_screen.dart';
+import '../features/community/community_screen.dart';
 import '../features/friends/friends_screen.dart';
 import '../features/subscription/subscription_screen.dart';
 import '../features/event/event_screen.dart';
@@ -25,6 +26,11 @@ GoRouter createRouter() {
             path: '/chat',
             name: 'chat',
             builder: (context, state) => const ChatScreen(),
+          ),
+          GoRoute(
+            path: '/community',
+            name: 'community',
+            builder: (context, state) => const CommunityScreen(),
           ),
           GoRoute(
             path: '/friends',
@@ -85,7 +91,7 @@ class RootNavigation extends StatelessWidget {
               context.go('/chat');
               break;
             case 2:
-              context.go('/friends');
+              context.go('/community');
               break;
             case 3:
               context.go('/profile');
@@ -114,7 +120,7 @@ class RootNavigation extends StatelessWidget {
 
   int _calculateSelectedIndex(String location) {
     if (location.startsWith('/chat')) return 1;
-    if (location.startsWith('/friends')) return 2;
+    if (location.startsWith('/community')) return 2;
     if (location.startsWith('/profile')) return 3;
     if (location.startsWith('/event')) return 4;
     return 0;
