@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../features/radar/radar_screen.dart';
 import '../features/radar/user_profile_screen.dart';
 import '../features/chat/chat_screen.dart';
-import '../features/community/community_screen.dart';
+import '../features/friends/friends_screen.dart';
 import '../features/subscription/subscription_screen.dart';
 import '../features/event/event_screen.dart';
 import '../features/profile/profile_screen.dart';
@@ -29,7 +29,7 @@ GoRouter createRouter() {
           GoRoute(
             path: '/friends',
             name: 'friends',
-            builder: (context, state) => const CommunityScreen(),
+            builder: (context, state) => const FriendsScreen(),
           ),
           GoRoute(
             path: '/event',

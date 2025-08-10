@@ -257,10 +257,20 @@ class ChatScreen extends HookWidget {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
-          onPressed: () => context.push('/settings'),
-          tooltip: 'Settings',
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary),
+              onPressed: () => context.push('/friends'),
+              tooltip: 'Friends',
+            ),
+            IconButton(
+              icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
+              onPressed: () => context.push('/settings'),
+              tooltip: 'Settings',
+            ),
+          ],
         ),
         actions: [
           IconButton(

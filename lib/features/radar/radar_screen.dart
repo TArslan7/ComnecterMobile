@@ -96,14 +96,30 @@ class RadarScreen extends HookWidget {
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        leading: IconButton(
-          onPressed: () {
-            context.push('/settings');
-          },
-          icon: Icon(
-            Icons.settings,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              onPressed: () {
+                context.push('/friends');
+              },
+              icon: Icon(
+                Icons.people,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              tooltip: 'Friends',
+            ),
+            IconButton(
+              onPressed: () {
+                context.push('/settings');
+              },
+              icon: Icon(
+                Icons.settings,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              tooltip: 'Settings',
+            ),
+          ],
         ),
         actions: [
           IconButton(

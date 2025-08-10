@@ -10,10 +10,20 @@ class EventScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
-          onPressed: () => context.push('/settings'),
-          tooltip: 'Settings',
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary),
+              onPressed: () => context.push('/friends'),
+              tooltip: 'Friends',
+            ),
+            IconButton(
+              icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
+              onPressed: () => context.push('/settings'),
+              tooltip: 'Settings',
+            ),
+          ],
         ),
         // no title per request
                   backgroundColor: Theme.of(context).colorScheme.surface,

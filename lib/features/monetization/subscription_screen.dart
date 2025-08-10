@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'models/subscription_plan.dart';
 import 'models/user_subscription.dart';
 import 'services/monetization_service.dart';
@@ -68,8 +69,20 @@ class SubscriptionScreen extends HookWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary),
+          onPressed: () => context.push('/friends'),
+          tooltip: 'Friends',
+        ),
         title: const Text('Subscription Plans'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary),
+            onPressed: () => context.push('/settings'),
+            tooltip: 'Settings',
+          ),
+        ],
       ),
       body: isLoading.value
           ? const Center(child: CircularProgressIndicator())
