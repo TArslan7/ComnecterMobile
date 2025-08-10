@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:math';
+import '../friends/services/friend_service.dart';
+import 'services/radar_service.dart';
+import 'models/user_model.dart';
 
 class RadarScreen extends HookWidget {
   const RadarScreen({super.key});
@@ -9,19 +12,45 @@ class RadarScreen extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final isScanning = useState(true);
-    final scanRadius = useState(0.0);
     final heartbeatController = useAnimationController(
       duration: const Duration(milliseconds: 800),
     );
     final radarController = useAnimationController(
       duration: const Duration(milliseconds: 1200),
     );
+    
+    // Radar service integration
+    final radarService = useMemoized(() => RadarService(), []);
+    final detectedUsers = useState<List<NearbyUser>>([]);
+    final friendService = useMemoized(() => FriendService(), []);
+
+    useEffect(() {
+      // Initialize radar service
+      radarService.initialize();
+      
+      // Listen to detected users
+      final subscription = radarService.usersStream.listen((users) {
+        detectedUsers.value = users.where((user) => user.isDetected).toList();
+      });
+
+      // Start scanning initially
+      if (isScanning.value) {
+        radarService.startScanning();
+      }
+
+      return () {
+        subscription.cancel();
+        radarService.stopScanning();
+      };
+    }, []);
 
     useEffect(() {
       if (isScanning.value) {
+        radarService.startScanning();
         heartbeatController.repeat();
         radarController.repeat();
       } else {
+        radarService.stopScanning();
         heartbeatController.stop();
         radarController.stop();
       }
@@ -30,6 +59,37 @@ class RadarScreen extends HookWidget {
 
     void toggleScanning() {
       isScanning.value = !isScanning.value;
+    }
+
+    void sendFriendRequest(NearbyUser user) async {
+      try {
+        await friendService.sendFriendRequest(
+          user.id,
+          user.name,
+          user.avatar,
+          message: 'Hey! I detected you on radar. Would you like to connect?',
+        );
+        
+        // Show success message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Friend request sent to ${user.name}!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        // Show error message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to send friend request: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
 
     return Scaffold(
@@ -117,7 +177,6 @@ class RadarScreen extends HookWidget {
                       child: AnimatedBuilder(
                         animation: heartbeatController,
                         builder: (context, child) {
-                          final scale = 1.0 + (heartbeatController.value * 0.3);
                           final opacity = 0.7 + (heartbeatController.value * 0.3);
                           
                           return Container(
@@ -278,7 +337,7 @@ class RadarScreen extends HookWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            '3',
+                            '${detectedUsers.value.length}',
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context).colorScheme.primary,
@@ -291,124 +350,130 @@ class RadarScreen extends HookWidget {
                     const SizedBox(height: 12),
                     
                     // User List
-                    ...List.generate(3, (index) {
-                      final names = ['Alex Chen', 'Sarah Kim', 'Mike Rodriguez'];
-                      final distances = ['15m', '28m', '42m'];
-                      final isOnline = [true, true, false];
+                    ...List.generate(detectedUsers.value.length, (index) {
+                      final user = detectedUsers.value[index];
                       
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                      return GestureDetector(
+                        onTap: () {
+                          context.push('/user-profile/${user.id}', extra: {'user': user});
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            // Avatar
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Theme.of(context).colorScheme.primary,
-                                    Theme.of(context).colorScheme.secondary,
+                          child: Row(
+                            children: [
+                              // Avatar
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Theme.of(context).colorScheme.primary,
+                                      Theme.of(context).colorScheme.secondary,
+                                    ],
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    user.name[0],
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              
+                              const SizedBox(width: 10),
+                              
+                              // User Info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      user.name,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Theme.of(context).colorScheme.onSurface,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 5,
+                                          height: 5,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: user.isOnline 
+                                              ? Theme.of(context).colorScheme.primary 
+                                              : Theme.of(context).colorScheme.outline,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          user.isOnline ? 'Online' : 'Offline',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '• ${(user.distanceKm * 1000).round()}m',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
-                              child: Center(
-                                child: Text(
-                                  names[index][0],
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                              
+                              // Connect Button
+                              GestureDetector(
+                                onTap: () => sendFriendRequest(user),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ),
-                            
-                            const SizedBox(width: 10),
-                            
-                            // User Info
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    names[index],
+                                  child: Text(
+                                    'Connect',
                                     style: TextStyle(
-                                      fontSize: 13,
-                                      color: Theme.of(context).colorScheme.onSurface,
+                                      fontSize: 11,
+                                      color: Theme.of(context).colorScheme.primary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 5,
-                                        height: 5,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isOnline[index] 
-                                            ? Theme.of(context).colorScheme.primary 
-                                            : Theme.of(context).colorScheme.outline,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        isOnline[index] ? 'Online' : 'Offline',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '• ${distances[index]}',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            // Connect Button
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                                 ),
                               ),
-                              child: Text(
-                                'Connect',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     }),
                     
                     // Empty state when no users detected
-                    if (!isScanning.value)
+                    if (detectedUsers.value.isEmpty)
                       Container(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -420,7 +485,9 @@ class RadarScreen extends HookWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Start scanning to detect users',
+                              isScanning.value 
+                                ? 'Scanning for nearby users...' 
+                                : 'No users detected in range',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/radar/radar_screen.dart';
+import '../features/radar/user_profile_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/community/community_screen.dart';
 import '../features/subscription/subscription_screen.dart';
@@ -49,6 +50,14 @@ GoRouter createRouter() {
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/user-profile/:userId',
+            name: 'user-profile',
+            builder: (context, state) {
+              final user = state.extra as Map<String, dynamic>;
+              return UserProfileScreen(user: user['user']);
+            },
           ),
         ],
       ),
