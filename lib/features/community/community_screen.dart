@@ -71,7 +71,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Create Community'),
+        label: const Icon(Icons.groups),
       ),
     );
   }

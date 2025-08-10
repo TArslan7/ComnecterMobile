@@ -161,13 +161,12 @@ class ChatScreen extends HookWidget {
                 return _buildConversationTile(context, conversation, openConversation);
               },
             ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: startNewChat,
         backgroundColor: Theme.of(context).colorScheme.primary,
-        child: const Icon(
-          Icons.chat,
-          color: Colors.white,
-        ),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Icon(Icons.chat),
       ),
     );
   }
