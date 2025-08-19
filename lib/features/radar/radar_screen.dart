@@ -96,54 +96,52 @@ class RadarScreen extends HookWidget {
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              onPressed: () {
-                context.push('/settings');
-              },
-              icon: Icon(
-                Icons.settings,
-                color: Theme.of(context).colorScheme.primary,
-                size: 22,
+        elevation: 0,
+        leading: Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: IconButton(
+                  onPressed: () {
+                    context.push('/settings');
+                  },
+                  icon: Icon(
+                    Icons.settings,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 22,
+                  ),
+                  tooltip: 'Settings',
+                  padding: const EdgeInsets.all(8),
+                ),
               ),
-              tooltip: 'Settings',
-              padding: const EdgeInsets.all(2),
-              constraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 28,
-                maxWidth: 28,
-                maxHeight: 28,
+              const SizedBox(width: 4),
+              Flexible(
+                child: IconButton(
+                  onPressed: () {
+                    context.push('/friends');
+                  },
+                  icon: Icon(
+                    Icons.people,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 22,
+                  ),
+                  tooltip: 'Friends',
+                  padding: const EdgeInsets.all(8),
+                ),
               ),
-            ),
-            const SizedBox(width: 1),
-            IconButton(
-              onPressed: () {
-                context.push('/friends');
-              },
-              icon: Icon(
-                Icons.people,
-                color: Theme.of(context).colorScheme.primary,
-                size: 22,
-              ),
-              tooltip: 'Friends',
-              padding: const EdgeInsets.all(2),
-              constraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 28,
-                maxWidth: 28,
-                maxHeight: 28,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
-          IconButton(
-            onPressed: toggleScanning,
-            icon: Icon(
-              isScanning.value ? Icons.pause : Icons.play_arrow,
-              color: Theme.of(context).colorScheme.primary,
+          Flexible(
+            child: IconButton(
+              onPressed: toggleScanning,
+              icon: Icon(
+                isScanning.value ? Icons.pause : Icons.play_arrow,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              padding: const EdgeInsets.all(8),
             ),
           ),
         ],

@@ -80,40 +80,85 @@ class RootNavigation extends StatelessWidget {
     final location = GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString(); // ✅ werkt altijd
     return Scaffold(
       body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _calculateSelectedIndex(location),
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 0:
-              context.go('/');
-              break;
-            case 1:
-              context.go('/chat');
-              break;
-            case 2:
-              context.go('/community');
-              break;
-            case 3:
-              context.go('/profile');
-              break;
-            case 4:
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('This feature is coming soon!'),
-                  behavior: SnackBarBehavior.floating,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            height: 80,
+            child: NavigationBar(
+              selectedIndex: _calculateSelectedIndex(location),
+              onDestinationSelected: (index) {
+                switch (index) {
+                  case 0:
+                    context.go('/');
+                    break;
+                  case 1:
+                    context.go('/chat');
+                    break;
+                  case 2:
+                    context.go('/community');
+                    break;
+                  case 3:
+                    context.go('/profile');
+                    break;
+                  case 4:
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                          'This feature is coming soon!',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                    context.go('/event');
+                    break;
+                }
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.radar), 
+                  label: 'Radar',
+                  tooltip: 'Radar',
                 ),
-              );
-              context.go('/event');
-              break;
-          }
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.radar), label: 'Radar'),
-          NavigationDestination(icon: Icon(Icons.chat_bubble), label: 'Chat'),
-          NavigationDestination(icon: Icon(Icons.people), label: 'Community'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
-          NavigationDestination(icon: Icon(Icons.event), label: 'Event'),
-        ],
+                NavigationDestination(
+                  icon: Icon(Icons.chat_bubble), 
+                  label: 'Chat',
+                  tooltip: 'Chat',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.people), 
+                  label: 'Community',
+                  tooltip: 'Community',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person), 
+                  label: 'Profile',
+                  tooltip: 'Profile',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.event), 
+                  label: 'Event',
+                  tooltip: 'Event',
+                ),
+              ],
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              height: 80,
+              elevation: 0,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -86,36 +86,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Icon(
-              Icons.settings,
-              color: Theme.of(context).colorScheme.primary,
-              size: 28,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Settings',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.help_outline,
-              color: AppTheme.electricAurora,
-            ),
-            onPressed: () async {
-              await soundService.playButtonClickSound();
-              _showHelpDialog(context);
-            },
-            tooltip: 'Help',
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.settings,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: const Text(
+                      'Settings',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.help_outline,
+                        color: AppTheme.electricAurora,
+                        size: 24,
+                      ),
+                      onPressed: () async {
+                        await soundService.playButtonClickSound();
+                        _showHelpDialog(context);
+                      },
+                      tooltip: 'Help',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       body: Stack(
         children: [
@@ -330,7 +362,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
               ),
               const SizedBox(height: 20),
             ],
-          ),
+          ).animate().fadeIn(duration: const Duration(milliseconds: 400)).slideY(begin: 0.2, duration: const Duration(milliseconds: 400)),
           
           // Confetti overlay
           Align(
@@ -359,6 +391,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
         const SizedBox(height: 12),
           _buildSubscriptionCard(
@@ -464,6 +498,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
                           if (isRecommended) ...[
@@ -488,6 +524,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                           ],
@@ -500,6 +538,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                           color: Colors.grey[600],
                           fontSize: 14,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                     ],
                   ),
@@ -511,6 +551,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                     fontSize: 16,
                     color: isRecommended ? AppTheme.electricAurora : Colors.grey[700],
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),
@@ -529,6 +571,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
         const SizedBox(height: 12),
         _buildToggleSetting(
@@ -598,6 +642,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     Text(
                       subtitle,
@@ -605,6 +651,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                         color: Colors.grey[600],
                         fontSize: 14,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ],
                 ),
@@ -692,6 +740,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? AppTheme.primary : Colors.grey[600],
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ],
         ),
@@ -736,6 +786,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
                 Text(
                   subtitle,
@@ -743,6 +795,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                     color: Colors.grey[600],
                     fontSize: 14,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
               ],
             ),
@@ -800,6 +854,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                     Text(
                       subtitle,
@@ -807,6 +863,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                         color: Colors.grey[600],
                         fontSize: 14,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
                     ),
                   ],
                 ),
@@ -817,6 +875,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ],
           ),
@@ -872,6 +932,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   Text(
                     subtitle,
@@ -879,6 +941,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                       color: Colors.grey[600],
                       fontSize: 14,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
                 ],
               ),
@@ -921,10 +985,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                   child: Icon(icon, color: AppTheme.primary),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
                 ),
               ],
@@ -1111,6 +1179,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
               Text(
                 subtitle,
@@ -1118,6 +1188,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                   fontSize: 14,
                   color: AppTheme.textMedium,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
             ],
           ),

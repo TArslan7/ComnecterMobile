@@ -257,92 +257,97 @@ class ChatScreen extends HookWidget {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-                                                                                                                                                                       leading: Row(
-           mainAxisSize: MainAxisSize.min,
-           children: [
-             IconButton(
-               icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
-               onPressed: () => context.push('/settings'),
-               tooltip: 'Settings',
-               padding: const EdgeInsets.all(2),
-               constraints: const BoxConstraints(
-                 minWidth: 28,
-                 minHeight: 28,
-                 maxWidth: 28,
-                 maxHeight: 28,
-               ),
-             ),
-             const SizedBox(width: 1),
-             IconButton(
-               icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
-               onPressed: () => context.push('/friends'),
-               tooltip: 'Friends',
-               padding: const EdgeInsets.all(2),
-               constraints: const BoxConstraints(
-                 minWidth: 28,
-                 minHeight: 28,
-                 maxWidth: 28,
-                 maxHeight: 28,
-               ),
-             ),
-           ],
-         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.person_add_alt_1, color: Theme.of(context).colorScheme.primary),
-            tooltip: 'Add friend by username',
-            onPressed: () {
-              final controller = TextEditingController();
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Add Friend'),
-                  content: TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                      hintText: 'Enter username',
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        final name = controller.text.trim();
-                        Navigator.pop(context);
-                        if (name.isNotEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Friend request to @$name coming soon!')),
-                          );
-                        }
-                      },
-                      child: const Text('Send'),
-                    ),
-                  ],
+        leading: Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: IconButton(
+                  icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
+                  onPressed: () => context.push('/settings'),
+                  tooltip: 'Settings',
+                  padding: const EdgeInsets.all(8),
                 ),
-              );
-            },
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: IconButton(
+                  icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
+                  onPressed: () => context.push('/friends'),
+                  tooltip: 'Friends',
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            icon: Icon(
-              Icons.search,
-              color: Theme.of(context).colorScheme.primary,
+        ),
+        actions: [
+          Flexible(
+            child: IconButton(
+              icon: Icon(Icons.person_add_alt_1, color: Theme.of(context).colorScheme.primary),
+              tooltip: 'Add friend by username',
+              onPressed: () {
+                final controller = TextEditingController();
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Add Friend'),
+                    content: TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        labelText: 'Username',
+                        hintText: 'Enter username',
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          final name = controller.text.trim();
+                          Navigator.pop(context);
+                          if (name.isNotEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Friend request to @$name coming soon!')),
+                            );
+                          }
+                        },
+                        child: const Text('Send'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              padding: const EdgeInsets.all(8),
             ),
-            onPressed: () {
-              // TODO: Implement search
-            },
           ),
-          IconButton(
-            icon: Icon(
-              Icons.more_vert,
-              color: Theme.of(context).colorScheme.primary,
+          const SizedBox(width: 4),
+          Flexible(
+            child: IconButton(
+              icon: Icon(
+                Icons.search,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: () {
+                // TODO: Implement search
+              },
+              padding: const EdgeInsets.all(8),
             ),
-            onPressed: () {
-              // TODO: Show more options
-            },
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: IconButton(
+              icon: Icon(
+                Icons.more_vert,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: () {
+                // TODO: Show more options
+              },
+              padding: const EdgeInsets.all(8),
+            ),
           ),
         ],
       ),
@@ -721,82 +726,99 @@ class ChatConversationScreen extends HookWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-                    blurRadius: 10,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  conversation.avatar,
-                  style: const TextStyle(fontSize: 20),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  conversation.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                Text(
-                  conversation.isOnline ? 'Online' : 'Offline',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: conversation.isOnline ? AppTheme.success : Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Back to chats',
+        leading: Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: IconButton(
+                  icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
+                  onPressed: () => context.push('/settings'),
+                  tooltip: 'Settings',
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: IconButton(
+                  icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
+                  onPressed: () => context.push('/friends'),
+                  tooltip: 'Friends',
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(
-              Icons.video_call,
-              color: Theme.of(context).colorScheme.primary,
+          Flexible(
+            child: IconButton(
+              icon: Icon(Icons.person_add_alt_1, color: Theme.of(context).colorScheme.primary),
+              tooltip: 'Add friend by username',
+              onPressed: () {
+                final controller = TextEditingController();
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Add Friend'),
+                    content: TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        labelText: 'Username',
+                        hintText: 'Enter username',
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          final name = controller.text.trim();
+                          Navigator.pop(context);
+                          if (name.isNotEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Friend request to @$name coming soon!')),
+                            );
+                          }
+                        },
+                        child: const Text('Send'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              padding: const EdgeInsets.all(8),
             ),
-            onPressed: () {
-              // TODO: Implement video call
-            },
           ),
-          IconButton(
-            icon: Icon(
-              Icons.call,
-              color: Theme.of(context).colorScheme.primary,
+          const SizedBox(width: 4),
+          Flexible(
+            child: IconButton(
+              icon: Icon(
+                Icons.search,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: () {
+                // TODO: Implement search
+              },
+              padding: const EdgeInsets.all(8),
             ),
-            onPressed: () {
-              // TODO: Implement voice call
-            },
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: IconButton(
+              icon: Icon(
+                Icons.more_vert,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: () {
+                // TODO: Show more options
+              },
+              padding: const EdgeInsets.all(8),
+            ),
           ),
         ],
       ),

@@ -35,7 +35,54 @@ class ProfileScreen extends HookWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      appBar: _buildAppBar(context, isEditing, soundService),
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+        leading: Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: IconButton(
+                  icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
+                  onPressed: () => context.push('/settings'),
+                  tooltip: 'Settings',
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: IconButton(
+                  icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
+                  onPressed: () => context.push('/friends'),
+                  tooltip: 'Friends',
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Flexible(
+            child: IconButton(
+              icon: Icon(
+                isEditing.value ? Icons.save : Icons.edit,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: () async {
+                await soundService.playButtonClickSound();
+                isEditing.value = !isEditing.value;
+                if (!isEditing.value) {
+                  // Save changes
+                  await soundService.playSuccessSound();
+                }
+              },
+              tooltip: isEditing.value ? 'Save' : 'Edit',
+              padding: const EdgeInsets.all(8),
+            ),
+          ),
+        ],
+      ),
       body: isLoading.value
           ? _buildLoadingState(context)
           : SingleChildScrollView(
@@ -61,36 +108,36 @@ class ProfileScreen extends HookWidget {
     SoundService soundService,
   ) {
     return AppBar(
-                                                                                           leading: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
-                onPressed: () => context.push('/settings'),
-                tooltip: 'Settings',
-                padding: const EdgeInsets.all(2),
-                constraints: const BoxConstraints(
-                  minWidth: 28,
-                  minHeight: 28,
-                  maxWidth: 28,
-                  maxHeight: 28,
-                ),
-              ),
-              const SizedBox(width: 1),
-              IconButton(
-                icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
-                onPressed: () => context.push('/friends'),
-                tooltip: 'Friends',
-                padding: const EdgeInsets.all(2),
-                constraints: const BoxConstraints(
-                  minWidth: 28,
-                  minHeight: 28,
-                  maxWidth: 28,
-                  maxHeight: 28,
-                ),
-              ),
-            ],
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
+            onPressed: () => context.push('/settings'),
+            tooltip: 'Settings',
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+              maxWidth: 32,
+              maxHeight: 32,
+            ),
           ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
+            onPressed: () => context.push('/friends'),
+            tooltip: 'Friends',
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(
+              minWidth: 32,
+              minHeight: 32,
+              maxWidth: 32,
+              maxHeight: 32,
+            ),
+          ),
+        ],
+      ),
       // no title per request
       backgroundColor: Theme.of(context).colorScheme.surface,
       elevation: 0,

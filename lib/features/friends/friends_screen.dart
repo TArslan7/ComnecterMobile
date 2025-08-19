@@ -112,57 +112,47 @@ class FriendsScreen extends HookWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundLight,
       appBar: AppBar(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
-              onPressed: () => context.pop(),
-              tooltip: 'Go Back',
-              padding: const EdgeInsets.all(2),
-              constraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 28,
-                maxWidth: 28,
-                maxHeight: 28,
+        backgroundColor: AppTheme.surfaceLight,
+        elevation: 0,
+        centerTitle: true,
+        leading: Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
+                  onPressed: () => context.pop(),
+                  tooltip: 'Go Back',
+                  padding: const EdgeInsets.all(8),
+                ),
               ),
-            ),
-            const SizedBox(width: 1),
-            IconButton(
-              icon: const Icon(Icons.settings, color: AppTheme.primary),
-              onPressed: () => context.push('/settings'),
-              tooltip: 'Settings',
-              padding: const EdgeInsets.all(2),
-              constraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 28,
-                maxWidth: 28,
-                maxHeight: 28,
+              const SizedBox(width: 4),
+              Flexible(
+                child: IconButton(
+                  icon: const Icon(Icons.settings, color: AppTheme.primary),
+                  onPressed: () => context.push('/settings'),
+                  tooltip: 'Settings',
+                  padding: const EdgeInsets.all(8),
+                ),
               ),
-            ),
-            const SizedBox(width: 1),
-            IconButton(
-              icon: const Icon(Icons.people, color: AppTheme.primary),
-              onPressed: () => context.push('/friends'),
-              tooltip: 'Friends',
-              padding: const EdgeInsets.all(2),
-              constraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 28,
-                maxWidth: 28,
-                maxHeight: 28,
+              const SizedBox(width: 4),
+              Flexible(
+                child: IconButton(
+                  icon: const Icon(Icons.people, color: AppTheme.primary),
+                  onPressed: () => context.push('/friends'),
+                  tooltip: 'Friends',
+                  padding: const EdgeInsets.all(8),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         title: const Text(
           'Friends',
           style: TextStyle(fontWeight: FontWeight.bold),
           overflow: TextOverflow.ellipsis,
         ),
-        backgroundColor: AppTheme.surfaceLight,
-        elevation: 0,
-        centerTitle: true,
       ),
       body: Container(
         decoration: BoxDecoration(

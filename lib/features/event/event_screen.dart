@@ -10,39 +10,32 @@ class EventScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
-              onPressed: () => context.push('/settings'),
-              tooltip: 'Settings',
-              padding: const EdgeInsets.all(2),
-              constraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 28,
-                maxWidth: 28,
-                maxHeight: 28,
-              ),
-            ),
-            const SizedBox(width: 1),
-            IconButton(
-              icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
-              onPressed: () => context.push('/friends'),
-              tooltip: 'Friends',
-              padding: const EdgeInsets.all(2),
-              constraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 28,
-                maxWidth: 28,
-                maxHeight: 28,
-              ),
-            ),
-          ],
-        ),
-        // no title per request
-                  backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
+        leading: Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: IconButton(
+                  icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
+                  onPressed: () => context.push('/settings'),
+                  tooltip: 'Settings',
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: IconButton(
+                  icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
+                  onPressed: () => context.push('/friends'),
+                  tooltip: 'Friends',
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       body: Center(
         child: Column(
