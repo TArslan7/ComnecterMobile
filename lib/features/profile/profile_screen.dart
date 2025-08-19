@@ -94,7 +94,7 @@ class ProfileScreen extends HookWidget {
                   const SizedBox(height: 16),
                   _buildProfileActions(context, isEditing, soundService),
                   const SizedBox(height: 16),
-                  _buildProfileSections(context, soundService),
+                  _buildPostedContentSlider(context, soundService),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -440,47 +440,136 @@ class ProfileScreen extends HookWidget {
     ).animate().slideY(begin: 0.2, duration: const Duration(milliseconds: 600), delay: const Duration(milliseconds: 200));
   }
 
-  Widget _buildProfileSections(BuildContext context, SoundService soundService) {
-    return Column(
-      children: [
-        _buildSectionCard(
-          context,
-          'Friends',
-          Icons.people,
-          'Manage your friends and connections',
-          () async {
-            await soundService.playButtonClickSound();
-            _showFriendsBottomSheet(context);
-          },
+  Widget _buildPostedContentSlider(BuildContext context, SoundService soundService) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.secondary,
+          ],
         ),
-      ],
-    ).animate().fadeIn(duration: const Duration(milliseconds: 800), delay: const Duration(milliseconds: 400));
-  }
-
-  Widget _buildSectionCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    String subtitle,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
-          child: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        ),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
+        ],
       ),
-    );
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Posted Content',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                onPressed: () async {
+                  await soundService.playButtonClickSound();
+                  // Navigate to a dedicated content feed screen
+                  context.push('/content-feed');
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Content preview section
+          GestureDetector(
+            onTap: () async {
+              await soundService.playButtonClickSound();
+              // Navigate to a dedicated content feed screen
+              context.push('/content-feed');
+            },
+            child: Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Content preview image placeholder
+                  Container(
+                    width: 80,
+                    height: 80,
+                    margin: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.image,
+                      color: Colors.white.withOpacity(0.6),
+                      size: 32,
+                    ),
+                  ),
+                  // Content info
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Recent Posts',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'View and manage your shared content',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.visibility,
+                                color: Colors.white.withOpacity(0.7),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Tap to explore',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ).animate().slideY(begin: 0.3, duration: const Duration(milliseconds: 600), delay: const Duration(milliseconds: 400));
   }
 
   void _showAvatarOptions(BuildContext context) {
@@ -561,49 +650,6 @@ class ProfileScreen extends HookWidget {
             child: const Text('Share'),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showFriendsDialog(BuildContext context) {
-    // Deprecated by _showFriendsBottomSheet
-  }
-
-  void _showFriendsBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.person_add),
-              title: const Text('Add Friend'),
-              subtitle: const Text('Send a friend request'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Add Friend is coming soon!')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.search),
-              title: const Text('Search Friends'),
-              subtitle: const Text('Find people to connect with'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Search Friends is coming soon!')),
-                );
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
