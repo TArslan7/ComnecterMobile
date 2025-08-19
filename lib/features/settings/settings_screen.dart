@@ -104,6 +104,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
+                  Flexible(
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 24,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Go Back',
+                      padding: const EdgeInsets.all(8),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Icon(
                     Icons.settings,
                     color: Theme.of(context).colorScheme.primary,
