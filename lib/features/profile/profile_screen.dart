@@ -92,7 +92,7 @@ class ProfileScreen extends HookWidget {
                   const SizedBox(height: 16),
                   _buildProfileStats(context, userProfile.value),
                   const SizedBox(height: 16),
-                  _buildProfileActions(context, isEditing, soundService),
+                  _buildProfileActions(context, isEditing, soundService, userProfile),
                   const SizedBox(height: 16),
                   _buildPostedContentSlider(context, soundService),
                   const SizedBox(height: 20),
@@ -245,21 +245,60 @@ class ProfileScreen extends HookWidget {
           
           const SizedBox(height: 20),
           
-          // Name and username
-          Text(
-            profile['name'],
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+          // Name and username with tap to view content
+          GestureDetector(
+            onTap: () async {
+              await soundService.playTapSound();
+              _navigateToUserContentFeed(context, profile);
+            },
+            child: Column(
+              children: [
+                Text(
+                  profile['name'],
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  profile['username'],
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.play_circle_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'View Content',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            profile['username'],
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
           
           // Bio
           Container(
@@ -331,6 +370,59 @@ class ProfileScreen extends HookWidget {
                 );
               }).toList(),
             ),
+          
+          const SizedBox(height: 16),
+          
+          // Interests
+          if (profile['interests'] != null && (profile['interests'] as List<String>).isNotEmpty)
+            Column(
+              children: [
+                Text(
+                  'Interests',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: (profile['interests'] as List<String>).map((interest) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getInterestIcon(interest),
+                            size: 16,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            interest,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.secondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
         ],
       ),
     ).animate().fadeIn(duration: const Duration(milliseconds: 600));
@@ -361,11 +453,11 @@ class ProfileScreen extends HookWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem(context, 'Friends', profile['friendsCount'].toString(), Icons.people),
+          _buildStatItem(context, '${profile['friendsCount']}', 'Friends', Icons.people),
           _buildDivider(),
-          _buildStatItem(context, 'Posts', profile['postsCount'].toString(), Icons.post_add),
+          _buildStatItem(context, '${profile['postsCount']}', 'Posts', Icons.grid_on),
           _buildDivider(),
-          _buildStatItem(context, 'Online', profile['isOnline'] ? 'Now' : 'Offline', Icons.circle),
+          _buildStatItem(context, profile['isOnline'] ? 'Now' : 'Offline', 'Online', Icons.circle),
         ],
       ),
     ).animate().slideY(begin: 0.3, duration: const Duration(milliseconds: 600));
@@ -620,6 +712,7 @@ class ProfileScreen extends HookWidget {
     BuildContext context,
     ValueNotifier<bool> isEditing,
     SoundService soundService,
+    ValueNotifier<Map<String, dynamic>> userProfile,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -629,7 +722,7 @@ class ProfileScreen extends HookWidget {
             child: ElevatedButton.icon(
               onPressed: () async {
                 await soundService.playButtonClickSound();
-                _showEditProfileDialog(context);
+                _showEditProfileDialog(context, userProfile);
               },
               icon: const Icon(Icons.edit),
               label: const Text('Edit Profile'),
@@ -1286,18 +1379,312 @@ class ProfileScreen extends HookWidget {
     );
   }
 
-  void _showEditProfileDialog(BuildContext context) {
+  void _showEditProfileDialog(BuildContext context, ValueNotifier<Map<String, dynamic>> userProfile) {
+    // Create controllers for form fields with current values
+    final nameController = TextEditingController(text: userProfile.value['name']);
+    final usernameController = TextEditingController(text: userProfile.value['username']);
+    final bioController = TextEditingController(text: userProfile.value['bio']);
+    final locationController = TextEditingController(text: userProfile.value['location']);
+    final emailController = TextEditingController(text: userProfile.value['email']);
+    final phoneController = TextEditingController(text: userProfile.value['phone']);
+    
+    // Create a copy of current interests for editing
+    final List<String> editableInterests = List.from(userProfile.value['interests']);
+    
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Profile'),
-        content: const Text('Profile editing feature coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.edit,
+                color: Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text('Edit Profile'),
+            ],
           ),
-        ],
+          content: SizedBox(
+            width: double.maxFinite,
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Update your profile information:'),
+                  const SizedBox(height: 20),
+                  
+                  // Profile Picture Section
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Profile Picture',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () {
+                            // TODO: Implement avatar selection
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Avatar selection coming soon!')),
+                            );
+                          },
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(40),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                userProfile.value['avatar'],
+                                style: const TextStyle(fontSize: 32),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap to change',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Basic Information
+                  Text(
+                    'Basic Information',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Name Field
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      hintText: 'Enter your full name',
+                      prefixIcon: Icon(Icons.person),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Username Field
+                  TextFormField(
+                    controller: usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                      hintText: 'Enter your username',
+                      prefixIcon: Icon(Icons.alternate_email),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Bio Field
+                  TextFormField(
+                    controller: bioController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Bio',
+                      hintText: 'Tell us about yourself',
+                      prefixIcon: Icon(Icons.info),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Location Field
+                  TextFormField(
+                    controller: locationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Location',
+                      hintText: 'Where are you located?',
+                      prefixIcon: Icon(Icons.location_on),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Contact Information
+                  Text(
+                    'Contact Information',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Email Field
+                  TextFormField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      hintText: 'Enter your email address',
+                      prefixIcon: Icon(Icons.email),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Phone Field
+                  TextFormField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone',
+                      hintText: 'Enter your phone number',
+                      prefixIcon: Icon(Icons.phone),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Interests Section
+                  Text(
+                    'Interests',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Current Interests Display
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: editableInterests.map((interest) => Chip(
+                      label: Text(interest),
+                      deleteIcon: const Icon(Icons.close, size: 18),
+                      onDeleted: () {
+                        setState(() {
+                          editableInterests.remove(interest);
+                        });
+                      },
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Add New Interest
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: 'Add Interest',
+                            hintText: 'Enter a new interest',
+                            border: OutlineInputBorder(),
+                          ),
+                          onFieldSubmitted: (value) {
+                            if (value.trim().isNotEmpty && !editableInterests.contains(value.trim())) {
+                              setState(() {
+                                editableInterests.add(value.trim());
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () {
+                          // TODO: Show interest suggestions
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Interest suggestions coming soon!')),
+                          );
+                        },
+                        icon: const Icon(Icons.lightbulb_outline),
+                        tooltip: 'Get Suggestions',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Validate required fields
+                if (nameController.text.trim().isEmpty || 
+                    usernameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Name and username are required!'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Update user profile with new values
+                userProfile.value = {
+                  ...userProfile.value,
+                  'name': nameController.text.trim(),
+                  'username': usernameController.text.trim(),
+                  'bio': bioController.text.trim(),
+                  'location': locationController.text.trim(),
+                  'email': emailController.text.trim(),
+                  'phone': phoneController.text.trim(),
+                  'interests': editableInterests,
+                };
+                
+                // Close dialog
+                Navigator.pop(context);
+                
+                // Show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('Profile updated successfully!'),
+                      ],
+                    ),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+                
+                // Play success sound
+                final soundService = SoundService();
+                await soundService.playSuccessSound();
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1868,6 +2255,612 @@ class ProfileScreen extends HookWidget {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToUserContentFeed(BuildContext context, Map<String, dynamic> profile) {
+    context.push('/user_content_feed/${profile['username']}');
+  }
+
+  IconData _getInterestIcon(String interest) {
+    // Convert interest to lowercase for case-insensitive matching
+    final lowerInterest = interest.toLowerCase();
+    
+    if (lowerInterest.contains('tech') || lowerInterest.contains('technology')) {
+      return Icons.computer;
+    } else if (lowerInterest.contains('coffee')) {
+      return Icons.coffee;
+    } else if (lowerInterest.contains('travel')) {
+      return Icons.flight;
+    } else if (lowerInterest.contains('music')) {
+      return Icons.music_note;
+    } else if (lowerInterest.contains('sport') || lowerInterest.contains('fitness')) {
+      return Icons.fitness_center;
+    } else if (lowerInterest.contains('food') || lowerInterest.contains('cooking')) {
+      return Icons.restaurant;
+    } else if (lowerInterest.contains('art') || lowerInterest.contains('design')) {
+      return Icons.palette;
+    } else if (lowerInterest.contains('book') || lowerInterest.contains('reading')) {
+      return Icons.book;
+    } else if (lowerInterest.contains('game') || lowerInterest.contains('gaming')) {
+      return Icons.games;
+    } else if (lowerInterest.contains('photo') || lowerInterest.contains('photography')) {
+      return Icons.camera_alt;
+    } else if (lowerInterest.contains('movie') || lowerInterest.contains('film')) {
+      return Icons.movie;
+    } else if (lowerInterest.contains('nature') || lowerInterest.contains('outdoor')) {
+      return Icons.nature;
+    } else if (lowerInterest.contains('business') || lowerInterest.contains('work')) {
+      return Icons.business;
+    } else if (lowerInterest.contains('health') || lowerInterest.contains('wellness')) {
+      return Icons.favorite;
+    } else if (lowerInterest.contains('education') || lowerInterest.contains('learning')) {
+      return Icons.school;
+    } else if (lowerInterest.contains('fashion') || lowerInterest.contains('style')) {
+      return Icons.style;
+    } else if (lowerInterest.contains('car') || lowerInterest.contains('automotive')) {
+      return Icons.directions_car;
+    } else if (lowerInterest.contains('pet') || lowerInterest.contains('animal')) {
+      return Icons.pets;
+    } else {
+      // Default icon for unknown interests
+      return Icons.star;
+    }
+  }
+
+  // TikTok-style User Content Feed Screen
+  static Widget buildUserContentFeedScreen(BuildContext context, String username) {
+    return _UserContentFeedScreen(username: username);
+  }
+}
+
+class _UserContentFeedScreen extends StatefulWidget {
+  final String username;
+  
+  const _UserContentFeedScreen({required this.username});
+  
+  @override
+  State<_UserContentFeedScreen> createState() => _UserContentFeedScreenState();
+}
+
+class _UserContentFeedScreenState extends State<_UserContentFeedScreen> {
+  late PageController _pageController;
+  int _currentIndex = 0;
+  bool _isLiked = false;
+  bool _isBookmarked = false;
+  
+  // Sample user content data - in a real app this would come from your data source
+  final List<Map<String, dynamic>> _userContent = [
+    {
+      'id': '1',
+      'type': 'video',
+      'content': 'Amazing sunset at the beach! 🌅',
+      'description': 'Just captured this beautiful moment during my evening walk. Nature is truly amazing!',
+      'likes': 1247,
+      'comments': 89,
+      'shares': 23,
+      'views': 15420,
+      'timestamp': '2h ago',
+      'location': 'Amsterdam Beach',
+      'music': 'Sunset Vibes - Chill Mix',
+      'isLiked': false,
+      'isBookmarked': false,
+      'hashtags': ['#sunset', '#beach', '#nature', '#amsterdam'],
+    },
+    {
+      'id': '2',
+      'type': 'image',
+      'content': 'Coffee and good vibes ☕️',
+      'description': 'Perfect morning with my favorite coffee blend. Ready to tackle the day!',
+      'likes': 892,
+      'comments': 45,
+      'shares': 12,
+      'views': 8765,
+      'timestamp': '5h ago',
+      'location': 'Home Sweet Home',
+      'music': 'Morning Coffee - Acoustic',
+      'isLiked': true,
+      'isBookmarked': false,
+      'hashtags': ['#coffee', '#morning', '#vibes', '#home'],
+    },
+    {
+      'id': '3',
+      'type': 'text',
+      'content': 'Just had the most incredible experience today! Sometimes the best moments in life are the unexpected ones. #grateful #life',
+      'description': 'Reflecting on today\'s amazing experiences and feeling grateful for all the little moments.',
+      'likes': 2156,
+      'comments': 156,
+      'shares': 67,
+      'views': 23450,
+      'timestamp': '1d ago',
+      'location': 'Amsterdam, Netherlands',
+      'music': 'Grateful - Uplifting',
+      'isLiked': false,
+      'isBookmarked': true,
+      'hashtags': ['#grateful', '#life', '#experience', '#reflection'],
+    },
+    {
+      'id': '4',
+      'type': 'video',
+      'content': 'Weekend adventures with friends! 🚀',
+      'description': 'Exploring the city with amazing people. Life is better when shared!',
+      'likes': 3421,
+      'comments': 234,
+      'shares': 89,
+      'views': 45670,
+      'timestamp': '3d ago',
+      'location': 'City Center',
+      'music': 'Adventure Time - Energetic',
+      'isLiked': true,
+      'isBookmarked': false,
+      'hashtags': ['#adventure', '#friends', '#weekend', '#explore'],
+    },
+    {
+      'id': '5',
+      'type': 'image',
+      'content': 'New goals, new beginnings. Time to make things happen! 💪',
+      'description': 'Setting new goals and working towards them. Every step counts!',
+      'likes': 1567,
+      'comments': 98,
+      'shares': 34,
+      'views': 18920,
+      'timestamp': '4d ago',
+      'location': 'Gym',
+      'music': 'Motivation - Power Mix',
+      'isLiked': false,
+      'isBookmarked': false,
+      'hashtags': ['#goals', '#motivation', '#fitness', '#growth'],
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Full-screen content viewer
+          PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+                _isLiked = _userContent[index]['isLiked'];
+                _isBookmarked = _userContent[index]['isBookmarked'];
+              });
+            },
+            itemCount: _userContent.length,
+            itemBuilder: (context, index) {
+              final content = _userContent[index];
+              return _buildContentItem(context, content, index);
+            },
+          ),
+          
+          // Top navigation bar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 10,
+                left: 20,
+                right: 20,
+                bottom: 10,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.8),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '@${widget.username}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () {
+                      // TODO: Implement more options
+                    },
+                    icon: const Icon(
+                      Icons.more_vert,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Bottom action bar
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                bottom: MediaQuery.of(context).padding.bottom + 20,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.8),
+                  ],
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Content info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _userContent[_currentIndex]['content'],
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _userContent[_currentIndex]['description'],
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.music_note,
+                              color: Colors.white.withOpacity(0.8),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _userContent[_currentIndex]['music'],
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Action buttons
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Profile avatar
+                      GestureDetector(
+                        onTap: () {
+                          // TODO: Navigate to profile
+                        },
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '👨‍💻',
+                              style: TextStyle(fontSize: 24),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Like button
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isLiked = !_isLiked;
+                            _userContent[_currentIndex]['isLiked'] = _isLiked;
+                            if (_isLiked) {
+                              _userContent[_currentIndex]['likes']++;
+                            } else {
+                              _userContent[_currentIndex]['likes']--;
+                            }
+                          });
+                        },
+                        child: Column(
+                          children: [
+                            Icon(
+                              _isLiked ? Icons.favorite : Icons.favorite_border,
+                              color: _isLiked ? Colors.red : Colors.white,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_userContent[_currentIndex]['likes']}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Comment button
+                      GestureDetector(
+                        onTap: () {
+                          // TODO: Show comments
+                        },
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.comment_outlined,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_userContent[_currentIndex]['comments']}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Share button
+                      GestureDetector(
+                        onTap: () {
+                          // TODO: Implement share
+                        },
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.share_outlined,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_userContent[_currentIndex]['shares']}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Bookmark button
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isBookmarked = !_isBookmarked;
+                            _userContent[_currentIndex]['isBookmarked'] = _isBookmarked;
+                          });
+                        },
+                        child: Column(
+                          children: [
+                            Icon(
+                              _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                              color: _isBookmarked ? Colors.white : Colors.white.withOpacity(0.8),
+                              size: 32,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Save',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Content counter
+          Positioned(
+            right: 20,
+            top: MediaQuery.of(context).size.height * 0.4,
+            child: Column(
+              children: [
+                for (int i = 0; i < _userContent.length; i++)
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: i == _currentIndex 
+                        ? Colors.white 
+                        : Colors.white.withOpacity(0.3),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentItem(BuildContext context, Map<String, dynamic> content, int index) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.black,
+      child: Stack(
+        children: [
+          // Content display
+          Center(
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                color: content['type'] == 'text' 
+                  ? Colors.grey[900] 
+                  : Colors.grey[800],
+              ),
+              child: content['type'] == 'text'
+                ? _buildTextContent(content)
+                : _buildMediaContent(content),
+            ),
+          ),
+          
+          // Hashtags overlay
+          if (content['hashtags'] != null)
+            Positioned(
+              left: 20,
+              bottom: 120,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: (content['hashtags'] as List<String>).map((hashtag) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      hashtag,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextContent(Map<String, dynamic> content) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.text_fields,
+              color: Colors.white.withOpacity(0.6),
+              size: 64,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              content['content'],
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaContent(Map<String, dynamic> content) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            content['type'] == 'image' ? Icons.image : Icons.video_library,
+            color: Colors.white.withOpacity(0.6),
+            size: 64,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            content['type'] == 'image' ? 'Image Content' : 'Video Content',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            content['content'],
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 16,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
