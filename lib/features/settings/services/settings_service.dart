@@ -20,7 +20,6 @@ class SettingsService {
       }
     } catch (e) {
       // Handle error, e.g., corrupted data
-      print('Error loading settings: $e');
     }
     return AppSettings.defaultSettings(); // Return default if no settings found or error
   }
@@ -135,27 +134,19 @@ class SettingsService {
   // Data Management
   Future<void> exportSettings() async {
     // Mock implementation
-    print('Exporting settings...');
-    await Future.delayed(const Duration(seconds: 1));
-    print('Settings exported!');
   }
 
   Future<void> importSettings() async {
     // Mock implementation
-    print('Importing settings...');
-    await Future.delayed(const Duration(seconds: 1));
-    print('Settings imported!');
   }
 
   Future<void> resetSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_settingsKey);
-    print('Settings reset to default.');
   }
 
   Future<void> clearAllData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    print('All app data cleared.');
   }
 } 

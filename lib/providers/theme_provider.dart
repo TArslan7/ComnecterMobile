@@ -83,7 +83,6 @@ class ThemeModeNotifier extends StateNotifier<AppThemeMode> {
       await settingsService.updateDarkModeEnabled(darkModeEnabled);
     } catch (e) {
       // Handle error silently
-      print('Error saving theme mode: $e');
     }
   }
 

@@ -92,7 +92,6 @@ class SubscriptionService {
       SoundService().playSuccessSound();
       return true;
     } catch (e) {
-      print('Error subscribing to plan: $e');
       SoundService().playErrorSound();
       return false;
     }
@@ -118,7 +117,6 @@ class SubscriptionService {
       SoundService().playButtonClickSound();
       return true;
     } catch (e) {
-      print('Error cancelling subscription: $e');
       SoundService().playErrorSound();
       return false;
     }
@@ -146,7 +144,6 @@ class SubscriptionService {
       SoundService().playSuccessSound();
       return true;
     } catch (e) {
-      print('Error renewing subscription: $e');
       SoundService().playErrorSound();
       return false;
     }
@@ -164,7 +161,6 @@ class SubscriptionService {
       SoundService().playSuccessSound();
       return true;
     } catch (e) {
-      print('Error adding payment method: $e');
       SoundService().playErrorSound();
       return false;
     }
@@ -179,7 +175,6 @@ class SubscriptionService {
       SoundService().playButtonClickSound();
       return true;
     } catch (e) {
-      print('Error removing payment method: $e');
       SoundService().playErrorSound();
       return false;
     }
@@ -198,7 +193,6 @@ class SubscriptionService {
       SoundService().playSuccessSound();
       return true;
     } catch (e) {
-      print('Error setting default payment method: $e');
       SoundService().playErrorSound();
       return false;
     }

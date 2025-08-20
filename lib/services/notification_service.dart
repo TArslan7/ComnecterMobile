@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'sound_service.dart';
 
@@ -15,17 +13,15 @@ class NotificationService {
   bool _isInitialized = false;
   NotificationSettings _settings = const NotificationSettings();
 
-  // Initialize the notification service
+  // Initialize notification service
   Future<void> initialize() async {
-    if (_isInitialized) return;
-
     try {
       // Load settings
       await _loadSettings();
       
       _isInitialized = true;
     } catch (e) {
-      print('Error initializing notification service: $e');
+      // Handle initialization errors silently
     }
   }
 
@@ -53,7 +49,6 @@ class NotificationService {
     }
 
     // Show a simple dialog for now (in a real app, this would be a system notification)
-    print('Notification: $title - $body');
   }
 
   // Send friend request notification
