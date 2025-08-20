@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../features/radar/radar_screen.dart';
 import '../features/radar/user_profile_screen.dart';
 import '../features/chat/chat_screen.dart';
@@ -9,11 +10,47 @@ import '../features/subscription/subscription_screen.dart';
 import '../features/event/event_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/auth/sign_in_screen.dart';
+import '../features/auth/sign_up_screen.dart';
+import '../config/auth_config.dart';
 
 GoRouter createRouter() {
   return GoRouter(
     initialLocation: '/',
+      redirect: (context, state) {
+    // Use Firebase Auth if configured, otherwise skip auth check for now
+    if (AuthConfig.useFirebaseAuth) {
+      final user = FirebaseAuth.instance.currentUser;
+      final isAuthRoute = state.matchedLocation == '/signin' || 
+                          state.matchedLocation == '/signup';
+      
+      // If user is not signed in and trying to access protected route
+      if (user == null && !isAuthRoute) {
+        return '/signin';
+      }
+      
+      // If user is signed in and trying to access auth route
+      if (user != null && isAuthRoute) {
+        return '/';
+      }
+    }
+    
+    return null;
+  },
     routes: [
+      // Authentication routes
+      GoRoute(
+        path: '/signin',
+        name: 'signin',
+        builder: (context, state) => const SignInScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        name: 'signup',
+        builder: (context, state) => const SignUpScreen(),
+      ),
+      
+      // Protected routes
       ShellRoute(
         builder: (context, state, child) => RootNavigation(child: child),
         routes: [

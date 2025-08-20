@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../../services/sound_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/theme_provider.dart';
 import 'models/app_settings.dart';
@@ -369,6 +370,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                     () async {
                       await soundService.playButtonClickSound();
                       _showSupportDialog(context);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Account Section
+              _buildSettingsCard(
+                context,
+                'Account',
+                Icons.account_circle,
+                [
+                  _buildActionSetting(
+                    context,
+                    'Change Password',
+                    'Update your password with new requirements',
+                    Icons.lock_reset,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showChangePasswordDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _buildActionSetting(
+                    context,
+                    'Sign Out',
+                    'Sign out of your account',
+                    Icons.logout,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showSignOutDialog(context);
                     },
                   ),
                 ],
@@ -1466,6 +1498,312 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out of your account?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                // Import and use the auth service
+                final authService = AuthService();
+                await authService.signOut();
+                if (context.mounted) {
+                  context.go('/signin');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error signing out: $e'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool obscureCurrentPassword = true;
+    bool obscureNewPassword = true;
+    bool obscureConfirmPassword = true;
+    final theme = Theme.of(context);
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Change Password'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Enter your current password and choose a new one that meets our security requirements.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Current Password
+                TextFormField(
+                  controller: currentPasswordController,
+                  obscureText: obscureCurrentPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Current Password',
+                    hintText: 'Enter your current password',
+                    prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureCurrentPassword ? Icons.visibility : Icons.visibility_off,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscureCurrentPassword = !obscureCurrentPassword;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // New Password
+                TextFormField(
+                  controller: newPasswordController,
+                  obscureText: obscureNewPassword,
+                  decoration: InputDecoration(
+                    labelText: 'New Password',
+                    hintText: 'Enter your new password',
+                    prefixIcon: Icon(Icons.lock_outline, color: theme.colorScheme.primary),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureNewPassword ? Icons.visibility : Icons.visibility_off,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscureNewPassword = !obscureNewPassword;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                
+                // Password Requirements
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Password Requirements:',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      _buildRequirementItem(
+                        'At least 8 characters long',
+                        newPasswordController.text.length >= 8,
+                        theme,
+                      ),
+                      _buildRequirementItem(
+                        'Include uppercase and lowercase letters',
+                        RegExp(r'(?=.*[a-z])(?=.*[A-Z])').hasMatch(newPasswordController.text),
+                        theme,
+                      ),
+                      _buildRequirementItem(
+                        'Include at least one number',
+                        RegExp(r'(?=.*\d)').hasMatch(newPasswordController.text),
+                        theme,
+                      ),
+                      _buildRequirementItem(
+                        'Include at least one special character (!@#\$%^&*)',
+                        RegExp(r'(?=.*[!@#\$%^&*])').hasMatch(newPasswordController.text),
+                        theme,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Confirm New Password
+                TextFormField(
+                  controller: confirmPasswordController,
+                  obscureText: obscureConfirmPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm New Password',
+                    hintText: 'Confirm your new password',
+                    prefixIcon: Icon(Icons.lock_outline, color: theme.colorScheme.primary),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscureConfirmPassword = !obscureConfirmPassword;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Validate current password
+                if (currentPasswordController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Please enter your current password'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Validate new password
+                final newPassword = newPasswordController.text;
+                if (newPassword.length < 8) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('New password must be at least 8 characters long'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                  return;
+                }
+                
+                if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$%^&*])').hasMatch(newPassword)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('New password must meet all requirements'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Validate password confirmation
+                if (newPassword != confirmPasswordController.text) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('New passwords do not match'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                  return;
+                }
+                
+                Navigator.pop(context);
+                
+                try {
+                  // TODO: Implement actual password change logic
+                  // This would require re-authentication and then password update
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Password change feature coming soon!'),
+                      backgroundColor: theme.colorScheme.primary,
+                    ),
+                  );
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error changing password: $e'),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Change Password'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequirementItem(String text, bool isMet, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          Icon(
+            isMet ? Icons.check_circle : Icons.circle_outlined,
+            size: 16,
+            color: isMet 
+              ? theme.colorScheme.primary 
+              : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isMet 
+                  ? theme.colorScheme.onSurface 
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                fontWeight: isMet ? FontWeight.w500 : FontWeight.normal,
+              ),
+            ),
           ),
         ],
       ),

@@ -33,48 +33,48 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // TODO: Replace these placeholder values with your actual Firebase configuration
+  // Firebase configuration for Comnecter Mobile
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'your-web-api-key',
-    appId: 'your-web-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    authDomain: 'your-project-id.firebaseapp.com',
-    storageBucket: 'your-project-id.appspot.com',
-    measurementId: 'your-measurement-id',
+    apiKey: 'AIzaSyD3f8zAdKxm8HXWHJCiMNwVW0kkZhERjhw',
+    appId: '1:887865244956:web:temp-web-app-id',
+    messagingSenderId: '887865244956',
+    projectId: 'comnecter-mobile-aa30b',
+    authDomain: 'comnecter-mobile-aa30b.firebaseapp.com',
+    storageBucket: 'comnecter-mobile-aa30b.firebasestorage.app',
+    measurementId: 'G-XXXXXXXXXX',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'your-android-api-key',
-    appId: 'your-android-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyD3f8zAdKxm8HXWHJCiMNwVW0kkZhERjhw',
+    appId: '1:887865244956:android:8c44b99280759292e9ced9',
+    messagingSenderId: '887865244956',
+    projectId: 'comnecter-mobile-aa30b',
+    storageBucket: 'comnecter-mobile-aa30b.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'your-ios-api-key',
-    appId: 'your-ios-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyDRxV7kQcVxxYkkTGX1hHH2j0TB6uVVVZA',
+    appId: '1:887865244956:ios:e247049fd3cda1a3e9ced9',
+    messagingSenderId: '887865244956',
+    projectId: 'comnecter-mobile-aa30b',
+    storageBucket: 'comnecter-mobile-aa30b.firebasestorage.app',
     iosBundleId: 'com.comnecter.mobile.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'your-macos-api-key',
-    appId: 'your-macos-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyDRxV7kQcVxxYkkTGX1hHH2j0TB6uVVVZA',
+    appId: '1:887865244956:ios:e247049fd3cda1a3e9ced9',
+    messagingSenderId: '887865244956',
+    projectId: 'comnecter-mobile-aa30b',
+    storageBucket: 'comnecter-mobile-aa30b.firebasestorage.app',
     iosBundleId: 'com.comnecter.mobile.app',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'your-windows-api-key',
-    appId: 'your-windows-app-id',
-    messagingSenderId: 'your-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyD3f8zAdKxm8HXWHJCiMNwVW0kkZhERjhw',
+    appId: '1:887865244956:android:8c44b99280759292e9ced9',
+    messagingSenderId: '887865244956',
+    projectId: 'comnecter-mobile-aa30b',
+    storageBucket: 'comnecter-mobile-aa30b.firebasestorage.app',
   );
 }

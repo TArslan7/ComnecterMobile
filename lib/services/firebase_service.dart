@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+// import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import '../firebase_options.dart';
 
 class FirebaseService {
@@ -19,7 +20,7 @@ class FirebaseService {
   late FirebaseStorage _storage;
   late FirebaseMessaging _messaging;
   late FirebaseAnalytics _analytics;
-  late FirebaseCrashlytics _crashlytics;
+  // late FirebaseCrashlytics _crashlytics;
 
   // Getters
   FirebaseAuth get auth => _auth;
@@ -27,11 +28,18 @@ class FirebaseService {
   FirebaseStorage get storage => _storage;
   FirebaseMessaging get messaging => _messaging;
   FirebaseAnalytics get analytics => _analytics;
-  FirebaseCrashlytics get crashlytics => _crashlytics;
+  // FirebaseCrashlytics get crashlytics => _crashlytics;
 
   /// Initialize Firebase services
   Future<void> initialize() async {
     try {
+      // Check if running on web platform
+      if (kIsWeb) {
+        print('🌐 Web platform detected - Firebase web has compatibility issues');
+        print('📱 Firebase will work on mobile platforms (iOS/Android)');
+        return;
+      }
+
       // Initialize Firebase Core
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -43,7 +51,7 @@ class FirebaseService {
       _storage = FirebaseStorage.instance;
       _messaging = FirebaseMessaging.instance;
       _analytics = FirebaseAnalytics.instance;
-      _crashlytics = FirebaseCrashlytics.instance;
+      // _crashlytics = FirebaseCrashlytics.instance;
 
       // Configure Firebase services
       await _configureFirebaseServices();
@@ -64,6 +72,9 @@ class FirebaseService {
         cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
       );
 
+      // Configure Firebase Auth settings
+      await _configureAuthSettings();
+
       // Configure messaging permissions
       await _messaging.requestPermission(
         alert: true,
@@ -76,7 +87,7 @@ class FirebaseService {
       );
 
       // Configure crashlytics
-      await _crashlytics.setCrashlyticsCollectionEnabled(true);
+      // await _crashlytics.setCrashlyticsCollectionEnabled(true);
 
       // Configure analytics
       await _analytics.setAnalyticsCollectionEnabled(true);
@@ -85,6 +96,18 @@ class FirebaseService {
     } catch (e) {
       print('⚠️ Firebase service configuration failed: $e');
       // Don't rethrow - these are optional configurations
+    }
+  }
+
+  /// Configure Firebase Auth settings
+  Future<void> _configureAuthSettings() async {
+    try {
+      // Set language code for better error messages
+      _auth.setLanguageCode('en');
+      
+      print('🔐 Firebase Auth configured for development');
+    } catch (e) {
+      print('⚠️ Firebase Auth configuration failed: $e');
     }
   }
 
