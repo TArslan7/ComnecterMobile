@@ -18,6 +18,9 @@ class ProfileScreen extends HookWidget {
       'location': 'Amsterdam, Netherlands',
       'joinedDate': 'March 2024',
       'friendsCount': 127,
+      'followersCount': 45,
+      'followingCount': 38,
+      'achievementPoints': 1250,
       'postsCount': 42,
       'avatar': '👨‍💻',
       'isOnline': true,
@@ -94,7 +97,7 @@ class ProfileScreen extends HookWidget {
                   const SizedBox(height: 16),
                   _buildProfileActions(context, isEditing, soundService, userProfile),
                   const SizedBox(height: 16),
-                  _buildPostedContentSlider(context, soundService),
+                  // _buildPostedContentSlider(context, soundService), // Temporarily disabled
                   const SizedBox(height: 20),
                 ],
               ),
@@ -450,14 +453,33 @@ class ProfileScreen extends HookWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Column(
         children: [
-          _buildStatItem(context, '${profile['friendsCount']}', 'Friends', Icons.people),
-          _buildDivider(),
-          _buildStatItem(context, '${profile['postsCount']}', 'Posts', Icons.grid_on),
-          _buildDivider(),
-          _buildStatItem(context, profile['isOnline'] ? 'Now' : 'Offline', 'Online', Icons.circle),
+          Text(
+            'Profile Overview',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Your social connections and achievements',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatItem(context, '${profile['friendsCount']}', 'Friends', Icons.people),
+              _buildDivider(),
+              _buildStatItem(context, '${profile['postsCount']}', 'Posts', Icons.grid_on),
+              _buildDivider(),
+              _buildStatItem(context, '${profile['achievementPoints'] ?? 1250}', 'Points', Icons.stars),
+            ],
+          ),
         ],
       ),
     ).animate().slideY(begin: 0.3, duration: const Duration(milliseconds: 600));
@@ -838,232 +860,230 @@ class ProfileScreen extends HookWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Enhanced header with stats and achievements
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Theme.of(context).colorScheme.secondary.withOpacity(0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Posted Content',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        // Achievement badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.star,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Creator',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          onPressed: () async {
-                            await soundService.playButtonClickSound();
-                            _showManageContentDialog(context, soundService);
-                          },
-                          icon: Icon(
-                            Icons.add_circle_outline,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 24,
-                          ),
-                          tooltip: 'Manage Content',
-                          style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                            padding: const EdgeInsets.all(8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Enhanced stats row
-                Row(
-                  children: [
-                    _buildStatItem(context, '${samplePosts.length}', 'Posts', Icons.grid_on),
-                    _buildDivider(),
-                    _buildStatItem(context, '${samplePosts.fold<int>(0, (sum, post) => sum + (post['likes'] as int))}', 'Likes', Icons.favorite),
-                    _buildDivider(),
-                    _buildStatItem(context, '${samplePosts.fold<int>(0, (sum, post) => sum + (post['views'] as int))}', 'Views', Icons.visibility),
-                    _buildDivider(),
-                    _buildStatItem(context, '${samplePosts.fold<int>(0, (sum, post) => sum + (post['shares'] as int))}', 'Shares', Icons.share),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          // Enhanced header with stats and achievements - Temporarily disabled
+          // Container(
+          //   padding: const EdgeInsets.all(16),
+          //   decoration: BoxDecoration(
+          //     gradient: LinearGradient(
+          //       begin: Alignment.topLeft,
+          //       end: Alignment.bottomRight,
+          //       colors: [
+          //         Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          //         Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+          //       ],
+          //     ),
+          //     borderRadius: BorderRadius.circular(16),
+          //     border: Border.all(
+          //       color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          //       width: 1,
+          //     ),
+          //   ),
+          //   child: Column(
+          //     children: [
+          //       Row(
+          //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //         children: [
+          //           Text(
+          //             'Posted Content',
+          //             style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          //               fontWeight: FontWeight.bold,
+          //             ),
+          //           ),
+          //           Row(
+          //             children: [
+          //               // Achievement badge
+          //               Container(
+          //                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          //                 decoration: BoxDecoration(
+          //                   color: Theme.of(context).colorScheme.primary,
+          //                   borderRadius: BorderRadius.circular(12),
+          //                 ),
+          //                 child: Row(
+          //                   mainAxisSize: MainAxisSize.min,
+          //                   children: [
+          //                     Icon(
+          //                       Icons.star,
+          //                       color: Colors.white,
+          //                       size: 16,
+          //                     ),
+          //                     const SizedBox(width: 4),
+          //                     Text(
+          //                       'Creator',
+          //                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          //                         color: Colors.white,
+          //                         fontWeight: FontWeight.bold,
+          //                       ),
+          //                     ),
+          //                   ],
+          //                 ),
+          //               ),
+          //               const SizedBox(width: 12),
+          //               IconButton(
+          //                 onPressed: () async {
+          //                   await soundService.playButtonClickSound();
+          //                   _showManageContentDialog(context, soundService);
+          //                 },
+          //                 icon: Icon(
+          //                   Icons.add_circle_outline,
+          //                   color: Theme.of(context).colorScheme.primary,
+          //                   size: 24,
+          //                 ),
+          //                 tooltip: 'Manage Content',
+          //                 style: IconButton.styleFrom(
+          //                   backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          //                   padding: const EdgeInsets.all(8),
+          //                 ),
+          //               ),
+          //             ],
+          //           ),
+          //         ],
+          //       ),
+          //       const SizedBox(height: 16),
+          //       // Enhanced stats row
+          //       Row(
+          //         children: [
+          //           _buildStatItem(context, '${samplePosts.length}', 'Posts', Icons.grid_on),
+          //           _buildDivider(),
+          //           _buildStatifier(context, '${samplePosts.fold<int>(0, (sum, post) => sum + (post['likes'] as int))}', 'Likes', Icons.favorite),
+          //           _buildDivider(),
+          //           _buildStatItem(context, '${samplePosts.fold<int>(0, (sum, post) => sum + (post['views'] as int))}', 'Views', Icons.visibility),
+          //           _buildDivider(),
+          //           _buildStatItem(context, '${samplePosts.fold<int>(0, (sum, post) => sum + (post['shares'] as int))}', 'Shares', Icons.share),
+          //         ],
+          //       ),
+          //     ],
+          //   ),
+          // ),
           const SizedBox(height: 20),
-          // Content filters and sorting
-          Row(
-            children: [
-              _buildFilterChip(context, 'All', true),
-              const SizedBox(width: 8),
-              _buildFilterChip(context, 'Images', false),
-              const SizedBox(width: 8),
-              _buildFilterChip(context, 'Videos', false),
-              const SizedBox(width: 8),
-              _buildFilterChip(context, 'Text', false),
-              const Spacer(),
-              IconButton(
-                onPressed: () async {
-                  await soundService.playButtonClickSound();
-                  _showSortOptionsDialog(context, soundService);
-                },
-                icon: Icon(
-                  Icons.sort,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                tooltip: 'Sort Posts',
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Enhanced TikTok-style post grid (3 columns)
-          SizedBox(
-            height: 450, // Increased height for enhanced grid
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, // 3 columns like TikTok
-                crossAxisSpacing: 3, // Slightly increased spacing
-                mainAxisSpacing: 3, // Slightly increased spacing
-                childAspectRatio: 0.75, // Slightly taller for more content
-              ),
-              itemCount: samplePosts.length,
-              itemBuilder: (context, index) {
-                final post = samplePosts[index];
-                return GestureDetector(
-                  onTap: () async {
-                    await soundService.playButtonClickSound();
-                    _showExpandedPost(context, post, soundService);
-                  },
-                  onLongPress: () async {
-                    await soundService.playButtonClickSound();
-                    _showQuickActionsBottomSheet(context, post, soundService);
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: post['isLiked'] || post['isBookmarked'] 
-                          ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
-                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                        width: post['isLiked'] || post['isBookmarked'] ? 2 : 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: post['isLiked'] || post['isBookmarked']
-                            ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
-                            : Colors.black.withOpacity(0.1),
-                          blurRadius: post['isLiked'] || post['isBookmarked'] ? 12 : 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: post['type'] == 'text' 
-                        ? _buildEnhancedTextPostGridItem(context, post)
-                        : _buildEnhancedMediaPostGridItem(context, post),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Engagement insights
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.insights,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Engagement Insights',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Your posts are performing great! Keep creating amazing content.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () async {
-                    await soundService.playButtonClickSound();
-                    _showEngagementInsightsDialog(context, soundService);
-                  },
-                  icon: Icon(
-                    Icons.arrow_forward_ios,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Content filters and sorting - Temporarily disabled
+          // Row(
+          //   children: [
+          //     _buildFilterChip(context, 'All', true),
+          //     const SizedBox(width: 8),
+          //     _buildFilterChip(context, 'Images', false),
+          //     const SizedBox(width: 8),
+          //     _buildFilterChip(context, 'Videos', false),
+          //     const SizedBox(width: 8),
+          //     _buildFilterChip(context, 'Text', false),
+          //     const Spacer(),
+          //     IconButton(
+          //       onPressed: () async {
+          //     await soundService.playButtonClickSound();
+          //     _showSortOptionsDialog(context, soundService);
+          //   },
+          //       icon: Icon(
+          //         Icons.sort,
+          //         color: Theme.of(context).colorScheme.primary,
+          //         size: 20,
+          //       ),
+          //       tooltip: 'Sort Posts',
+          //     ),
+          //   ],
+          // ),
+          // const SizedBox(height: 16),
+          // Enhanced TikTok-style post grid (3 columns) - Temporarily disabled
+          // SizedBox(
+          //   height: 450, // Increased height for enhanced grid
+          //   child: GridView.builder(
+          //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          //       crossAxisCount: 3, // 3 columns like TikTok
+          //       crossAxisSpacing: 3, // Slightly increased spacing
+          //       mainAxisSpacing: 3, // Slightly increased spacing
+          //       childAspectRatio: 0.75, // Slightly taller for more content
+          //     ),
+          //     itemCount: samplePosts.length,
+          //     itemBuilder: (context, index) {
+          //       final post = samplePosts[index];
+          //       return GestureDetector(
+          //         onTap: () async {
+          //           await soundService.playButtonClickSound();
+          //           _showExpandedPost(context, post, soundService);
+          //         },
+          //         onLongPress: () async {
+          //           await soundService.playButtonClickSound();
+          //           _showQuickActionsBottomSheet(context, post, soundService);
+          //         },
+          //         child: Container(
+          //           decoration: BoxDecoration(
+          //             borderRadius: BorderRadius.circular(12),
+          //             border: Border.all(
+          //               color: post['isLiked'] || post['isBookmarked'] 
+          //                 ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
+          //                 : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          //               width: post['isLiked'] || post['isBookmarked'] ? 2 : 1,
+          //             ),
+          //             boxShadow: [
+          //               BoxShadow(
+          //                 color: post['isLiked'] || post['isBookmarked']
+          //                 ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+          //                 : Colors.black.withOpacity(0.1),
+          //                 blurRadius: post['isLiked'] || post['isBookmarked'] ? 12 : 8,
+          //                 offset: const Offset(0, 4),
+          //             ),
+          //           ),
+          //           child: ClipRRect(
+          //             borderRadius: BorderRadius.circular(12),
+          //             child: post['type'] == 'text' 
+          //               ? _buildEnhancedTextPostGridItem(context, post)
+          //               : _buildEnhancedMediaPostGridItem(context, post),
+          //           ),
+          //         ),
+          //       );
+          //     },
+          //   ),
+          // ),
+          // const SizedBox(height: 16),
+          // Engagement insights - Temporarily disabled
+          // Container(
+          //   padding: const EdgeInsets.all(16),
+          //   decoration: BoxDecoration(
+          //     color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+          //     borderRadius: BorderRadius.circular(12),
+          //     border: Border.all(
+          //       color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          //       width: 1,
+          //   ),
+          // ),
+          //   child: Row(
+          //     children: [
+          //       Icon(
+          //         Icons.insights,
+          //         color: Theme.of(context).colorScheme.primary,
+          //         size: 24,
+          //       ),
+          //       const SizedBox(width: 12),
+          //       Expanded(
+          //         child: Column(
+          //           crossAxisAlignment: CrossAxisAlignment.start,
+          //           children: [
+          //             Text(
+          //               'Engagement Insights',
+          //               style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          //                 fontWeight: FontWeight.bold,
+          //               ),
+          //             ),
+          //             Text(
+          //               'Your posts are performing great! Keep creating amazing content.',
+          //               style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          //                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          //               ),
+          //           ),
+          //         ),
+          //       ),
+          //       IconButton(
+          //         onPressed: () async {
+          //           await soundService.playButtonClickSound();
+          //           _showEngagementInsightsDialog(context, soundService);
+          //         },
+          //         icon: Icon(
+          //           Icons.arrow_forward_ios,
+          //           color: Theme.of(context).colorScheme.primary,
+          //           size: 16,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
         ],
       ),
     ).animate().slideY(begin: 0.3, duration: const Duration(milliseconds: 600), delay: const Duration(milliseconds: 400));

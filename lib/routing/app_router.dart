@@ -65,6 +65,14 @@ GoRouter createRouter() {
               return UserProfileScreen(user: user['user']);
             },
           ),
+          GoRoute(
+            path: '/user_content_feed/:username',
+            name: 'user-content-feed',
+            builder: (context, state) => ProfileScreen.buildUserContentFeedScreen(
+              context,
+              state.pathParameters['username']!,
+            ),
+          ),
         ],
       ),
     ],
