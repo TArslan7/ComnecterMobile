@@ -85,7 +85,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
     final currentSettings = settings!;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: Container(
@@ -93,7 +93,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
             color: Theme.of(context).colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -1068,7 +1068,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                 const Text('Notification Settings'),
               ],
             ),
-            content: Container(
+            content: SizedBox(
               width: double.maxFinite,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

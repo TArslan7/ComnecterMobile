@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routing/app_router.dart';
 import 'providers/theme_provider.dart';
-import 'features/settings/services/settings_service.dart';
+
 import 'services/sound_service.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';

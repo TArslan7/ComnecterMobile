@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import 'dart:math';
 import '../../../theme/app_theme.dart';
 import '../models/user_model.dart';
@@ -41,7 +41,7 @@ class RadarWidget extends HookWidget {
       return null;
     }, [isScanning]);
 
-    return Container(
+    return SizedBox(
       width: 300,
       height: 300,
       child: Stack(
@@ -255,20 +255,20 @@ class RadarWidget extends HookWidget {
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   colors: [
-                    signalColor.withOpacity(0.8 + pulseValue * 0.2),
-                    signalColor.withOpacity(0.4 + pulseValue * 0.3),
-                    signalColor.withOpacity(0.1 + pulseValue * 0.1),
+                    signalColor.withValues(alpha: 0.8 + pulseValue * 0.2),
+                    signalColor.withValues(alpha: 0.4 + pulseValue * 0.3),
+                    signalColor.withValues(alpha: 0.1 + pulseValue * 0.1),
                   ],
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: signalColor.withOpacity(0.6 + pulseValue * 0.3),
+                    color: signalColor.withValues(alpha: 0.6 + pulseValue * 0.3),
                     blurRadius: 12 + (pulseValue * 8),
                     spreadRadius: 2 + (pulseValue * 3),
                   ),
                   BoxShadow(
-                    color: signalColor.withOpacity(0.3 + pulseValue * 0.2),
+                    color: signalColor.withValues(alpha: 0.3 + pulseValue * 0.2),
                     blurRadius: 20 + (pulseValue * 15),
                     spreadRadius: 1 + (pulseValue * 2),
                   ),
@@ -283,7 +283,7 @@ class RadarWidget extends HookWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         blurRadius: 4,
                         spreadRadius: 1,
                       ),
@@ -317,7 +317,7 @@ class RadarBackgroundPainter extends CustomPainter {
     for (int i = 1; i <= 4; i++) {
       final circleRadius = radius * (i / 4);
       final paint = Paint()
-        ..color = AppTheme.primary.withOpacity(0.1 - (i * 0.02))
+        ..color = AppTheme.primary.withValues(alpha: 0.1 - (i * 0.02))
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
 
@@ -334,7 +334,7 @@ class RadarBackgroundPainter extends CustomPainter {
       );
 
       final paint = Paint()
-        ..color = AppTheme.primary.withOpacity(0.15)
+        ..color = AppTheme.primary.withValues(alpha: 0.15)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.5;
 
@@ -345,7 +345,7 @@ class RadarBackgroundPainter extends CustomPainter {
     for (int i = 1; i <= 3; i++) {
       final gridRadius = radius * (i / 4);
       final paint = Paint()
-        ..color = AppTheme.secondary.withOpacity(0.05)
+        ..color = AppTheme.secondary.withValues(alpha: 0.05)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.5;
 
@@ -378,9 +378,9 @@ class RadarScanPainter extends CustomPainter {
     final sweepPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          AppTheme.primary.withOpacity(0.8),
-          AppTheme.primary.withOpacity(0.4),
-          AppTheme.secondary.withOpacity(0.2),
+          AppTheme.primary.withValues(alpha: 0.8),
+          AppTheme.primary.withValues(alpha: 0.4),
+          AppTheme.secondary.withValues(alpha: 0.2),
           Colors.transparent,
         ],
         stops: const [0.0, 0.3, 0.7, 1.0],
@@ -419,7 +419,7 @@ class RadarScanPainter extends CustomPainter {
 
     // Draw scanning pulse effect
     final pulsePaint = Paint()
-      ..color = AppTheme.primary.withOpacity(0.3)
+      ..color = AppTheme.primary.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 

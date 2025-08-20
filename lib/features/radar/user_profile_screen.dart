@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:go_router/go_router.dart';
+
 import '../friends/services/friend_service.dart';
 import '../friends/models/friend_model.dart';
 import 'models/user_model.dart';
@@ -21,7 +21,7 @@ class UserProfileScreen extends HookWidget {
     final isFriend = useState(false);
     final isLoading = useState(false);
 
-    Future<void> _checkFriendStatus(FriendService friendService) async {
+    Future<void> checkFriendStatus(FriendService friendService) async {
       try {
         final friends = friendService.getFriends();
         final existingFriend = friends.firstWhere(
@@ -50,7 +50,7 @@ class UserProfileScreen extends HookWidget {
 
     // Check if user is already a friend or if request was sent
     useEffect(() {
-      _checkFriendStatus(friendService);
+      checkFriendStatus(friendService);
       return null;
     }, []);
 

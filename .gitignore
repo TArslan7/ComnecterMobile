@@ -67,3 +67,9 @@ app.*.map.json
 .svn/
 .swiftpm/
 migrate_working_dir/
+
+# Firebase Configuration Files
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+*.jks
+*.keystore

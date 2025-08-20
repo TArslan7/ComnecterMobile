@@ -21,6 +21,28 @@ dependencies:
   shimmer: ^3.0.0
   shared_preferences: ^2.2.2
   audioplayers: ^5.2.1
+  
+  # TODO: Uncomment after Firebase project setup
+  # # Firebase Core
+  # firebase_core: ^2.24.2
+  # 
+  # # Firebase Authentication
+  # firebase_auth: ^4.15.3
+  # 
+  # # Cloud Firestore Database
+  # cloud_firestore: ^4.13.6
+  # 
+  # # Firebase Storage
+  # firebase_storage: ^11.5.6
+  # 
+  # # Firebase Messaging (Push Notifications)
+  # firebase_messaging: ^14.7.10
+  # 
+  # # Firebase Analytics
+  # firebase_analytics: ^10.7.4
+  # 
+  # Firebase Crashlytics
+  # firebase_crashlytics: ^3.4.8
 
 dev_dependencies:
   flutter_test:

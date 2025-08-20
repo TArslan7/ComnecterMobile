@@ -140,7 +140,7 @@ class _EnhancedUserListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 12,
             spreadRadius: 1,
           ),
@@ -163,7 +163,7 @@ class _EnhancedUserListItem extends StatelessWidget {
               ),
               border: Border.all(
                 color: user.isOnline 
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.4)
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
                   : Colors.grey.shade200,
                 width: 1.5,
               ),
@@ -182,7 +182,7 @@ class _EnhancedUserListItem extends StatelessWidget {
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                               Colors.transparent,
                             ],
                           ),
@@ -197,7 +197,7 @@ class _EnhancedUserListItem extends StatelessWidget {
                         gradient: RadialGradient(
                           colors: [
                             user.isOnline 
-                              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
                               : Colors.grey.shade300,
                             Colors.white,
                           ],
@@ -205,7 +205,7 @@ class _EnhancedUserListItem extends StatelessWidget {
                         boxShadow: [
                           BoxShadow(
                             color: user.isOnline 
-                              ? Theme.of(context).colorScheme.primary.withOpacity(0.4)
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.4)
                               : Colors.grey.shade300,
                             blurRadius: 12,
                             spreadRadius: 2,
@@ -242,7 +242,7 @@ class _EnhancedUserListItem extends StatelessWidget {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.green.withOpacity(0.6),
+                                color: Colors.green.withValues(alpha: 0.6),
                                 blurRadius: 6,
                                 spreadRadius: 1,
                               ),
@@ -325,18 +325,18 @@ class _EnhancedUserListItem extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.green.withOpacity(0.3),
-                              Colors.green.withOpacity(0.15),
+                              Colors.green.withValues(alpha: 0.3),
+                              Colors.green.withValues(alpha: 0.15),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.green.withOpacity(0.4),
+                            color: Colors.green.withValues(alpha: 0.4),
                             width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.green.withOpacity(0.2),
+                              color: Colors.green.withValues(alpha: 0.2),
                               blurRadius: 8,
                               spreadRadius: 1,
                             ),
@@ -353,7 +353,7 @@ class _EnhancedUserListItem extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.green.withOpacity(0.5),
+                                    color: Colors.green.withValues(alpha: 0.5),
                                     blurRadius: 4,
                                     spreadRadius: 1,
                                   ),

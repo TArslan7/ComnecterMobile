@@ -66,7 +66,6 @@ class SubscriptionService {
       await Future.delayed(const Duration(seconds: 2));
       
       final planData = _availablePlans.firstWhere((p) => p.plan == plan);
-      final paymentInfo = _paymentMethods.firstWhere((p) => p.method == paymentMethod);
       
       final subscription = Subscription(
         id: 'sub_${DateTime.now().millisecondsSinceEpoch}',

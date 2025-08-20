@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
-import 'dart:async';
+
 import 'dart:math';
 import '../../services/sound_service.dart';
 import '../../theme/app_theme.dart';
@@ -24,7 +24,6 @@ class SubscriptionScreen extends HookWidget {
     final showPaymentDialog = useState(false);
     final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 3)));
     final soundService = useMemoized(() => SoundService());
-    final showAddPaymentDialog = useState(false);
 
     // Initialize subscription service
     useEffect(() {
@@ -117,16 +116,16 @@ class SubscriptionScreen extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-                        Theme.of(context).colorScheme.background,
-                          Theme.of(context).colorScheme.background.withValues(alpha: 0.95),
-                Theme.of(context).colorScheme.background.withValues(alpha: 0.9),
+                        Theme.of(context).colorScheme.surface,
+                          Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
             ],
             stops: const [0.0, 0.7, 1.0],
           ),
@@ -385,7 +384,7 @@ class SubscriptionScreen extends HookWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             Text(

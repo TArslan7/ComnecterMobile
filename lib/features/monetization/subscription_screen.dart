@@ -16,7 +16,7 @@ class SubscriptionScreen extends HookWidget {
     final isLoading = useState(true);
     final isSubscribing = useState(false);
 
-    Future<void> _loadData() async {
+    Future<void> loadData() async {
       isLoading.value = true;
       await Future.delayed(const Duration(milliseconds: 500));
       
@@ -26,7 +26,7 @@ class SubscriptionScreen extends HookWidget {
       isLoading.value = false;
     }
 
-    Future<void> _subscribeToPlan(SubscriptionPlan plan) async {
+    Future<void> subscribeToPlan(SubscriptionPlan plan) async {
       if (plan.tier == SubscriptionTier.free) return;
       
       isSubscribing.value = true;
@@ -35,35 +35,41 @@ class SubscriptionScreen extends HookWidget {
         final success = await monetizationService.subscribeToPlan(plan.id);
         
         if (success) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Successfully subscribed to ${plan.name}!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          await loadData(); // Refresh data
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to subscribe. Please try again.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Successfully subscribed to ${plan.name}!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          await _loadData(); // Refresh data
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to subscribe. Please try again.'),
+              content: Text('Error: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
         }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
       } finally {
         isSubscribing.value = false;
       }
     }
 
     useEffect(() {
-      _loadData();
+      loadData();
       return null;
     }, []);
 
@@ -87,7 +93,7 @@ class SubscriptionScreen extends HookWidget {
       body: isLoading.value
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadData,
+              onRefresh: loadData,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -146,7 +152,7 @@ class SubscriptionScreen extends HookWidget {
                       child: PlanCard(
                         plan: plan,
                         isCurrentPlan: currentSubscription.value?.planId == plan.id,
-                        onSubscribe: () => _subscribeToPlan(plan),
+                        onSubscribe: () => subscribeToPlan(plan),
                         isLoading: isSubscribing.value,
                       ),
                     )),

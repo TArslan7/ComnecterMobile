@@ -97,52 +97,37 @@ class RadarScreen extends HookWidget {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: IconButton(
-                  onPressed: () {
-                    context.push('/settings');
-                  },
-                  icon: Icon(
-                    Icons.settings,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 22,
-                  ),
-                  tooltip: 'Settings',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: IconButton(
-                  onPressed: () {
-                    context.push('/friends');
-                  },
-                  icon: Icon(
-                    Icons.people,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 22,
-                  ),
-                  tooltip: 'Friends',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-            ],
+        leading: IconButton(
+          onPressed: () {
+            context.push('/settings');
+          },
+          icon: Icon(
+            Icons.settings,
+            color: Theme.of(context).colorScheme.primary,
+            size: 24,
           ),
+          tooltip: 'Settings',
         ),
         actions: [
-          Flexible(
-            child: IconButton(
-              onPressed: toggleScanning,
-              icon: Icon(
-                isScanning.value ? Icons.pause : Icons.play_arrow,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              padding: const EdgeInsets.all(8),
+          IconButton(
+            onPressed: () {
+              context.push('/friends');
+            },
+            icon: Icon(
+              Icons.people,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
             ),
+            tooltip: 'Friends',
+          ),
+          IconButton(
+            onPressed: toggleScanning,
+            icon: Icon(
+              isScanning.value ? Icons.pause : Icons.play_arrow,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
+            tooltip: isScanning.value ? 'Pause Radar' : 'Start Radar',
           ),
         ],
       ),
@@ -151,9 +136,9 @@ class RadarScreen extends HookWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.background,
-                              Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
+                        colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
             ],
           ),
         ),
@@ -217,14 +202,14 @@ class RadarScreen extends HookWidget {
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 colors: [
-                                  Theme.of(context).colorScheme.primary.withOpacity(opacity),
-                                  Theme.of(context).colorScheme.primary.withOpacity(opacity * 0.5),
-                                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                  Theme.of(context).colorScheme.primary.withValues(alpha: opacity),
+                                  Theme.of(context).colorScheme.primary.withValues(alpha: opacity * 0.5),
+                                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                 ],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
                                   blurRadius: 20,
                                   spreadRadius: 5,
                                 ),
@@ -260,10 +245,10 @@ class RadarScreen extends HookWidget {
                               height: 6,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Theme.of(context).colorScheme.secondary.withOpacity(opacity),
+                                color: Theme.of(context).colorScheme.secondary.withValues(alpha: opacity),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Theme.of(context).colorScheme.secondary.withOpacity(opacity * 0.5),
+                                    color: Theme.of(context).colorScheme.secondary.withValues(alpha: opacity * 0.5),
                                     blurRadius: 4,
                                     spreadRadius: 1,
                                   ),
@@ -285,7 +270,7 @@ class RadarScreen extends HookWidget {
                 isScanning.value ? 'Scanning for connections...' : 'Radar paused',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Theme.of(context).colorScheme.onBackground,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -299,7 +284,7 @@ class RadarScreen extends HookWidget {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -335,10 +320,10 @@ class RadarScreen extends HookWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 20),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(15),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                   ),
                 ),
                 child: Column(
@@ -364,7 +349,7 @@ class RadarScreen extends HookWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -512,7 +497,7 @@ class RadarScreen extends HookWidget {
                             Icon(
                               Icons.radar_outlined,
                               size: 32,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -521,7 +506,7 @@ class RadarScreen extends HookWidget {
                                 : 'No users detected in range',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                             ),
                           ],

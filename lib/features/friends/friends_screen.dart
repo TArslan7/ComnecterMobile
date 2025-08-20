@@ -115,44 +115,23 @@ class FriendsScreen extends HookWidget {
         backgroundColor: AppTheme.surfaceLight,
         elevation: 0,
         centerTitle: true,
-        leading: Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
-                  onPressed: () => context.pop(),
-                  tooltip: 'Go Back',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: IconButton(
-                  icon: const Icon(Icons.settings, color: AppTheme.primary),
-                  onPressed: () => context.push('/settings'),
-                  tooltip: 'Settings',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: IconButton(
-                  icon: const Icon(Icons.people, color: AppTheme.primary),
-                  onPressed: () => context.push('/friends'),
-                  tooltip: 'Friends',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-            ],
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.primary, size: 24),
+          onPressed: () => context.pop(),
+          tooltip: 'Go Back',
         ),
         title: const Text(
           'Friends',
           style: TextStyle(fontWeight: FontWeight.bold),
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: AppTheme.primary, size: 24),
+            onPressed: () => context.push('/settings'),
+            tooltip: 'Settings',
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -209,7 +188,7 @@ class FriendsScreen extends HookWidget {
                 emissionFrequency: 0.02,
                 numberOfParticles: 100,
                 gravity: 0.06,
-                colors: [
+                colors: const [
                   AppTheme.primary,
                   AppTheme.secondary,
                   AppTheme.success,
@@ -262,7 +241,7 @@ class FriendsScreen extends HookWidget {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.people,
                 color: Colors.white,
                 size: 32,
@@ -372,7 +351,7 @@ class FriendsScreen extends HookWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.search, color: AppTheme.primary),
+          const Icon(Icons.search, color: AppTheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
@@ -388,7 +367,7 @@ class FriendsScreen extends HookWidget {
           ),
           if (query.isNotEmpty)
             IconButton(
-              icon: Icon(Icons.clear, color: AppTheme.textMedium),
+              icon: const Icon(Icons.clear, color: AppTheme.textMedium),
               onPressed: () => onSearch(''),
               constraints: const BoxConstraints(
                 minWidth: 40,
@@ -521,12 +500,12 @@ class FriendsScreen extends HookWidget {
             end: Alignment.bottomRight,
             colors: [
               AppTheme.surfaceLight,
-              AppTheme.surfaceLight.withOpacity(0.8),
+              AppTheme.surfaceLight.withValues(alpha: 0.8),
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withOpacity(0.2),
+              color: AppTheme.primary.withValues(alpha: 0.2),
               blurRadius: 15,
               spreadRadius: 2,
               offset: const Offset(0, 5),
@@ -551,7 +530,7 @@ class FriendsScreen extends HookWidget {
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary.withOpacity(0.4),
+                            color: AppTheme.primary.withValues(alpha: 0.4),
                             blurRadius: 15,
                             spreadRadius: 2,
                           ),
@@ -577,7 +556,7 @@ class FriendsScreen extends HookWidget {
                             border: Border.all(color: Colors.white, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.success.withOpacity(0.8),
+                                color: AppTheme.success.withValues(alpha: 0.8),
                                 blurRadius: 8,
                                 spreadRadius: 2,
                               ),
@@ -727,12 +706,12 @@ class FriendsScreen extends HookWidget {
             end: Alignment.bottomRight,
             colors: [
               AppTheme.surfaceLight,
-              AppTheme.surfaceLight.withOpacity(0.8),
+              AppTheme.surfaceLight.withValues(alpha: 0.8),
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withOpacity(0.2),
+              color: AppTheme.primary.withValues(alpha: 0.2),
               blurRadius: 15,
               spreadRadius: 2,
               offset: const Offset(0, 5),
@@ -754,7 +733,7 @@ class FriendsScreen extends HookWidget {
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.primary.withOpacity(0.4),
+                          color: AppTheme.primary.withValues(alpha: 0.4),
                           blurRadius: 12,
                           spreadRadius: 2,
                         ),
@@ -854,7 +833,7 @@ class FriendsScreen extends HookWidget {
               borderRadius: BorderRadius.circular(50),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.4),
+                  color: AppTheme.primary.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -869,7 +848,7 @@ class FriendsScreen extends HookWidget {
           const SizedBox(height: 20),
           Text(
             'Loading friends...',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               color: AppTheme.textDark,
               fontWeight: FontWeight.w600,
@@ -893,7 +872,7 @@ class FriendsScreen extends HookWidget {
               borderRadius: BorderRadius.circular(60),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primary.withOpacity(0.4),
+                  color: AppTheme.primary.withValues(alpha: 0.4),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -908,7 +887,7 @@ class FriendsScreen extends HookWidget {
           const SizedBox(height: 20),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               color: AppTheme.textDark,
               fontWeight: FontWeight.bold,
@@ -917,7 +896,7 @@ class FriendsScreen extends HookWidget {
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               color: AppTheme.textMedium,
             ),
@@ -936,7 +915,7 @@ class FriendsScreen extends HookWidget {
     VoidCallback onClose,
   ) {
     return Container(
-      color: Colors.black.withOpacity(0.8),
+      color: Colors.black.withValues(alpha: 0.8),
       child: Center(
         child: Container(
           margin: const EdgeInsets.all(24),
@@ -945,7 +924,7 @@ class FriendsScreen extends HookWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primary.withOpacity(0.6),
+                color: AppTheme.primary.withValues(alpha: 0.6),
                 blurRadius: 40,
                 spreadRadius: 5,
               ),
@@ -967,7 +946,7 @@ class FriendsScreen extends HookWidget {
                         borderRadius: BorderRadius.circular(40),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary.withOpacity(0.7),
+                            color: AppTheme.primary.withValues(alpha: 0.7),
                             blurRadius: 20,
                             spreadRadius: 3,
                           ),
@@ -1003,7 +982,7 @@ class FriendsScreen extends HookWidget {
                                   borderRadius: BorderRadius.circular(6),
                                   boxShadow: friend.isOnline ? [
                                     BoxShadow(
-                                      color: AppTheme.success.withOpacity(0.7),
+                                      color: AppTheme.success.withValues(alpha: 0.7),
                                       blurRadius: 8,
                                       spreadRadius: 2,
                                     ),
@@ -1054,7 +1033,7 @@ class FriendsScreen extends HookWidget {
                       Text(
                         friend.bio!,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 16,
                         ),
                       ),
@@ -1075,11 +1054,11 @@ class FriendsScreen extends HookWidget {
                       children: friend.interests.map((interest) => Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primary.withOpacity(0.3),
+                              color: AppTheme.primary.withValues(alpha: 0.3),
                               blurRadius: 8,
                               spreadRadius: 1,
                             ),

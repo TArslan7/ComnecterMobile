@@ -269,19 +269,17 @@ class ChatScreen extends HookWidget {
                   padding: const EdgeInsets.all(8),
                 ),
               ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: IconButton(
-                  icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
-                  onPressed: () => context.push('/friends'),
-                  tooltip: 'Friends',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
+
+
             ],
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 24),
+            onPressed: () => context.push('/friends'),
+            tooltip: 'Friends',
+          ),
           Flexible(
             child: IconButton(
               icon: Icon(Icons.person_add_alt_1, color: Theme.of(context).colorScheme.primary),
@@ -740,19 +738,17 @@ class ChatConversationScreen extends HookWidget {
                   padding: const EdgeInsets.all(8),
                 ),
               ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: IconButton(
-                  icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
-                  onPressed: () => context.push('/friends'),
-                  tooltip: 'Friends',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
+
+
             ],
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 24),
+            onPressed: () => context.push('/friends'),
+            tooltip: 'Friends',
+          ),
           Flexible(
             child: IconButton(
               icon: Icon(Icons.person_add_alt_1, color: Theme.of(context).colorScheme.primary),

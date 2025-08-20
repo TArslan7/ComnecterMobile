@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+
 import 'package:go_router/go_router.dart';
 
 class EventScreen extends StatelessWidget {
@@ -8,34 +8,22 @@ class EventScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+              backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: IconButton(
-                  icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
-                  onPressed: () => context.push('/settings'),
-                  tooltip: 'Settings',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: IconButton(
-                  icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 22),
-                  onPressed: () => context.push('/friends'),
-                  tooltip: 'Friends',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-            ],
-          ),
+        leading: IconButton(
+          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 24),
+          onPressed: () => context.push('/settings'),
+          tooltip: 'Settings',
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 24),
+            onPressed: () => context.push('/friends'),
+            tooltip: 'Friends',
+          ),
+        ],
       ),
       body: Center(
         child: Column(
