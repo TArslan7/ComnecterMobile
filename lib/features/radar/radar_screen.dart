@@ -93,7 +93,7 @@ class RadarScreen extends HookWidget {
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+              backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
@@ -169,7 +169,7 @@ class RadarScreen extends HookWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                     width: 2,
                   ),
                 ),
@@ -193,7 +193,7 @@ class RadarScreen extends HookWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(opacity),
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: opacity),
                                   width: 1.5,
                                 ),
                               ),
