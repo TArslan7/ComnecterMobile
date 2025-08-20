@@ -1221,11 +1221,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Privacy Policy'),
-        content: const Text('Read our privacy policy. This feature will be available soon!'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Effective Date: January 2025',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Welcome to Comnecter, a mobile application designed to help you connect with people nearby using radar technology.',
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'This Privacy Policy explains how we collect, use, and protect your information when you use our app.',
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Key Points:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text('• We collect location data for radar functionality'),
+              const Text('• Your data is encrypted and secure'),
+              const Text('• Location data is automatically deleted after 30 days'),
+              const Text('• You control what information you share'),
+              const SizedBox(height: 16),
+              const Text(
+                'For the complete privacy policy, please visit our website or contact us.',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Open full privacy policy (web or full screen)
+            },
+            child: const Text('View Full Policy'),
           ),
         ],
       ),
@@ -1237,11 +1278,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Terms of Service'),
-        content: const Text('Read our terms of service. This feature will be available soon!'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Effective Date: January 2025',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'By downloading, installing, or using the Comnecter mobile application, you agree to be bound by these Terms of Service.',
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Key Terms:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text('• You must be at least 13 years old'),
+              const Text('• Use the app respectfully and safely'),
+              const Text('• Report inappropriate behavior'),
+              const Text('• We may terminate accounts for violations'),
+              const SizedBox(height: 16),
+              const Text(
+                'For the complete terms of service, please visit our website or contact us.',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Open full terms of service (web or full screen)
+            },
+            child: const Text('View Full Terms'),
           ),
         ],
       ),
@@ -1268,12 +1346,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rate App'),
-        content: const Text('Rate us on the app store. This feature will be available soon!'),
+        title: const Text('Rate Comnecter'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.star,
+              size: 48,
+              color: AppTheme.accent,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Enjoying Comnecter?',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Your rating helps us improve and reach more users who want to connect with people nearby.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(5, (index) => Icon(
+                Icons.star,
+                color: index < 4 ? AppTheme.accent : Colors.grey,
+                size: 32,
+              )),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: const Text('Maybe Later'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Open app store rating page
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('App store rating feature coming soon!'),
+                  backgroundColor: AppTheme.info,
+                ),
+              );
+            },
+            child: const Text('Rate Now'),
           ),
         ],
       ),
@@ -1285,11 +1404,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Contact Support'),
-        content: const Text('Get help and support. This feature will be available soon!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.support_agent,
+              size: 48,
+              color: AppTheme.primary,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Need Help?',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'We\'re here to help you get the most out of Comnecter.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Contact us:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text('📧 support@comnecter.com'),
+            const Text('🌐 [Your Website]/support'),
+            const Text('📱 In-app chat (coming soon)'),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Open support email or website
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Support contact feature coming soon!'),
+                  backgroundColor: AppTheme.info,
+                ),
+              );
+            },
+            child: const Text('Contact Support'),
           ),
         ],
       ),

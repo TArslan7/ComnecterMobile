@@ -97,7 +97,7 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
   Widget _buildSplashScreen(ThemeData themeData) {
     final isDarkMode = themeData.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: themeData.colorScheme.background,
+              backgroundColor: themeData.colorScheme.surface,
       body: Center(
         child: _splashAnimation != null
             ? FadeTransition(
@@ -114,7 +114,7 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.electricAurora.withOpacity(0.3),
+                            color: AppTheme.electricAurora.withValues(alpha: 0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),

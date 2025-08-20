@@ -86,7 +86,7 @@ class RadarWidget extends HookWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primary.withOpacity(0.6 - pulseAnimation.value * 0.3),
+                      color: AppTheme.primary.withValues(alpha: 0.6 - pulseAnimation.value * 0.3),
                       blurRadius: 10 + (pulseAnimation.value * 20),
                       spreadRadius: 2 + (pulseAnimation.value * 5),
                     ),
@@ -112,7 +112,7 @@ class RadarWidget extends HookWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.5),
+                    color: AppTheme.primary.withValues(alpha: 0.5),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
@@ -123,7 +123,6 @@ class RadarWidget extends HookWidget {
                 children: [
                   Icon(
                     Icons.radar,
-                    color: Colors.white,
                     size: 14,
                   ),
                   const SizedBox(width: 6),
@@ -151,7 +150,7 @@ class RadarWidget extends HookWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primary.withOpacity(0.5),
+                    color: AppTheme.primary.withValues(alpha: 0.5),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
@@ -190,7 +189,7 @@ class RadarWidget extends HookWidget {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primary.withOpacity(0.5),
+                      color: AppTheme.primary.withValues(alpha: 0.5),
                       blurRadius: 15,
                       spreadRadius: 2,
                     ),
