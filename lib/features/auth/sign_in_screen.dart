@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../../services/auth_service.dart';
-import '../../../services/sound_service.dart';
-import '../../../theme/app_theme.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/sound_provider.dart';
-import '../../../config/auth_config.dart';
 import 'sign_up_screen.dart';
 
 
@@ -97,26 +92,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       } else {
         await ref.read(soundServiceProvider).playErrorSound();
         if (context.mounted) {
-          // Show enhanced error handling
+          // Show simple error message
           final errorMessage = result.errorMessage ?? 'Sign in failed';
-          if (errorMessage.contains('unexpected error') || 
-              errorMessage.contains('PigeonUserDetails') ||
-              errorMessage.contains('authentication system error')) {
-            _showEnhancedErrorDialog(context, errorMessage);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(errorMessage),
-                backgroundColor: Theme.of(context).colorScheme.error,
-                duration: const Duration(seconds: 5),
-                action: SnackBarAction(
-                  label: 'Retry',
-                  onPressed: () => _signIn(),
-                  textColor: Theme.of(context).colorScheme.onError,
-                ),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Retry',
+                onPressed: () => _signIn(),
+                textColor: Theme.of(context).colorScheme.onError,
               ),
-            );
-          }
+            ),
+          );
         }
       }
     } catch (e) {
@@ -137,302 +126,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
-  void _showEnhancedErrorDialog(BuildContext context, String errorMessage) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign In Error'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(errorMessage),
-            const SizedBox(height: 16),
-            const Text(
-              'This error is usually caused by a temporary authentication system issue. Here are your options:',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '• Clear Cache: Fixes most authentication issues\n'
-              '• Retry: Attempts sign-in again\n'
-              '• Restart App: Complete system reset',
-              style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              _clearFirebaseCache();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-            ),
-            child: const Text('Clear Cache'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _signIn();
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _testAuthSystem() async {
-    try {
-      final authService = ref.read(authServiceProvider);
-      final result = await authService.testBasicAuth();
-      
-      if (result.isSuccess) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('✅ Auth system test completed successfully!'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('⚠️ Auth system test: ${result.errorMessage}'),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Auth system test failed: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
-  }
 
-  void _testMyLogin() async {
-    try {
-      final authService = ref.read(authServiceProvider);
-      final result = await authService.testUserCredentials(
-        email: 'T_Arslan7@hotmail.com',
-        password: 'Tolga123@',
-      );
-      
-      if (result.isSuccess) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('✅ Your login credentials are working!'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('⚠️ Login test failed: ${result.errorMessage}'),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Login test failed: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
-  }
 
-  void _resetAuthSystem() async {
-    try {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🔄 Resetting authentication system...'),
-            backgroundColor: Colors.blue,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-      
-      final authService = ref.read(authServiceProvider);
-      final result = await authService.resetAuthenticationSystem();
-      
-      if (result.isSuccess) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Authentication system reset successful!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 5),
-            ),
-          );
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('⚠️ Reset failed: ${result.errorMessage}'),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Reset failed: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
-  }
 
-  void _nuclearReset() async {
-    try {
-      // Show warning dialog first
-      if (context.mounted) {
-        final shouldProceed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('☢️ NUCLEAR RESET WARNING'),
-            content: const Text(
-              'This will DELETE ALL EXISTING ACCOUNTS and completely reset the authentication system.\n\n'
-              'This action cannot be undone!\n\n'
-              'Are you sure you want to proceed?'
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('CANCEL'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('DELETE EVERYTHING'),
-              ),
-            ],
-          ),
-        );
-        
-        if (shouldProceed != true) return;
-      }
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('☢️ NUCLEAR RESET: Deleting all accounts...'),
-            backgroundColor: Colors.black,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-      
-      final authService = ref.read(authServiceProvider);
-      final result = await authService.nuclearReset();
-      
-      if (result.isSuccess) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('☢️ NUCLEAR RESET COMPLETE: All accounts deleted!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 5),
-            ),
-          );
-          
-          // Force app restart by showing sign-in screen
-          Navigator.of(context).pushReplacementNamed('/signin');
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('⚠️ Nuclear reset failed: ${result.errorMessage}'),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Nuclear reset failed: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-    }
-  }
 
-  void _clearFirebaseCache() async {
-    try {
-      final authService = ref.read(authServiceProvider);
-      final result = await authService.clearFirebaseCache();
-      
-      if (result.isSuccess) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Cache cleared! Try signing in again.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ ${result.errorMessage}'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error clearing cache: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
+
+
+
+  
+
+
 
   void _showForgotPasswordDialog(BuildContext context) {
     final emailController = TextEditingController();
@@ -593,7 +297,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    gradient: AppTheme.auroraGradient,
+                    color: theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
@@ -721,121 +425,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       
                       const SizedBox(height: 8),
                       
-                      // Forgot Password and Clear Cache
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextButton(
-                            onPressed: () => _clearFirebaseCache(),
-                            child: Text(
-                              'Clear Cache',
-                              style: TextStyle(
-                                color: theme.colorScheme.secondary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => _showForgotPasswordDialog(context),
-                            child: Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // Test Auth System Button
+                      // Forgot Password
                       Center(
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _testAuthSystem,
-                          icon: const Icon(Icons.bug_report, size: 16),
-                          label: const Text(
-                            'Test Auth System',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        child: TextButton(
+                          onPressed: () => _showForgotPasswordDialog(context),
+                          child: Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: theme.colorScheme.primary,
                             ),
                           ),
                         ),
                       ),
                       
-                      const SizedBox(height: 8),
-                      
-                      // Test User Credentials Button
-                      Center(
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _testMyLogin,
-                          icon: const Icon(Icons.person, size: 16),
-                          label: const Text(
-                            'Test My Login',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // Reset Authentication System Button
-                      Center(
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _resetAuthSystem,
-                          icon: const Icon(Icons.refresh, size: 16),
-                          label: const Text(
-                            'Reset Auth System',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // NUCLEAR RESET Button
-                      Center(
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : _nuclearReset,
-                          icon: const Icon(Icons.delete_forever, size: 16),
-                          label: const Text(
-                            '☢️ NUCLEAR RESET',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 8),
+
                       
 
                       
