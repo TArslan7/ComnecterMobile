@@ -39,6 +39,7 @@ dependencies:
   
   # Firebase Analytics
   firebase_analytics: ^10.7.4
+  connectivity_plus: ^6.1.5
   
   # Firebase Crashlytics
   # firebase_crashlytics: ^3.4.8

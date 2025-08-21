@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/radar/radar_screen.dart';
 import '../features/radar/user_profile_screen.dart';
 import '../features/chat/chat_screen.dart';
@@ -13,25 +14,60 @@ import '../features/settings/settings_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/auth/sign_up_screen.dart';
 import '../config/auth_config.dart';
+import '../providers/auth_provider.dart';
 
 GoRouter createRouter() {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/signin',
+    errorBuilder: (context, state) => const SignInScreen(), // Fallback to signin if route not found
       redirect: (context, state) {
-    // Use Firebase Auth if configured, otherwise skip auth check for now
-    if (AuthConfig.useFirebaseAuth) {
+    // Check both Firebase Auth and local authentication state
+    try {
       final user = FirebaseAuth.instance.currentUser;
+      
+      // Get local authentication state from provider
+      bool isLocallyAuthenticated = false;
+      try {
+        final container = ProviderScope.containerOf(context);
+        final authService = container.read(authServiceProvider);
+        
+        // Get the current state without modifying it
+        isLocallyAuthenticated = authService.isLocallyAuthenticated;
+        print('🔍 Router: Retrieved local auth state: $isLocallyAuthenticated from AuthService instance: ${authService.hashCode}');
+        
+        // Double-check: if the service says we're not authenticated, force it to false
+        if (!authService.isLocallyAuthenticated) {
+          print('🔍 Router: Force correcting local auth state to false');
+          isLocallyAuthenticated = false;
+        }
+      } catch (e) {
+        print('⚠️ Could not get local auth state from provider: $e');
+        isLocallyAuthenticated = false;
+      }
+      
       final isAuthRoute = state.matchedLocation == '/signin' || 
                           state.matchedLocation == '/signup';
       
-      // If user is not signed in and trying to access protected route
-      if (user == null && !isAuthRoute) {
+      print('🔍 Router redirect check - Location: ${state.matchedLocation}, Firebase User: ${user?.email ?? 'null'}, Local Auth: $isLocallyAuthenticated, IsAuthRoute: $isAuthRoute');
+      
+      // If user is not signed in (either Firebase or local) and trying to access protected route
+      if (user == null && !isLocallyAuthenticated && !isAuthRoute) {
+        print('🚪 Redirecting to signin - User not authenticated');
         return '/signin';
       }
       
-      // If user is signed in and trying to access auth route
-      if (user != null && isAuthRoute) {
+      // If user is signed in (either Firebase or local) and trying to access auth route
+      if ((user != null || isLocallyAuthenticated) && isAuthRoute) {
+        print('🏠 Redirecting to home - User already authenticated');
         return '/';
+      }
+      
+      print('✅ No redirect needed');
+    } catch (e) {
+      print('⚠️ Auth check failed, redirecting to signin: $e');
+      // If auth check fails, redirect to signin
+      if (state.matchedLocation != '/signin') {
+        return '/signin';
       }
     }
     

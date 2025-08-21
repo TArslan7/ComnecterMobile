@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'routing/app_router.dart';
 import 'providers/theme_provider.dart';
+import 'providers/auth_provider.dart';
 
 import 'services/sound_service.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
+import 'features/auth/sign_in_screen.dart';
 
 class ComnecterApp extends ConsumerStatefulWidget {
   const ComnecterApp({super.key});
@@ -32,6 +35,8 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
       
       // Initialize notification service
       await NotificationService().initialize();
+      
+
       
       // Initialize splash animation
       _splashController = AnimationController(
@@ -86,6 +91,31 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
       );
     }
 
+    // Check both Firebase Auth and local authentication state
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final authService = ref.watch(authServiceProvider);
+    final localAuthState = authService.isLocallyAuthenticated;
+    
+    print('🔍 App startup - Current user: ${currentUser?.email ?? 'null'}');
+    print('🔍 Local auth state: $localAuthState');
+    print('🔍 Local user: ${authService.currentLocalUser}');
+    print('🔍 AuthService instance: ${authService.hashCode}');
+    print('🔍 App rebuild triggered at: ${DateTime.now()}');
+    
+    // If no user is signed in (either Firebase or local), show sign-in screen
+    if (currentUser == null && !localAuthState) {
+      print('🚪 No user signed in - showing sign-in screen');
+      return MaterialApp(
+        title: 'Comnecter',
+        theme: themeData,
+        home: const SignInScreen(),
+        debugShowCheckedModeBanner: false,
+      );
+    }
+    
+    // If user is signed in (either Firebase or local), show the main app
+    final userEmail = currentUser?.email ?? authService.currentLocalUser ?? 'Local User';
+    print('✅ User signed in: $userEmail - showing main app');
     return MaterialApp.router(
       title: 'Comnecter',
       theme: themeData,
@@ -93,6 +123,8 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
       debugShowCheckedModeBanner: false,
     );
   }
+
+
 
   Widget _buildSplashScreen(ThemeData themeData) {
     final isDarkMode = themeData.brightness == Brightness.dark;

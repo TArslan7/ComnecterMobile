@@ -6,6 +6,7 @@ import '../../../services/sound_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/sound_provider.dart';
+import 'two_factor_screen.dart';
 
 class _PasswordStrength {
   final String label;
@@ -228,6 +229,101 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
+  void _showRetryDialog(BuildContext context, String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Up Error'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(errorMessage),
+            const SizedBox(height: 16),
+            const Text(
+              'This error is usually caused by a temporary authentication system issue. Would you like to retry?',
+              style: TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _retrySignUp();
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _retrySignUp() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      final result = await authService.signUpWithEmailAndPasswordEnhanced(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        displayName: _displayNameController.text.trim(),
+      );
+
+      if (result.isSuccess) {
+        await ref.read(soundServiceProvider).playSuccessSound();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('✅ Account created successfully! Please verify your email.'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+          
+          // Navigate to 2FA verification screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => TwoFactorScreen(
+                email: _emailController.text.trim(),
+                displayName: _displayNameController.text.trim(),
+              ),
+            ),
+          );
+        }
+      } else {
+        await ref.read(soundServiceProvider).playErrorSound();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Retry failed: ${result.errorMessage}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      await ref.read(soundServiceProvider).playErrorSound();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Retry error: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
     
@@ -245,7 +341,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     try {
       final authService = ref.read(authServiceProvider);
-      final result = await authService.signUpWithEmailAndPassword(
+      final result = await authService.signUpWithEmailAndPasswordEnhanced(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         displayName: _displayNameController.text.trim(),
@@ -256,21 +352,39 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Account created successfully!'),
+              content: const Text('Account created successfully! Please verify your email.'),
               backgroundColor: Theme.of(context).colorScheme.primary,
             ),
           );
-          context.go('/');
+          
+          // Navigate to 2FA verification screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => TwoFactorScreen(
+                email: _emailController.text.trim(),
+                displayName: _displayNameController.text.trim(),
+              ),
+            ),
+          );
         }
       } else {
         await ref.read(soundServiceProvider).playErrorSound();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result.errorMessage ?? 'Sign up failed'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
+          // Show error with retry option for common errors
+          final errorMessage = result.errorMessage ?? 'Sign up failed';
+          if (errorMessage.contains('unexpected error') || 
+              errorMessage.contains('PigeonUserDetails') ||
+              errorMessage.contains('authentication system error')) {
+            _showRetryDialog(context, errorMessage);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Theme.of(context).colorScheme.error,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -280,6 +394,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           SnackBar(
             content: Text('An error occurred: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -663,7 +778,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             ),
                           ),
                           TextButton(
-                            onPressed: () => context.go('/signin'),
+                            onPressed: () => Navigator.of(context).pop(),
                             child: Text(
                               'Sign In',
                               style: TextStyle(

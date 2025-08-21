@@ -45,8 +45,10 @@ class SoundService {
     } catch (e) {
       // Silently handle sound errors to avoid crashes
       if (kDebugMode) {
-        print('Error playing sound $soundPath: $e');
+        print('⚠️ Sound asset not available: $soundPath');
+        print('ℹ️ This is normal during development. Sound will be skipped.');
       }
+      // Don't crash the app if sound assets are missing
     }
   }
 
