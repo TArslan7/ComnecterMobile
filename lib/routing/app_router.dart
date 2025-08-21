@@ -25,39 +25,20 @@ GoRouter createRouter() {
     try {
       final user = FirebaseAuth.instance.currentUser;
       
-      // Get local authentication state from provider
-      bool isLocallyAuthenticated = false;
-      try {
-        final container = ProviderScope.containerOf(context);
-        final authService = container.read(authServiceProvider);
-        
-        // Get the current state without modifying it
-        isLocallyAuthenticated = authService.isLocallyAuthenticated;
-        print('🔍 Router: Retrieved local auth state: $isLocallyAuthenticated from AuthService instance: ${authService.hashCode}');
-        
-        // Double-check: if the service says we're not authenticated, force it to false
-        if (!authService.isLocallyAuthenticated) {
-          print('🔍 Router: Force correcting local auth state to false');
-          isLocallyAuthenticated = false;
-        }
-      } catch (e) {
-        print('⚠️ Could not get local auth state from provider: $e');
-        isLocallyAuthenticated = false;
-      }
       
       final isAuthRoute = state.matchedLocation == '/signin' || 
                           state.matchedLocation == '/signup';
       
-      print('🔍 Router redirect check - Location: ${state.matchedLocation}, Firebase User: ${user?.email ?? 'null'}, Local Auth: $isLocallyAuthenticated, IsAuthRoute: $isAuthRoute');
+      print('🔍 Router redirect check - Location: ${state.matchedLocation}, Firebase User: ${user?.email ?? 'null'}, IsAuthRoute: $isAuthRoute');
       
-      // If user is not signed in (either Firebase or local) and trying to access protected route
-      if (user == null && !isLocallyAuthenticated && !isAuthRoute) {
+      // If user is not signed in and trying to access protected route
+      if (user == null && !isAuthRoute) {
         print('🚪 Redirecting to signin - User not authenticated');
         return '/signin';
       }
       
-      // If user is signed in (either Firebase or local) and trying to access auth route
-      if ((user != null || isLocallyAuthenticated) && isAuthRoute) {
+      // If user is signed in and trying to access auth route
+      if (user != null && isAuthRoute) {
         print('🏠 Redirecting to home - User already authenticated');
         return '/';
       }

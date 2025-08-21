@@ -91,19 +91,17 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
       );
     }
 
-    // Check both Firebase Auth and local authentication state
+    // Check Firebase Auth state
     final currentUser = FirebaseAuth.instance.currentUser;
     final authService = ref.watch(authServiceProvider);
-    final localAuthState = authService.isLocallyAuthenticated;
     
     print('🔍 App startup - Current user: ${currentUser?.email ?? 'null'}');
-    print('🔍 Local auth state: $localAuthState');
-    print('🔍 Local user: ${authService.currentLocalUser}');
+    print('🔍 Firebase Auth state: ${currentUser != null}');
     print('🔍 AuthService instance: ${authService.hashCode}');
     print('🔍 App rebuild triggered at: ${DateTime.now()}');
     
-    // If no user is signed in (either Firebase or local), show sign-in screen
-    if (currentUser == null && !localAuthState) {
+    // If no user is signed in, show sign-in screen
+    if (currentUser == null) {
       print('🚪 No user signed in - showing sign-in screen');
       return MaterialApp(
         title: 'Comnecter',
@@ -113,8 +111,8 @@ class _ComnecterAppState extends ConsumerState<ComnecterApp> with TickerProvider
       );
     }
     
-    // If user is signed in (either Firebase or local), show the main app
-    final userEmail = currentUser?.email ?? authService.currentLocalUser ?? 'Local User';
+    // If user is signed in, show the main app
+    final userEmail = currentUser.email ?? 'User';
     print('✅ User signed in: $userEmail - showing main app');
     return MaterialApp.router(
       title: 'Comnecter',

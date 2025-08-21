@@ -32,9 +32,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Use Local Authentication (bypasses Firebase completely)
+      // Use Firebase Authentication
       final authService = ref.read(authServiceProvider);
-      final result = await authService.localAuth(
+      final result = await authService.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
@@ -50,45 +50,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             ),
           );
         }
-        // Force app rebuild to detect local authentication state change
-        if (mounted) {
-          setState(() {});
-        }
-        
-        // Add a small delay to ensure the auth state is properly set
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        print('🚀 Attempting navigation to main app...');
-        print('🔍 Current local auth state: ${authService.isLocallyAuthenticated}');
-        print('🔍 Current local user: ${authService.currentLocalUser}');
-        
-        // Force navigation to main app by triggering app rebuild
-        if (mounted && context.mounted) {
-          print('🔄 Triggering app rebuild to detect local auth state...');
-          
-          // Since we're in a direct MaterialApp context, we need to trigger
-          // the app to rebuild and detect the local auth state change
-          setState(() {});
-          
-          // Add a longer delay to ensure the auth state is properly detected
-          await Future.delayed(const Duration(milliseconds: 1000));
-          
-          print('✅ Local authentication successful! The app should now show the main screen.');
-          print('💡 If the main screen does not appear, please restart the app.');
-          
-          // Show success message to user
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Sign in successful! The app will now show the main screen.'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        } else {
-          print('❌ Context not mounted, cannot navigate');
-        }
+        // Firebase authentication successful - app will automatically navigate
+        print('✅ Firebase authentication successful!');
+        print('🔄 App will automatically navigate to main screen...');
       } else {
         await ref.read(soundServiceProvider).playErrorSound();
         if (context.mounted) {

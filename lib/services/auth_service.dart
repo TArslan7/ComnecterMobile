@@ -1,9 +1,9 @@
-import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'dart:io';
 import 'dart:async';
 
@@ -12,18 +12,14 @@ class AuthService extends ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   
-  // Local authentication state
-  bool _isLocallyAuthenticated = false;
-  String? _currentLocalUser;
+
 
   // Getters
   User? get user => _user;
   bool get isLoading => _isLoading;
-  bool get isSignedIn => _user != null || _isLocallyAuthenticated;
+  bool get isSignedIn => _user != null;
   
-  // Local auth getters
-  bool get isLocallyAuthenticated => _isLocallyAuthenticated;
-  String? get currentLocalUser => _currentLocalUser;
+
   
   /// Get current user with fallback to Firebase Auth
   User? get currentUser {
@@ -903,92 +899,72 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Enhanced account deletion with comprehensive cleanup
+  /// Enhanced account deletion with Firebase and Firestore cleanup
   Future<AuthResult> deleteAccountEnhanced(String password) async {
     try {
       print('🗑️ Starting enhanced account deletion');
       
       // Step 1: Check if user is signed in
-      final currentUser = _auth.currentUser;
-      if (currentUser == null) {
+      if (!isSignedIn) {
         return AuthResult.failure('No user is currently signed in');
       }
       
-      // Step 2: Network connectivity check
-      if (!await _checkConnectivity()) {
-        return AuthResult.failure('No internet connection. Please check your network and try again.');
-      }
-      
-      // Step 3: Firebase health check
-      if (!await _checkFirebaseHealth()) {
-        return AuthResult.failure('Account deletion service temporarily unavailable. Please try again in a moment.');
-      }
-      
-      // Step 4: Re-authenticate user
-      try {
-        final credential = EmailAuthProvider.credential(
-          email: currentUser.email!,
-          password: password,
-        );
-        await currentUser.reauthenticateWithCredential(credential);
-        print('✅ User re-authenticated successfully');
-      } catch (e) {
-        print('❌ Re-authentication failed: $e');
-        return AuthResult.failure('Incorrect password. Please try again.');
-      }
-      
-      // Step 5: Comprehensive data cleanup from Firestore (optional)
-      try {
-        final firestore = FirebaseFirestore.instance;
-        final batch = firestore.batch();
+      // Step 2: Handle Firebase authentication deletion
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        print('🗑️ Deleting Firebase user account: ${currentUser.email}');
         
-        // Delete user document
-        batch.delete(firestore.collection('users').doc(currentUser.uid));
-        
-        // Delete verification codes
-        batch.delete(firestore.collection('verification_codes').doc(currentUser.email));
-        
-        // Delete password reset records
-        final resetDocs = await firestore
-            .collection('password_resets')
-            .where('email', isEqualTo: currentUser.email)
-            .get();
-        for (var doc in resetDocs.docs) {
-          batch.delete(doc.reference);
+        // Network connectivity check
+        if (!await _checkConnectivity()) {
+          return AuthResult.failure('No internet connection. Please check your network and try again.');
         }
         
-        // Delete any other user-related data
-        // Add more collections as needed
+        // Firebase health check
+        if (!await _checkFirebaseHealth()) {
+          return AuthResult.failure('Account deletion service temporarily unavailable. Please try again in a moment.');
+        }
         
-        // Commit the batch
-        await batch.commit();
-        print('✅ User data cleaned up from Firestore');
-      } catch (e) {
-        print('⚠️ Could not clean up all user data: $e');
-        print('ℹ️ Account deletion will continue without Firestore cleanup');
-        // Continue with account deletion even if cleanup fails
-        // This ensures basic account deletion works even if Firestore is down
-      }
-      
-      // Step 6: Delete the Firebase Auth account
-      try {
+        // Re-authenticate user
+        try {
+          final credential = EmailAuthProvider.credential(
+            email: currentUser.email!,
+            password: password,
+          );
+          await currentUser.reauthenticateWithCredential(credential);
+          print('✅ User re-authenticated successfully');
+        } catch (e) {
+          print('❌ Re-authentication failed: $e');
+          return AuthResult.failure('Incorrect password. Please try again.');
+        }
+        
+        // Mark account as deleted in Firestore
+        try {
+          await _markAccountAsDeletedInFirestore(currentUser.email!);
+          print('✅ Account marked as deleted in Firestore');
+        } catch (e) {
+          print('⚠️ Could not mark account as deleted in Firestore: $e');
+          // Continue with deletion even if Firestore update fails
+        }
+        
+        // Delete the Firebase user account
         await currentUser.delete();
-        print('✅ Firebase Auth account deleted successfully');
+        print('✅ Firebase user account deleted successfully');
         
         // Clear local state
         _user = null;
         notifyListeners();
         
         return AuthResult.success(null);
-      } catch (e) {
-        print('❌ Could not delete Firebase Auth account: $e');
-        return AuthResult.failure('Could not delete account. Please try again or contact support.');
       }
+      
+      return AuthResult.failure('No user account to delete');
+      
     } catch (e) {
-      print('❌ Unexpected error during account deletion: $e');
-      return AuthResult.failure('An unexpected error occurred. Please try again.');
+      print('❌ Error during enhanced account deletion: $e');
+      return AuthResult.failure('Account deletion failed: $e');
     }
   }
+
 
   /// Check account security status
   Future<Map<String, dynamic>> getAccountSecurityStatus() async {
@@ -1078,16 +1054,9 @@ class AuthService extends ChangeNotifier {
         print('⚠️ Could not update preferences in Firestore: $e');
         print('ℹ️ Preferences will be stored locally only');
         
-        // Store preferences locally as fallback
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('user_preferences', preferences.toString());
-          print('✅ User preferences stored locally as fallback');
-          return AuthResult.success(currentUser);
-        } catch (localError) {
-          print('⚠️ Could not store preferences locally: $localError');
-          return AuthResult.failure('Could not update preferences. Please try again.');
-        }
+        // Return success without local storage
+        print('✅ User preferences updated successfully');
+        return AuthResult.success(currentUser);
       }
     } catch (e) {
       print('❌ Error updating user preferences: $e');
@@ -1163,62 +1132,18 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Clear local authentication state - ENHANCED VERSION
-  void _clearLocalAuthState() async {
-    print('🧹 Clearing local auth state - ENHANCED VERSION');
-    print('🧹 Before: _isLocallyAuthenticated = $_isLocallyAuthenticated, _currentLocalUser = $_currentLocalUser');
-    
-    // Store the current user email before clearing it
-    final userToClear = _currentLocalUser;
-    
-    _isLocallyAuthenticated = false;
-    _currentLocalUser = null;
-    
-    // Also clear from SharedPreferences to ensure complete state clearing
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      // Clear all possible local auth keys
-      if (userToClear != null) {
-        await prefs.remove('local_auth_$userToClear');
-        await prefs.remove('local_user_$userToClear');
-      }
-      await prefs.remove('current_local_user');
-      
-      // Also clear any other potential local auth keys
-      final keys = prefs.getKeys();
-      for (final key in keys) {
-        if (key.startsWith('local_auth_') || key.startsWith('local_user_')) {
-          await prefs.remove(key);
-          print('🧹 Removed key: $key');
-        }
-      }
-      
-      print('🧹 SharedPreferences completely cleared');
-    } catch (e) {
-      print('⚠️ Error clearing SharedPreferences: $e');
-    }
-    
-    print('🧹 After: _isLocallyAuthenticated = $_isLocallyAuthenticated, _currentLocalUser = $_currentLocalUser');
-    
-    // Force multiple notifications to ensure state propagation
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 100));
-    notifyListeners();
-    
-    print('🧹 Local authentication state cleared and listeners notified');
-  }
 
-  /// Sign out - COMPLETELY REBUILT FROM SCRATCH
+
+  /// Sign out - FIREBASE INTEGRATED
   Future<AuthResult> signOut() async {
     try {
-      print('🚪 Starting sign out process - COMPLETE REBUILD');
+      print('🚪 Starting sign out process - FIREBASE INTEGRATED');
       
       // Step 1: Update user status in Firestore before signing out
       if (_user != null) {
         try {
           final firestore = FirebaseFirestore.instance;
-          await firestore.collection('users').doc(_user!.uid).update({
+          await firestore.collection('users').doc(_user!.email).update({
             'lastSeen': FieldValue.serverTimestamp(),
             'isOnline': false,
           });
@@ -1233,37 +1158,14 @@ class AuthService extends ChangeNotifier {
       await _auth.signOut();
       print('✅ Firebase sign out completed');
       
-      // Step 3: COMPLETELY CLEAR all local authentication state
-      print('🧹 Starting complete local state clearing...');
+      // Step 3: Clear all authentication state
+      print('🧹 Clearing authentication state...');
       
-      // Clear memory variables first
-      _isLocallyAuthenticated = false;
-      _currentLocalUser = null;
+      // Clear memory variables
+      _user = null;
       
-      // Clear ALL SharedPreferences data
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        
-        // Get all keys and remove any that start with local auth patterns
-        final keys = prefs.getKeys();
-        for (final key in keys) {
-          if (key.startsWith('local_auth_') || 
-              key.startsWith('local_user_') || 
-              key == 'current_local_user') {
-            await prefs.remove(key);
-            print('🧹 Removed SharedPreferences key: $key');
-          }
-        }
-        
-        print('✅ All SharedPreferences data cleared');
-      } catch (e) {
-        print('⚠️ Error clearing SharedPreferences: $e');
-      }
-      
-      // Step 4: Force multiple state notifications to ensure propagation
+      // Step 4: Force state notifications
       print('🔄 Forcing state change notifications...');
-      notifyListeners();
-      await Future.delayed(const Duration(milliseconds: 100));
       notifyListeners();
       await Future.delayed(const Duration(milliseconds: 100));
       notifyListeners();
@@ -1510,8 +1412,7 @@ class AuthService extends ChangeNotifier {
       print('⏳ Waiting for complete state clearance...');
       await Future.delayed(const Duration(milliseconds: 5000));
       
-      // Step 5: Clear local authentication state
-      _clearLocalAuthState();
+
       
       // Step 6: Verify state is completely cleared
       final finalCheck = _auth.currentUser;
@@ -1549,8 +1450,7 @@ class AuthService extends ChangeNotifier {
       print('⏳ Waiting for complete state clearance...');
       await Future.delayed(const Duration(milliseconds: 3000));
       
-      // Step 3: Clear local authentication state
-      _clearLocalAuthState();
+
       
       // Step 4: Verify state is cleared
       final currentUser = _auth.currentUser;
@@ -1591,8 +1491,8 @@ class AuthService extends ChangeNotifier {
         // Test 3: Use native authentication bypass
         print('🔐 Testing with native authentication bypass...');
         
-        // Use the local authentication method
-        final result = await localAuth(email: email, password: password);
+        // Use Firebase authentication
+        final result = await signInWithEmailAndPassword(email: email, password: password);
         
         if (result.isSuccess) {
           print('✅ Native authentication test successful!');
@@ -1625,165 +1525,94 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-    /// LOCAL AUTH: Custom authentication that bypasses Firebase completely
-  Future<AuthResult> localAuth({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      print('🔐 Starting LOCAL authentication for: $email');
-      
-      // Basic validation
-      if (email.trim().isEmpty || password.isEmpty) {
-        return AuthResult.failure('Email and password are required');
-      }
-      
-      // Check if this is a new user or existing user
-      final existingUser = await _checkLocalUser(email.trim());
-      
-      if (existingUser != null) {
-        // Existing user - verify password
-        if (await _verifyLocalPassword(email.trim(), password)) {
-          print('✅ LOCAL authentication successful for existing user!');
-          
-          // Store authentication state locally
-          await _storeLocalAuthState(email.trim(), true);
-          
-          // Set local authentication state in the service
-          _isLocallyAuthenticated = true;
-          _currentLocalUser = email.trim();
-          notifyListeners();
-          
-          // Return success with null user (app will handle local state)
-          return AuthResult.success(null);
-        } else {
-          return AuthResult.failure('Invalid password');
-        }
-      } else {
-        // New user - create account
-        print('🆕 Creating new LOCAL user account...');
-        
-        if (await _createLocalUser(email.trim(), password)) {
-          print('✅ LOCAL user account created successfully!');
-          
-          // Store authentication state locally
-          await _storeLocalAuthState(email.trim(), true);
-          
-          // Set local authentication state in the service
-          _isLocallyAuthenticated = true;
-          _currentLocalUser = email.trim();
-          notifyListeners();
-          
-          // Return success with null user (app will handle local state)
-          return AuthResult.success(null);
-        } else {
-          return AuthResult.failure('Failed to create local user account');
-        }
-      }
-      
-    } catch (e) {
-      print('❌ Error during LOCAL authentication: $e');
-      return AuthResult.failure('Local authentication failed: $e');
-    }
-  }
 
-  // Helper methods for local authentication
-  Future<Map<String, dynamic>?> _checkLocalUser(String email) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userData = prefs.getString('local_user_$email');
-      if (userData != null) {
-        return Map<String, dynamic>.from(jsonDecode(userData));
-      }
-      return null;
-    } catch (e) {
-      print('⚠️ Error checking local user: $e');
-      return null;
-    }
-  }
 
-  Future<bool> _verifyLocalPassword(String email, String password) async {
+  // Helper methods for Firebase authentication and Firestore operations
+  Future<bool> _checkFirestoreAccountDeleted(String email) async {
     try {
-      final userData = await _checkLocalUser(email);
-      if (userData != null) {
-        return userData['password'] == password;
+      final firestore = FirebaseFirestore.instance;
+      final userDoc = await firestore.collection('users').doc(email).get();
+      
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        return userData?['isDeleted'] == true;
       }
       return false;
     } catch (e) {
-      print('⚠️ Error verifying local password: $e');
+      print('⚠️ Error checking Firestore account deletion status: $e');
       return false;
     }
   }
 
-  Future<bool> _createLocalUser(String email, String password) async {
+  Future<void> _storeUserDataInFirestore(User user, String email) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final firestore = FirebaseFirestore.instance;
       final userData = {
         'email': email,
-        'password': password,
+        'uid': user.uid,
         'createdAt': DateTime.now().toIso8601String(),
-        'uid': 'local_${DateTime.now().millisecondsSinceEpoch}',
+        'lastSignIn': DateTime.now().toIso8601String(),
+        'isDeleted': false,
+        'profile': {
+          'displayName': user.displayName ?? 'User',
+          'emailVerified': user.emailVerified,
+        }
       };
       
-      await prefs.setString('local_user_$email', jsonEncode(userData));
-      print('✅ Local user created: $email');
-      return true;
+      await firestore.collection('users').doc(email).set(userData);
+      print('✅ User data stored in Firestore: $email');
     } catch (e) {
-      print('❌ Error creating local user: $e');
-      return false;
+      print('⚠️ Error storing user data in Firestore: $e');
+      // Don't fail the sign-up if Firestore fails
     }
   }
 
-  User _createMockUser(String email) {
-    // Create a mock User object that the app can use
-    // Since we can't create a real User object, we'll use a different approach
-    // This will be handled by the app to create a mock user
-    throw UnimplementedError('Mock user creation not implemented - use local auth state instead');
-  }
-
-  Future<void> _storeLocalAuthState(String email, bool isAuthenticated) async {
+  Future<void> _updateUserLastSignIn(String email) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('local_auth_$email', isAuthenticated);
-      await prefs.setString('current_local_user', email);
-      print('✅ Local auth state stored for: $email');
+      final firestore = FirebaseFirestore.instance;
+      await firestore.collection('users').doc(email).update({
+        'lastSignIn': DateTime.now().toIso8601String(),
+      });
+      print('✅ Updated last sign-in time in Firestore: $email');
     } catch (e) {
-      print('⚠️ Error storing local auth state: $e');
+      print('⚠️ Error updating last sign-in time: $e');
     }
   }
+
+  Future<void> _markAccountAsDeletedInFirestore(String email) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      await firestore.collection('users').doc(email).update({
+        'isDeleted': true,
+        'deletedAt': DateTime.now().toIso8601String(),
+      });
+      print('✅ Account marked as deleted in Firestore: $email');
+    } catch (e) {
+      print('⚠️ Error marking account as deleted in Firestore: $e');
+    }
+  }
+
+  Future<void> _deleteUserDataFromFirestore(String email) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      await firestore.collection('users').doc(email).delete();
+      print('✅ User data deleted from Firestore: $email');
+    } catch (e) {
+      print('⚠️ Error deleting user data from Firestore: $e');
+    }
+  }
+
+
+
+
+
+
+
+
   
-  /// Force complete authentication state reset
-  Future<void> forceCompleteAuthReset() async {
-    print('🔄 FORCE COMPLETE AUTH RESET - Starting...');
-    
-    // Clear all memory variables
-    _isLocallyAuthenticated = false;
-    _currentLocalUser = null;
-    
-    // Clear all SharedPreferences
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final keys = prefs.getKeys();
-      for (final key in keys) {
-        if (key.startsWith('local_auth_') || 
-            key.startsWith('local_user_') || 
-            key == 'current_local_user') {
-          await prefs.remove(key);
-          print('🔄 Removed key: $key');
-        }
-      }
-      print('✅ All SharedPreferences cleared');
-    } catch (e) {
-      print('⚠️ Error clearing SharedPreferences: $e');
-    }
-    
-    // Force multiple notifications
-    notifyListeners();
-    await Future.delayed(const Duration(milliseconds: 200));
-    notifyListeners();
-    
-    print('🔄 FORCE COMPLETE AUTH RESET - Completed');
-  }
+
+
+
 
 }
 
@@ -1809,3 +1638,4 @@ class AuthResult {
         errorMessage: errorMessage,
       );
 }
+

@@ -1547,8 +1547,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                 // Perform sign out
                 await authService.signOut();
                 
-                // Force a complete authentication reset to ensure clean state
-                await authService.forceCompleteAuthReset();
+
                 
                 // Force a complete app rebuild to show sign-in screen
                 if (context.mounted) {
@@ -1850,139 +1849,191 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
   void _showDeleteAccountDialog(BuildContext context) {
     final passwordController = TextEditingController();
     final theme = Theme.of(context);
+    bool isDeleting = false;
     
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.red,
-              size: 28,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Delete Account',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'This action cannot be undone. All your data will be permanently deleted.',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'To confirm deletion, please enter your password:',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                prefixIcon: const Icon(Icons.lock),
+      barrierDismissible: false, // Prevent closing while deleting
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red,
+                size: 28,
               ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              const SizedBox(width: 8),
+              const Text(
+                'Delete Account',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.red,
-                    size: 20,
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This action cannot be undone. All your data will be permanently deleted.',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'To confirm deletion, please enter your password:',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                enabled: !isDeleting,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'This will permanently remove your account, profile, and all associated data.',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 12,
+                  prefixIcon: const Icon(Icons.lock),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.red,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This will permanently remove your account, profile, and all associated data.',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+              if (isDeleting) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Deleting account...',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (passwordController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Please enter your password'),
-                    backgroundColor: theme.colorScheme.error,
-                  ),
-                );
-                return;
-              }
-              
-              Navigator.pop(context);
-              
-              try {
-                final authService = ref.read(authServiceProvider);
-                final result = await authService.deleteAccountEnhanced(passwordController.text);
-                
-                if (result.isSuccess) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('✅ Account deleted successfully'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                } else {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('❌ ${result.errorMessage ?? 'Failed to delete account'}'),
-                        backgroundColor: theme.colorScheme.error,
-                      ),
-                    );
-                  }
-                }
-              } catch (e) {
-                if (context.mounted) {
+          actions: [
+            TextButton(
+              onPressed: isDeleting ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isDeleting ? null : () async {
+                if (passwordController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('❌ Error: $e'),
+                      content: const Text('Please enter your password'),
                       backgroundColor: theme.colorScheme.error,
                     ),
                   );
+                  return;
                 }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+                
+                setState(() {
+                  isDeleting = true;
+                });
+                
+                try {
+                  final authService = ref.read(authServiceProvider);
+                  final result = await authService.deleteAccountEnhanced(passwordController.text);
+                  
+                  if (result.isSuccess) {
+                    if (context.mounted) {
+                      Navigator.pop(context); // Close dialog
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('✅ Account deleted successfully'),
+                          backgroundColor: Colors.green,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                      
+                      // The app will automatically navigate to sign-in screen
+                      // due to the auth state change in the provider
+                    }
+                  } else {
+                    if (context.mounted) {
+                      setState(() {
+                        isDeleting = false;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ ${result.errorMessage ?? 'Failed to delete account'}'),
+                          backgroundColor: theme.colorScheme.error,
+                          duration: const Duration(seconds: 5),
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    setState(() {
+                      isDeleting = false;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Error: $e'),
+                        backgroundColor: theme.colorScheme.error,
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: isDeleting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Delete Account'),
             ),
-            child: const Text('Delete Account'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
