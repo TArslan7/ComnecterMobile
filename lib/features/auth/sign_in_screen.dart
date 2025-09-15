@@ -175,10 +175,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                  color: theme.colorScheme.primary.withOpacity(0.2),
                 ),
               ),
               child: Row(
@@ -193,7 +193,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     child: Text(
                       'Note: If you don\'t receive an email, check your spam folder or try again later. Firebase may require additional verification.',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                        color: theme.colorScheme.onSurface.withOpacity(0.8),
                       ),
                     ),
                   ),
