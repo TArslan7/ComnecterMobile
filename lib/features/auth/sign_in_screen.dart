@@ -334,7 +334,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       Text(
                         'Connect with people nearby',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+                          color: theme.colorScheme.onPrimary.withOpacity(0.8),
                         ),
                       ),
                     ],

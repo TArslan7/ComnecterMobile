@@ -444,7 +444,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       Text(
                         'Join the community',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+                          color: theme.colorScheme.onPrimary.withOpacity(0.8),
                         ),
                       ),
                     ],
@@ -646,7 +646,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                              color: theme.colorScheme.onSurface.withOpacity(0.6),
                             ),
                             onPressed: () {
                               setState(() {
@@ -660,7 +660,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                              color: theme.colorScheme.outline.withOpacity(0.3),
                             ),
                           ),
                         ),
