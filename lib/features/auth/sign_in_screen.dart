@@ -63,6 +63,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               errorMessage.contains('timeout')) {
             _showNetworkErrorDialog(errorMessage);
           } else {
+            // Store current values for retry
+            final email = _emailController.text;
+            final password = _passwordController.text;
+            
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorMessage),
@@ -70,7 +74,15 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 duration: const Duration(seconds: 5),
                 action: SnackBarAction(
                   label: 'Retry',
-                  onPressed: () => _signIn(),
+                  onPressed: () {
+                    // Make sure the form is still available before retrying
+                    if (mounted) {
+                      // Set the values back in case they changed
+                      _emailController.text = email;
+                      _passwordController.text = password;
+                      _signIn();
+                    }
+                  },
                   textColor: Theme.of(context).colorScheme.onError,
                 ),
               ),
