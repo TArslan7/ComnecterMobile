@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
+import '../features/auth/two_factor_screen.dart';
 import '../features/radar/radar_screen.dart';
 import '../features/radar/user_profile_screen.dart';
 import '../features/chat/chat_screen.dart';
@@ -18,7 +19,7 @@ import '../features/auth/sign_up_screen.dart';
 import '../config/auth_config.dart';
 import '../providers/auth_provider.dart';
 
-GoRouter createRouter(WidgetRef ref) {
+GoRouter createRouter([WidgetRef? ref]) {
   return GoRouter(
     initialLocation: '/signin',
     errorBuilder: (context, state) => const SignInScreen(), // Fallback to signin if route not found
@@ -29,7 +30,8 @@ GoRouter createRouter(WidgetRef ref) {
       // Check both Firebase Auth and local authentication state
       try {
         final user = FirebaseAuth.instance.currentUser;
-        final authService = ref.read(authServiceProvider);
+        // Only try to access authService if ref is provided
+        final authService = ref?.read(authServiceProvider);
         
         final isAuthRoute = state.matchedLocation == '/signin' || 
                             state.matchedLocation == '/signup' ||
@@ -180,7 +182,9 @@ class GoRouterRefreshStream extends ChangeNotifier {
 
 // Router provider
 final routerProvider = Provider<GoRouter>((ref) {
-  return createRouter(ref);
+  // Convert ProviderRef to WidgetRef (they're not directly compatible)
+  // but we can pass null since we'll handle that case
+  return createRouter();
 });
 
 class RootNavigation extends StatelessWidget {
