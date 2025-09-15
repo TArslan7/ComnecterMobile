@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 import '../features/radar/radar_screen.dart';
 import '../features/radar/user_profile_screen.dart';
 import '../features/chat/chat_screen.dart';
@@ -16,44 +18,58 @@ import '../features/auth/sign_up_screen.dart';
 import '../config/auth_config.dart';
 import '../providers/auth_provider.dart';
 
-GoRouter createRouter() {
+GoRouter createRouter(WidgetRef ref) {
   return GoRouter(
     initialLocation: '/signin',
     errorBuilder: (context, state) => const SignInScreen(), // Fallback to signin if route not found
-      redirect: (context, state) {
-    // Check both Firebase Auth and local authentication state
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      
-      
-      final isAuthRoute = state.matchedLocation == '/signin' || 
-                          state.matchedLocation == '/signup';
-      
-      print('🔍 Router redirect check - Location: ${state.matchedLocation}, Firebase User: ${user?.email ?? 'null'}, IsAuthRoute: $isAuthRoute');
-      
-      // If user is not signed in and trying to access protected route
-      if (user == null && !isAuthRoute) {
-        print('🚪 Redirecting to signin - User not authenticated');
-        return '/signin';
+    refreshListenable: GoRouterRefreshStream(
+      FirebaseAuth.instance.authStateChanges()
+    ),
+    redirect: (context, state) {
+      // Check both Firebase Auth and local authentication state
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        final authService = ref.read(authServiceProvider);
+        
+        final isAuthRoute = state.matchedLocation == '/signin' || 
+                            state.matchedLocation == '/signup' ||
+                            state.matchedLocation.contains('two-factor');
+        
+        if (kDebugMode) {
+          print('🔍 Router redirect check - Location: ${state.matchedLocation}, Firebase User: ${user?.email ?? 'null'}, IsAuthRoute: $isAuthRoute');
+        }
+        
+        // If user is not signed in and trying to access protected route
+        if (user == null && !isAuthRoute) {
+          if (kDebugMode) {
+            print('🚪 Redirecting to signin - User not authenticated');
+          }
+          return '/signin';
+        }
+        
+        // If user is signed in and trying to access auth route
+        if (user != null && isAuthRoute && !state.matchedLocation.contains('two-factor')) {
+          if (kDebugMode) {
+            print('🏠 Redirecting to home - User already authenticated');
+          }
+          return '/';
+        }
+        
+        if (kDebugMode) {
+          print('✅ No redirect needed');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Auth check failed, redirecting to signin: $e');
+        }
+        // If auth check fails, redirect to signin
+        if (state.matchedLocation != '/signin') {
+          return '/signin';
+        }
       }
       
-      // If user is signed in and trying to access auth route
-      if (user != null && isAuthRoute) {
-        print('🏠 Redirecting to home - User already authenticated');
-        return '/';
-      }
-      
-      print('✅ No redirect needed');
-    } catch (e) {
-      print('⚠️ Auth check failed, redirecting to signin: $e');
-      // If auth check fails, redirect to signin
-      if (state.matchedLocation != '/signin') {
-        return '/signin';
-      }
-    }
-    
-    return null;
-  },
+      return null;
+    },
     routes: [
       // Authentication routes
       GoRoute(
@@ -65,6 +81,17 @@ GoRouter createRouter() {
         path: '/signup',
         name: 'signup',
         builder: (context, state) => const SignUpScreen(),
+      ),
+      GoRoute(
+        path: '/two-factor',
+        name: 'two-factor',
+        builder: (context, state) {
+          final params = state.extra as Map<String, dynamic>?;
+          return TwoFactorScreen(
+            email: params?['email'] ?? '',
+            displayName: params?['displayName'] ?? '',
+          );
+        },
       ),
       
       // Protected routes
@@ -132,6 +159,29 @@ GoRouter createRouter() {
     ],
   );
 }
+
+// Stream-based refresh notifier for GoRouter
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+      (dynamic _) => notifyListeners(),
+    );
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+// Router provider
+final routerProvider = Provider<GoRouter>((ref) {
+  return createRouter(ref);
+});
 
 class RootNavigation extends StatelessWidget {
   final Widget child;

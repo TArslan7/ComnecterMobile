@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'dart:io';
 import 'dart:async';
+import 'dart:math';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -72,7 +73,9 @@ class AuthService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      print('🚀 Starting sign-up process for: $email');
+      if (kDebugMode) {
+        print('🚀 Starting sign-up process for: $email');
+      }
 
       // Validate input parameters
       if (email.trim().isEmpty || password.isEmpty) {
@@ -82,38 +85,188 @@ class AuthService extends ChangeNotifier {
       if (password.length < 8) {
         return AuthResult.failure('Password must be at least 8 characters long');
       }
+      
+      // Check network connectivity first
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        return AuthResult.failure('No internet connection. Please check your network and try again.');
+      }
 
-      // Clear any corrupted Firebase state before creating account
+      // Try to create user account directly first
+      try {
+        final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+          email: email.trim(),
+          password: password,
+        ).timeout(
+          const Duration(seconds: 20),
+          onTimeout: () => throw TimeoutException('Account creation timed out'),
+        );
+        
+        _user = userCredential.user;
+
+        if (kDebugMode) {
+          print('✅ User account created successfully: ${userCredential.user?.uid}');
+        }
+
+        // Update display name if provided
+        if (displayName != null && displayName.trim().isNotEmpty && userCredential.user != null) {
+          try {
+            await userCredential.user!.updateDisplayName(displayName.trim());
+            if (kDebugMode) {
+              print('✅ Display name updated: $displayName');
+            }
+            
+            // Reload user to get updated profile
+            await userCredential.user!.reload();
+            _user = _auth.currentUser;
+            
+          } catch (e) {
+            if (kDebugMode) {
+              print('⚠️ Could not update display name: $e');
+            }
+            // Don't fail sign-up if display name update fails
+          }
+        }
+
+        // Store user data securely in Firestore
+        if (userCredential.user != null) {
+          try {
+            final firestore = FirebaseFirestore.instance;
+            await firestore.collection('users').doc(userCredential.user!.uid).set({
+              'uid': userCredential.user!.uid,
+              'email': email.trim(),
+              'displayName': displayName?.trim() ?? '',
+              'createdAt': FieldValue.serverTimestamp(),
+              'lastSeen': FieldValue.serverTimestamp(),
+              'isOnline': true,
+              'emailVerified': false,
+              'twoFactorEnabled': false,
+              'phoneNumber': null,
+              'lastSignIn': FieldValue.serverTimestamp(),
+              'signInCount': 1,
+              'accountStatus': 'active',
+              'securityLevel': 'standard',
+              'dataVersion': 1,
+              'deviceInfo': {
+                'platform': Platform.operatingSystem,
+                'version': Platform.operatingSystemVersion,
+                'timestamp': FieldValue.serverTimestamp(),
+              },
+            });
+            if (kDebugMode) {
+              print('✅ User data securely stored in Firestore');
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('⚠️ Could not store user data in Firestore: $e');
+            }
+            // Don't fail sign-up if Firestore storage fails
+          }
+        }
+
+        // Send email verification
+        try {
+          await userCredential.user!.sendEmailVerification();
+          if (kDebugMode) {
+            print('✅ Verification email sent');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('⚠️ Could not send verification email: $e');
+          }
+          // Don't fail sign-up if email verification fails
+        }
+
+        if (kDebugMode) {
+          print('🎉 Sign-up completed successfully');
+        }
+        return AuthResult.success(userCredential.user);
+      } on FirebaseAuthException catch (e) {
+        if (kDebugMode) {
+          print('❌ Firebase Auth error during sign-up: ${e.code} - ${e.message}');
+        }
+        
+        // If we get email-already-in-use, don't retry
+        if (e.code == 'email-already-in-use') {
+          return AuthResult.failure(_getErrorMessage(e.code));
+        }
+        
+        // For other errors, try the fallback approach
+        if (kDebugMode) {
+          print('🔄 Trying fallback sign-up approach...');
+        }
+        return _fallbackSignUp(email, password, displayName);
+      } catch (e) {
+        if (kDebugMode) {
+          print('❌ Unexpected error during sign-up: $e');
+        }
+        
+        // Try fallback approach for unexpected errors
+        return _fallbackSignUp(email, password, displayName);
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+  
+  /// Fallback sign-up method with state clearing
+  Future<AuthResult> _fallbackSignUp(String email, String password, String? displayName) async {
+    try {
+      if (kDebugMode) {
+        print('🔄 Attempting fallback sign-up with state clearing for: $email');
+      }
+      
+      // Clear any corrupted Firebase state
       try {
         await _auth.signOut();
-        print('🔄 Cleared Firebase state to prevent sign-up errors');
+        if (kDebugMode) {
+          print('🔄 Cleared Firebase state to prevent sign-up errors');
+        }
       } catch (e) {
-        print('⚠️ Could not clear Firebase state: $e');
+        if (kDebugMode) {
+          print('⚠️ Could not clear Firebase state: $e');
+        }
       }
 
       // Wait a moment for state to clear
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 800));
 
       // Try to create user account with fresh state
       final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
+      ).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw TimeoutException('Account creation timed out'),
       );
+      
+      _user = userCredential.user;
 
-      print('✅ User account created successfully: ${userCredential.user?.uid}');
+      if (kDebugMode) {
+        print('✅ Fallback user account created successfully: ${userCredential.user?.uid}');
+      }
 
       // Update display name if provided
       if (displayName != null && displayName.trim().isNotEmpty && userCredential.user != null) {
         try {
           await userCredential.user!.updateDisplayName(displayName.trim());
-          print('✅ Display name updated: $displayName');
+          if (kDebugMode) {
+            print('✅ Display name updated: $displayName');
+          }
+          
+          // Reload user to get updated profile
+          await userCredential.user!.reload();
+          _user = _auth.currentUser;
+          
         } catch (e) {
-          print('⚠️ Could not update display name: $e');
-          // Don't fail sign-up if display name update fails
+          if (kDebugMode) {
+            print('⚠️ Could not update display name: $e');
+          }
         }
       }
 
-      // Store user data securely in Firestore
+      // Simplified Firestore storage for fallback
       if (userCredential.user != null) {
         try {
           final firestore = FirebaseFirestore.instance;
@@ -124,59 +277,38 @@ class AuthService extends ChangeNotifier {
             'createdAt': FieldValue.serverTimestamp(),
             'lastSeen': FieldValue.serverTimestamp(),
             'isOnline': true,
-            'emailVerified': false,
-            'twoFactorEnabled': false,
-            'phoneNumber': null,
-            'lastSignIn': FieldValue.serverTimestamp(),
-            'signInCount': 1,
-            'accountStatus': 'active',
-            'securityLevel': 'standard',
-            'dataVersion': 1,
           });
-          print('✅ User data securely stored in Firestore');
         } catch (e) {
-          print('⚠️ Could not store user data in Firestore: $e');
-          // Don't fail sign-up if Firestore storage fails
+          // Ignore Firestore errors in fallback mode
         }
       }
 
       // Send email verification
       try {
         await userCredential.user!.sendEmailVerification();
-        print('✅ Verification email sent');
       } catch (e) {
-        print('⚠️ Could not send verification email: $e');
-        // Don't fail sign-up if email verification fails
+        // Ignore verification errors in fallback mode
       }
 
-      print('🎉 Sign-up completed successfully');
       return AuthResult.success(userCredential.user);
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth error during sign-up: ${e.code} - ${e.message}');
+      if (kDebugMode) {
+        print('❌ Firebase Auth error during fallback sign-up: ${e.code} - ${e.message}');
+      }
       String message = _getErrorMessage(e.code);
       return AuthResult.failure(message);
     } catch (e) {
-      print('❌ Unexpected error during sign-up: $e');
+      if (kDebugMode) {
+        print('❌ Unexpected error during fallback sign-up: $e');
+      }
       
-      // Provide more specific error messages for common sign-up issues
       if (e.toString().contains('PigeonUserDetails')) {
         return AuthResult.failure('Authentication system error. Please restart the app and try again.');
-      } else if (e.toString().contains('FirebaseException')) {
-        return AuthResult.failure('Firebase connection error. Please check your internet connection and try again.');
       } else if (e.toString().contains('TimeoutException')) {
         return AuthResult.failure('Request timed out. Please try again.');
-      } else if (e.toString().contains('NetworkException')) {
-        return AuthResult.failure('Network error. Please check your internet connection and try again.');
-      } else if (e.toString().contains('StateError')) {
-        return AuthResult.failure('Authentication state error. Please try again.');
-      } else if (e.toString().contains('FormatException')) {
-        return AuthResult.failure('Invalid data format. Please check your input and try again.');
       } else {
         return AuthResult.failure('An unexpected error occurred during account creation. Please try again.');
       }
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 
@@ -191,84 +323,176 @@ class AuthService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      print('🔐 Starting sign-in process for: $email');
+      if (kDebugMode) {
+        print('🔐 Starting sign-in process for: $email');
+      }
 
       // Validate input parameters
       if (email.trim().isEmpty || password.isEmpty) {
         return AuthResult.failure('Email and password are required');
       }
 
-      // Clear any corrupted Firebase state before attempting sign-in
+      // Check network connectivity first
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        return AuthResult.failure('No internet connection. Please check your network and try again.');
+      }
+
+      // Attempt sign-in directly without clearing state first
+      try {
+        final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+          email: email.trim(),
+          password: password,
+        ).timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw TimeoutException('Sign-in request timed out'),
+        );
+        
+        _user = userCredential.user;
+        
+        if (kDebugMode) {
+          print('✅ Sign-in successful for: ${userCredential.user?.email}');
+        }
+
+        // Store user data securely in Firestore
+        if (userCredential.user != null) {
+          try {
+            final firestore = FirebaseFirestore.instance;
+            final userDoc = firestore.collection('users').doc(userCredential.user!.uid);
+            
+            // Always create/update user document with secure data
+            await userDoc.set({
+              'uid': userCredential.user!.uid,
+              'email': userCredential.user!.email,
+              'displayName': userCredential.user!.displayName ?? '',
+              'lastSeen': FieldValue.serverTimestamp(),
+              'isOnline': true,
+              'emailVerified': userCredential.user!.emailVerified,
+              'lastSignIn': FieldValue.serverTimestamp(),
+              'signInCount': FieldValue.increment(1),
+              'deviceInfo': {
+                'platform': Platform.operatingSystem,
+                'version': Platform.operatingSystemVersion,
+                'timestamp': FieldValue.serverTimestamp(),
+              },
+            }, SetOptions(merge: true)); // Use merge to update existing data
+            
+            if (kDebugMode) {
+              print('✅ User data securely stored in Firestore');
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              print('⚠️ Could not store user data in Firestore: $e');
+            }
+            // Don't fail sign-in if Firestore storage fails
+          }
+        }
+
+        if (kDebugMode) {
+          print('🎉 Sign-in completed successfully');
+        }
+        return AuthResult.success(userCredential.user);
+      } on FirebaseAuthException catch (e) {
+        if (kDebugMode) {
+          print('❌ Firebase Auth error during sign-in: ${e.code} - ${e.message}');
+        }
+        
+        // If we get a user-not-found or wrong-password error, don't retry
+        if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+          String message = _getErrorMessage(e.code);
+          return AuthResult.failure(message);
+        }
+        
+        // For other errors, try the fallback approach with state clearing
+        if (kDebugMode) {
+          print('🔄 Trying fallback authentication approach...');
+        }
+        return _fallbackSignIn(email, password);
+      } catch (e) {
+        if (kDebugMode) {
+          print('❌ Unexpected error during sign-in: $e');
+        }
+        
+        // Try fallback approach for unexpected errors
+        return _fallbackSignIn(email, password);
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+  
+  /// Fallback sign-in method with state clearing
+  Future<AuthResult> _fallbackSignIn(String email, String password) async {
+    try {
+      if (kDebugMode) {
+        print('🔄 Attempting fallback sign-in with state clearing for: $email');
+      }
+      
+      // Clear any corrupted Firebase state
       try {
         await _auth.signOut();
-        print('🔄 Cleared Firebase state to prevent PigeonUserDetails errors');
+        if (kDebugMode) {
+          print('🔄 Cleared Firebase state to prevent errors');
+        }
       } catch (e) {
-        print('⚠️ Could not clear Firebase state: $e');
+        if (kDebugMode) {
+          print('⚠️ Could not clear Firebase state: $e');
+        }
       }
 
       // Wait a moment for state to clear
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 800));
 
       // Attempt sign-in with fresh state
       final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Sign-in request timed out'),
       );
+      
+      _user = userCredential.user;
 
-      print('✅ Sign-in successful for: ${userCredential.user?.email}');
+      if (kDebugMode) {
+        print('✅ Fallback sign-in successful for: ${userCredential.user?.email}');
+      }
 
-      // Store user data securely in Firestore
+      // Update Firestore (simplified for fallback)
       if (userCredential.user != null) {
         try {
           final firestore = FirebaseFirestore.instance;
-          final userDoc = firestore.collection('users').doc(userCredential.user!.uid);
-          
-          // Always create/update user document with secure data
-          await userDoc.set({
-            'uid': userCredential.user!.uid,
-            'email': userCredential.user!.email,
-            'displayName': userCredential.user!.displayName ?? '',
-            'createdAt': FieldValue.serverTimestamp(),
+          await firestore.collection('users').doc(userCredential.user!.uid).update({
             'lastSeen': FieldValue.serverTimestamp(),
             'isOnline': true,
-            'emailVerified': userCredential.user!.emailVerified,
-            'twoFactorEnabled': false,
-            'phoneNumber': userCredential.user!.phoneNumber,
             'lastSignIn': FieldValue.serverTimestamp(),
-            'signInCount': FieldValue.increment(1),
-          }, SetOptions(merge: true)); // Use merge to update existing data
-          
-          print('✅ User data securely stored in Firestore');
+          });
         } catch (e) {
-          print('⚠️ Could not store user data in Firestore: $e');
-          // Don't fail sign-in if Firestore storage fails
+          // Ignore Firestore errors in fallback mode
         }
       }
 
-      print('🎉 Sign-in completed successfully');
       return AuthResult.success(userCredential.user);
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth error during sign-in: ${e.code} - ${e.message}');
+      if (kDebugMode) {
+        print('❌ Firebase Auth error during fallback sign-in: ${e.code} - ${e.message}');
+      }
       String message = _getErrorMessage(e.code);
       return AuthResult.failure(message);
     } catch (e) {
-      print('❌ Unexpected error during sign-in: $e');
+      if (kDebugMode) {
+        print('❌ Unexpected error during fallback sign-in: $e');
+      }
       
-      // Handle PigeonUserDetails error specifically
+      // Provide specific error messages
       if (e.toString().contains('PigeonUserDetails')) {
         return AuthResult.failure('Authentication system error. Please restart the app and try again.');
-      } else if (e.toString().contains('FirebaseException')) {
-        return AuthResult.failure('Firebase connection error. Please check your internet connection and try again.');
       } else if (e.toString().contains('TimeoutException')) {
         return AuthResult.failure('Request timed out. Please try again.');
-      } else if (e.toString().contains('NetworkException')) {
-        return AuthResult.failure('Network error. Please check your internet connection and try again.');
       } else {
         return AuthResult.failure('An unexpected error occurred. Please try again.');
       }
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 
@@ -719,7 +943,9 @@ class AuthService extends ChangeNotifier {
   /// Send 2FA verification code to email
   Future<AuthResult> send2FACode(String email) async {
     try {
-      print('📧 Sending 2FA code to: $email');
+      if (kDebugMode) {
+        print('📧 Sending 2FA code to: $email');
+      }
       
       if (email.trim().isEmpty) {
         return AuthResult.failure('Email is required');
@@ -728,93 +954,181 @@ class AuthService extends ChangeNotifier {
       // Generate a 6-digit verification code
       final verificationCode = _generateVerificationCode();
       
-      // Store the code in Firestore with expiration (5 minutes)
+      // Store the code in Firestore with proper expiration (5 minutes)
       try {
         final firestore = FirebaseFirestore.instance;
+        
+        // Calculate expiration time (5 minutes from now)
+        final now = DateTime.now();
+        final expiresAt = now.add(const Duration(minutes: 5));
+        
         await firestore.collection('verification_codes').doc(email.trim()).set({
           'code': verificationCode,
           'email': email.trim(),
           'createdAt': FieldValue.serverTimestamp(),
-          'expiresAt': FieldValue.serverTimestamp(),
+          'expiresAt': Timestamp.fromDate(expiresAt),
           'used': false,
+          'attempts': 0,
+          'maxAttempts': 5,
         });
-        print('✅ 2FA code stored in Firestore');
+        
+        if (kDebugMode) {
+          print('✅ 2FA code stored in Firestore');
+        }
       } catch (e) {
-        print('⚠️ Could not store 2FA code in Firestore: $e');
-        print('ℹ️ 2FA will continue without Firestore storage');
-        // Continue with 2FA even if Firestore is down
+        if (kDebugMode) {
+          print('⚠️ Could not store 2FA code in Firestore: $e');
+          print('ℹ️ 2FA will continue without Firestore storage');
+        }
+        
+        // Store code in memory as fallback
+        _verificationCodes[email.trim()] = {
+          'code': verificationCode,
+          'createdAt': DateTime.now(),
+          'expiresAt': DateTime.now().add(const Duration(minutes: 5)),
+          'used': false,
+        };
       }
 
-      // Send email with verification code (you can integrate with your email service)
+      // In a production app, you would send this via email service
       // For now, we'll just print it to console for testing
-      print('🔐 2FA Code for $email: $verificationCode');
+      if (kDebugMode) {
+        print('🔐 2FA Code for $email: $verificationCode');
+      }
       
       return AuthResult.success(null);
     } catch (e) {
-      print('❌ Error sending 2FA code: $e');
+      if (kDebugMode) {
+        print('❌ Error sending 2FA code: $e');
+      }
       return AuthResult.failure('Could not send verification code. Please try again.');
     }
   }
 
+  // In-memory storage for verification codes (fallback)
+  final Map<String, Map<String, dynamic>> _verificationCodes = {};
+
   /// Verify 2FA code
   Future<AuthResult> verify2FACode(String email, String code) async {
     try {
-      print('🔍 Verifying 2FA code for: $email');
+      if (kDebugMode) {
+        print('🔍 Verifying 2FA code for: $email');
+      }
       
       if (email.trim().isEmpty || code.trim().isEmpty) {
         return AuthResult.failure('Email and verification code are required');
       }
+      
+      // Validate code format
+      if (code.trim().length != 6 || !RegExp(r'^[0-9]+$').hasMatch(code.trim())) {
+        return AuthResult.failure('Invalid verification code format. Please enter a 6-digit code.');
+      }
 
-      // Try to verify code from Firestore, fallback to basic validation if unavailable
+      // Try to verify code from Firestore first
       try {
         final firestore = FirebaseFirestore.instance;
-        final doc = await firestore.collection('verification_codes').doc(email.trim()).get();
+        final docRef = firestore.collection('verification_codes').doc(email.trim());
         
-        if (!doc.exists) {
-          return AuthResult.failure('Verification code not found. Please request a new one.');
-        }
+        // Use transaction to ensure atomic updates
+        return await firestore.runTransaction<AuthResult>((transaction) async {
+          final doc = await transaction.get(docRef);
+          
+          if (!doc.exists) {
+            // Check in-memory fallback
+            return _verifyCodeFromMemory(email, code);
+          }
 
-        final data = doc.data() as Map<String, dynamic>;
-        final storedCode = data['code'] as String;
-        final createdAt = data['createdAt'] as Timestamp;
-        final used = data['used'] as bool? ?? false;
+          final data = doc.data() as Map<String, dynamic>;
+          final storedCode = data['code'] as String;
+          final createdAt = data['createdAt'] as Timestamp;
+          final expiresAt = data['expiresAt'] as Timestamp;
+          final used = data['used'] as bool? ?? false;
+          final attempts = data['attempts'] as int? ?? 0;
+          final maxAttempts = data['maxAttempts'] as int? ?? 5;
 
-        // Check if code is expired (5 minutes)
-        final now = Timestamp.now();
-        final difference = now.seconds - createdAt.seconds;
-        if (difference > 300) { // 5 minutes = 300 seconds
-          return AuthResult.failure('Verification code has expired. Please request a new one.');
-        }
+          // Check if code is expired
+          final now = Timestamp.now();
+          if (now.compareTo(expiresAt) > 0) {
+            return AuthResult.failure('Verification code has expired. Please request a new one.');
+          }
 
-        if (used) {
-          return AuthResult.failure('Verification code has already been used.');
-        }
+          if (used) {
+            return AuthResult.failure('Verification code has already been used.');
+          }
+          
+          // Check for too many attempts
+          if (attempts >= maxAttempts) {
+            return AuthResult.failure('Too many failed attempts. Please request a new code.');
+          }
 
-        if (code.trim() != storedCode) {
-          return AuthResult.failure('Invalid verification code. Please check and try again.');
-        }
+          // Increment attempts counter
+          transaction.update(docRef, {'attempts': attempts + 1});
+          
+          if (code.trim() != storedCode) {
+            return AuthResult.failure('Invalid verification code. Please check and try again. ${maxAttempts - attempts - 1} attempts remaining.');
+          }
 
-        // Mark code as used
-        await firestore.collection('verification_codes').doc(email.trim()).update({
-          'used': true,
+          // Mark code as used
+          transaction.update(docRef, {
+            'used': true,
+            'verifiedAt': FieldValue.serverTimestamp(),
+          });
+          
+          if (kDebugMode) {
+            print('✅ 2FA code verified successfully from Firestore');
+          }
+          return AuthResult.success(null);
         });
-        
-        print('✅ 2FA code verified successfully from Firestore');
       } catch (e) {
-        print('⚠️ Could not verify 2FA code from Firestore: $e');
-        print('ℹ️ Falling back to basic 2FA validation');
-        // For now, accept any 6-digit code if Firestore is unavailable
-        // In production, you'd implement a more secure fallback
-        if (code.trim().length != 6 || !RegExp(r'^[0-9]+$').hasMatch(code.trim())) {
-          return AuthResult.failure('Invalid verification code format. Please enter a 6-digit code.');
+        if (kDebugMode) {
+          print('⚠️ Could not verify 2FA code from Firestore: $e');
+          print('ℹ️ Falling back to in-memory 2FA validation');
         }
-        print('✅ 2FA code verified using fallback validation');
+        
+        // Fallback to in-memory verification
+        return _verifyCodeFromMemory(email, code);
       }
-      return AuthResult.success(null);
     } catch (e) {
-      print('❌ Error verifying 2FA code: $e');
+      if (kDebugMode) {
+        print('❌ Error verifying 2FA code: $e');
+      }
       return AuthResult.failure('Could not verify code. Please try again.');
     }
+  }
+  
+  /// Verify code from in-memory storage (fallback)
+  AuthResult _verifyCodeFromMemory(String email, String code) {
+    final codeData = _verificationCodes[email.trim()];
+    
+    if (codeData == null) {
+      return AuthResult.failure('Verification code not found. Please request a new one.');
+    }
+    
+    final storedCode = codeData['code'] as String;
+    final expiresAt = codeData['expiresAt'] as DateTime;
+    final used = codeData['used'] as bool;
+    
+    // Check if code is expired
+    final now = DateTime.now();
+    if (now.isAfter(expiresAt)) {
+      return AuthResult.failure('Verification code has expired. Please request a new one.');
+    }
+    
+    if (used) {
+      return AuthResult.failure('Verification code has already been used.');
+    }
+    
+    if (code.trim() != storedCode) {
+      return AuthResult.failure('Invalid verification code. Please check and try again.');
+    }
+    
+    // Mark code as used
+    _verificationCodes[email.trim()]?['used'] = true;
+    
+    if (kDebugMode) {
+      print('✅ 2FA code verified using in-memory fallback');
+    }
+    return AuthResult.success(null);
   }
 
   /// Enhanced password reset with comprehensive validation
@@ -1105,8 +1419,10 @@ class AuthService extends ChangeNotifier {
 
   /// Generate a random 6-digit verification code
   String _generateVerificationCode() {
-    final random = DateTime.now().millisecondsSinceEpoch % 900000 + 100000;
-    return random.toString();
+    // Use a more secure random number generator
+    final random = Random.secure();
+    final code = random.nextInt(900000) + 100000; // Ensures 6 digits
+    return code.toString();
   }
 
 
@@ -1137,47 +1453,73 @@ class AuthService extends ChangeNotifier {
   /// Sign out - FIREBASE INTEGRATED
   Future<AuthResult> signOut() async {
     try {
-      print('🚪 Starting sign out process - FIREBASE INTEGRATED');
+      if (kDebugMode) {
+        print('🚪 Starting sign out process');
+      }
       
       // Step 1: Update user status in Firestore before signing out
       if (_user != null) {
         try {
           final firestore = FirebaseFirestore.instance;
-          await firestore.collection('users').doc(_user!.email).update({
+          await firestore.collection('users').doc(_user!.uid).update({
             'lastSeen': FieldValue.serverTimestamp(),
             'isOnline': false,
           });
-          print('✅ User status updated in Firestore');
+          if (kDebugMode) {
+            print('✅ User status updated in Firestore');
+          }
         } catch (e) {
-          print('⚠️ Could not update user status in Firestore: $e');
+          if (kDebugMode) {
+            print('⚠️ Could not update user status in Firestore: $e');
+          }
           // Continue with sign out even if Firestore update fails
         }
       }
 
       // Step 2: Sign out from Firebase
       await _auth.signOut();
-      print('✅ Firebase sign out completed');
+      if (kDebugMode) {
+        print('✅ Firebase sign out completed');
+      }
       
       // Step 3: Clear all authentication state
-      print('🧹 Clearing authentication state...');
+      if (kDebugMode) {
+        print('🧹 Clearing authentication state...');
+      }
       
       // Clear memory variables
       _user = null;
       
       // Step 4: Force state notifications
-      print('🔄 Forcing state change notifications...');
-      notifyListeners();
-      await Future.delayed(const Duration(milliseconds: 100));
+      if (kDebugMode) {
+        print('🔄 Forcing state change notifications...');
+      }
       notifyListeners();
       
-      print('✅ User signed out successfully - ALL STATE CLEARED');
+      if (kDebugMode) {
+        print('✅ User signed out successfully');
+      }
       return AuthResult.success(null);
       
     } on FirebaseAuthException catch (e) {
-      print('❌ Firebase Auth error during sign out: ${e.code} - ${e.message}');
+      if (kDebugMode) {
+        print('❌ Firebase Auth error during sign out: ${e.code} - ${e.message}');
+      }
+      
+      // Even if there's an error, we should still clear local state
+      _user = null;
+      notifyListeners();
+      
       return AuthResult.failure(_getErrorMessage(e.code));
     } catch (e) {
-      print('❌ Unexpected error during sign out: $e');
+      if (kDebugMode) {
+        print('❌ Unexpected error during sign out: $e');
+      }
+      
+      // Even if there's an error, we should still clear local state
+      _user = null;
+      notifyListeners();
+      
       return AuthResult.failure('Could not sign out. Please try again.');
     }
   }

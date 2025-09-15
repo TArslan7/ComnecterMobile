@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -341,7 +342,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     try {
       final authService = ref.read(authServiceProvider);
-      final result = await authService.signUpWithEmailAndPasswordEnhanced(
+      final result = await authService.signUpWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         displayName: _displayNameController.text.trim(),
@@ -357,15 +358,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
             ),
           );
           
-          // Navigate to 2FA verification screen
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => TwoFactorScreen(
-                email: _emailController.text.trim(),
-                displayName: _displayNameController.text.trim(),
-              ),
-            ),
-          );
+          // Navigate to 2FA verification screen using GoRouter
+          context.pushReplacement('/two-factor', extra: {
+            'email': _emailController.text.trim(),
+            'displayName': _displayNameController.text.trim(),
+          });
         }
       } else {
         await ref.read(soundServiceProvider).playErrorSound();
@@ -374,7 +371,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           final errorMessage = result.errorMessage ?? 'Sign up failed';
           if (errorMessage.contains('unexpected error') || 
               errorMessage.contains('PigeonUserDetails') ||
-              errorMessage.contains('authentication system error')) {
+              errorMessage.contains('authentication system error') ||
+              errorMessage.contains('network') ||
+              errorMessage.contains('connection') ||
+              errorMessage.contains('timeout')) {
             _showRetryDialog(context, errorMessage);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(

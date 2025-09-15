@@ -50,26 +50,32 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             ),
           );
         }
-        // Firebase authentication successful - app will automatically navigate
-        print('✅ Firebase authentication successful!');
-        print('🔄 App will automatically navigate to main screen...');
+        // Firebase authentication successful - app will automatically navigate via GoRouter
       } else {
         await ref.read(soundServiceProvider).playErrorSound();
         if (context.mounted) {
-          // Show simple error message
+          // Show error message with retry option
           final errorMessage = result.errorMessage ?? 'Sign in failed';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              duration: const Duration(seconds: 5),
-              action: SnackBarAction(
-                label: 'Retry',
-                onPressed: () => _signIn(),
-                textColor: Theme.of(context).colorScheme.onError,
+          
+          // Check if it's a network error
+          if (errorMessage.contains('network') || 
+              errorMessage.contains('connection') || 
+              errorMessage.contains('timeout')) {
+            _showNetworkErrorDialog(errorMessage);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Theme.of(context).colorScheme.error,
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'Retry',
+                  onPressed: () => _signIn(),
+                  textColor: Theme.of(context).colorScheme.onError,
+                ),
               ),
-            ),
-          );
+            );
+          }
         }
       }
     } catch (e) {
@@ -88,6 +94,40 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+  
+  void _showNetworkErrorDialog(String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Connection Error'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(errorMessage),
+            const SizedBox(height: 16),
+            const Text(
+              'Please check your internet connection and try again.',
+              style: TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _signIn();
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 
 

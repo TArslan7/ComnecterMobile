@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/sound_service.dart';
 import '../../../theme/app_theme.dart';
@@ -125,8 +127,10 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
             ),
           );
           
-          // Navigate back to sign-in screen
-          Navigator.of(context).pop();
+          // Navigate to sign-in screen using GoRouter
+          if (context.mounted) {
+            context.go('/signin');
+          }
         }
       } else {
         await ref.read(soundServiceProvider).playErrorSound();
