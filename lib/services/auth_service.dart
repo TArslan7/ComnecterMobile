@@ -886,7 +886,7 @@ class AuthService extends ChangeNotifier {
               'emailUpdates': true,
               'privacyLevel': 'standard',
               'language': 'en',
-              'timezone': DateTime.now().timeZoneName,
+              'timezone': DateTime.now().timeZoneOffset.toString(),
             },
           });
           print('✅ Comprehensive user data securely stored in Firestore');

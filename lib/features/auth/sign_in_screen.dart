@@ -168,7 +168,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             Text(
               'Enter your email address and we\'ll send you a link to reset your password.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
             const SizedBox(height: 8),
@@ -385,7 +385,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                              color: theme.colorScheme.outline.withOpacity(0.3),
                             ),
                           ),
                         ),
@@ -413,7 +413,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                              color: theme.colorScheme.onSurface.withOpacity(0.6),
                             ),
                             onPressed: () {
                               setState(() {
@@ -427,7 +427,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                              color: theme.colorScheme.outline.withOpacity(0.3),
                             ),
                           ),
                         ),
@@ -500,7 +500,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           Text(
                             "Don't have an account? ",
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
                             ),
                           ),
                           TextButton(
