@@ -5,6 +5,7 @@ import 'dart:math';
 import '../friends/services/friend_service.dart';
 import 'services/radar_service.dart';
 import 'models/user_model.dart';
+import 'widgets/radar_range_slider.dart';
 
 class RadarScreen extends HookWidget {
   const RadarScreen({super.key});
@@ -23,6 +24,7 @@ class RadarScreen extends HookWidget {
     final radarService = useMemoized(() => RadarService(), []);
     final detectedUsers = useState<List<NearbyUser>>([]);
     final friendService = useMemoized(() => FriendService(), []);
+    final rangeSettings = useState<RadarRangeSettings>(const RadarRangeSettings());
 
     useEffect(() {
       // Initialize radar service
@@ -43,6 +45,12 @@ class RadarScreen extends HookWidget {
         radarService.stopScanning();
       };
     }, []);
+
+    // Update range settings when changed
+    useEffect(() {
+      radarService.updateRangeSettings(rangeSettings.value);
+      return null;
+    }, [rangeSettings.value]);
 
     useEffect(() {
       if (isScanning.value) {
@@ -309,6 +317,20 @@ class RadarScreen extends HookWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+              
+              const SizedBox(height: 25),
+              
+              // Range Slider
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: RadarRangeSlider(
+                  settings: rangeSettings.value,
+                  onChanged: (newSettings) {
+                    rangeSettings.value = newSettings;
+                  },
+                  userCount: detectedUsers.value.length,
                 ),
               ),
               
