@@ -18,6 +18,7 @@ class RadarService {
   Timer? _scanTimer;
   bool _isScanning = false;
   RadarSettings _settings = const RadarSettings();
+  RadarRangeSettings _rangeSettings = const RadarRangeSettings();
   List<NearbyUser> _currentUsers = [];
   final Random _random = Random();
 
@@ -62,6 +63,16 @@ class RadarService {
     }
   }
 
+  // Update range settings
+  void updateRangeSettings(RadarRangeSettings newRangeSettings) {
+    _rangeSettings = newRangeSettings;
+    
+    // Restart scanning if currently scanning
+    if (_isScanning) {
+      stopScanning().then((_) => startScanning());
+    }
+  }
+
   // Perform a scan for nearby users
   void _performScan() {
     if (!_settings.enableAutoDetection) return;
@@ -73,10 +84,11 @@ class RadarService {
     for (int i = 0; i < _currentUsers.length; i++) {
       final user = _currentUsers[i];
       
-      // Simulate user movement
-      final newDistance = (user.distanceKm + (_random.nextDouble() - 0.5) * 0.2).clamp(0.1, 3.0);
+      // Simulate user movement with privacy jitter
+      final baseDistance = (user.distanceKm + (_random.nextDouble() - 0.5) * 0.2).clamp(0.1, _rangeSettings.rangeKm);
+      final newDistance = _rangeSettings.applyJitter(baseDistance);
       final newAngle = (user.angleDegrees + (_random.nextDouble() - 0.5) * 10) % 360;
-      final newSignalStrength = user.calculateSignalStrength(_settings.detectionRangeKm);
+      final newSignalStrength = user.calculateSignalStrength(_rangeSettings.rangeKm);
       
       final updatedUser = user.copyWith(
         distanceKm: newDistance,
@@ -86,7 +98,7 @@ class RadarService {
         lastSeen: DateTime.now(),
       );
 
-      if (updatedUser.isWithinRange(_settings.detectionRangeKm)) {
+      if (updatedUser.isWithinRange(_rangeSettings.rangeKm)) {
         newUsers.add(updatedUser);
         if (updatedUser.isDetected && !user.isDetected) {
           detectedUsers.add(updatedUser.id);
@@ -97,7 +109,7 @@ class RadarService {
     // Add some new random users occasionally
     if (_random.nextDouble() < 0.3) {
       final newUser = _generateRandomUser();
-      if (newUser.isWithinRange(_settings.detectionRangeKm)) {
+      if (newUser.isWithinRange(_rangeSettings.rangeKm)) {
         newUsers.add(newUser);
         detectedUsers.add(newUser.id);
       }
@@ -120,7 +132,7 @@ class RadarService {
       orElse: () => throw Exception('User not found'),
     );
 
-    if (!user.isWithinRange(_settings.detectionRangeKm)) {
+    if (!user.isWithinRange(_rangeSettings.rangeKm)) {
       throw Exception('User is out of range');
     }
 
@@ -200,9 +212,9 @@ class RadarService {
     ];
 
     return List.generate(8, (index) {
-      final distance = 0.1 + _random.nextDouble() * 2.9; // 0.1 to 3.0 km
+      final distance = 0.1 + _random.nextDouble() * (_rangeSettings.rangeKm - 0.1);
       final angle = _random.nextDouble() * 360;
-      final signalStrength = (1.0 - (distance / _settings.detectionRangeKm)).clamp(0.0, 1.0);
+      final signalStrength = (1.0 - (distance / _rangeSettings.rangeKm)).clamp(0.0, 1.0);
       
       return NearbyUser(
         id: 'user_$index',
@@ -224,9 +236,9 @@ class RadarService {
     final names = ['New User', 'Anonymous', 'User${_random.nextInt(1000)}'];
     final avatars = ['👤', '👥', '👤'];
     
-    final distance = 0.1 + _random.nextDouble() * 2.9;
+    final distance = 0.1 + _random.nextDouble() * (_rangeSettings.rangeKm - 0.1);
     final angle = _random.nextDouble() * 360;
-    final signalStrength = (1.0 - (distance / _settings.detectionRangeKm)).clamp(0.0, 1.0);
+    final signalStrength = (1.0 - (distance / _rangeSettings.rangeKm)).clamp(0.0, 1.0);
     
     return NearbyUser(
       id: 'user_${DateTime.now().millisecondsSinceEpoch}',
@@ -247,6 +259,9 @@ class RadarService {
 
   // Get current settings
   RadarSettings get settings => _settings;
+  
+  // Get current range settings
+  RadarRangeSettings get rangeSettings => _rangeSettings;
 
   // Check if scanning
   bool get isScanning => _isScanning;
