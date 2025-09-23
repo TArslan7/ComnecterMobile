@@ -263,11 +263,13 @@ We welcome contributions! Please follow these guidelines:
 4. **Push to the branch**: `git push origin feature/amazing-feature`
 5. **Open a Pull Request**
 
-### **Development Workflow**
+### **Development Guidelines**
 - Follow Flutter/Dart style guidelines
 - Write tests for new features
 - Update documentation as needed
 - Ensure all tests pass before submitting
+
+**📖 For detailed development information, see [DEVELOPMENT.md](DEVELOPMENT.md)**
 
 ---
 
