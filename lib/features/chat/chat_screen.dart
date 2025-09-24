@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import '../friends/services/friend_service.dart';
@@ -11,6 +10,7 @@ class ChatScreen extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = useState<bool>(false);
     final conversations = useState<List<ChatConversation>>([
       ChatConversation(
         id: '1',
@@ -252,6 +252,14 @@ class ChatScreen extends HookWidget {
       );
     }
 
+    // Simulate a brief loading state to prevent dark background
+    useEffect(() {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        isLoading.value = false;
+      });
+      return null;
+    }, []);
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
@@ -326,16 +334,18 @@ class ChatScreen extends HookWidget {
           ),
         ],
       ),
-      body: conversations.value.isEmpty
-          ? _buildEmptyState(context, startNewChat)
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: conversations.value.length,
-              itemBuilder: (context, index) {
-                final conversation = conversations.value[index];
-                return _buildConversationTile(context, conversation, openConversation);
-              },
-            ),
+      body: isLoading.value
+          ? _buildLoadingState(context)
+          : conversations.value.isEmpty
+              ? _buildEmptyState(context, startNewChat)
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: conversations.value.length,
+                  itemBuilder: (context, index) {
+                    final conversation = conversations.value[index];
+                    return _buildConversationTile(context, conversation, openConversation);
+                  },
+                ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: startNewChat,
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -499,12 +509,29 @@ class ChatScreen extends HookWidget {
           ),
         ),
       ),
-    ).animate().fadeIn(
-      duration: const Duration(milliseconds: 300),
-    ).slideX(
-      begin: 0.3,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading conversations...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onBackground,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -867,12 +894,6 @@ class ChatConversationScreen extends HookWidget {
           ],
         ],
       ),
-    ).animate().fadeIn(
-      duration: const Duration(milliseconds: 300),
-    ).slideX(
-      begin: message.isMe ? 0.3 : -0.3,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
     );
   }
 

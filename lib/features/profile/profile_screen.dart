@@ -41,20 +41,11 @@ class ProfileScreen extends HookWidget {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        leading: Flexible(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: IconButton(
-                  icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
-                  onPressed: () => context.push('/settings'),
-                  tooltip: 'Settings',
-                  padding: const EdgeInsets.all(8),
-                ),
-              ),
-            ],
-          ),
+        leading: IconButton(
+          icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.primary, size: 22),
+          onPressed: () => context.push('/settings'),
+          tooltip: 'Settings',
+          padding: const EdgeInsets.all(8),
         ),
         actions: [
           IconButton(
