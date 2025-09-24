@@ -1,12 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:confetti/confetti.dart';
-import 'dart:math';
-import '../../services/sound_service.dart';
-import '../../theme/app_theme.dart';
-import 'models/friend_model.dart';
-import 'services/friend_service.dart';
 import 'package:go_router/go_router.dart';
 
 class FriendsScreen extends HookWidget {
@@ -14,891 +7,666 @@ class FriendsScreen extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final friendService = useMemoized(() => FriendService());
-    final friends = useState<List<Friend>>([]);
-    final requests = useState<List<FriendRequest>>([]);
-    final stats = useState<FriendStats>(const FriendStats(totalFriends: 0, onlineFriends: 0, pendingRequests: 0, sentRequests: 0));
-    final isLoading = useState(true);
-    final searchQuery = useState('');
+    final friends = useState<List<Map<String, dynamic>>>([
+      {
+        'id': '1',
+        'name': 'Sarah Johnson',
+        'username': 'sarah_j',
+        'avatar': '👩',
+        'isOnline': true,
+        'lastSeen': '2 minutes ago',
+        'status': 'accepted',
+      },
+      {
+        'id': '2',
+        'name': 'Mike Chen',
+        'username': 'mikechen',
+        'avatar': '👨',
+        'isOnline': false,
+        'lastSeen': '1 hour ago',
+        'status': 'accepted',
+      },
+      {
+        'id': '3',
+        'name': 'Emma Wilson',
+        'username': 'emma_w',
+        'avatar': '👩‍🦰',
+        'isOnline': true,
+        'lastSeen': '5 minutes ago',
+        'status': 'accepted',
+      },
+      {
+        'id': '4',
+        'name': 'Alex Rodriguez',
+        'username': 'alex_rod',
+        'avatar': '👨‍🦱',
+        'isOnline': false,
+        'lastSeen': '2 hours ago',
+        'status': 'accepted',
+      },
+    ]);
+
+    final pendingRequests = useState<List<Map<String, dynamic>>>([
+      {
+        'id': '5',
+        'name': 'David Kim',
+        'username': 'david_k',
+        'avatar': '👨‍💼',
+        'message': 'Hi! I\'d like to connect with you.',
+        'timestamp': DateTime.now().subtract(const Duration(hours: 1)),
+      },
+      {
+        'id': '6',
+        'name': 'Lisa Park',
+        'username': 'lisa_park',
+        'avatar': '👩‍🎨',
+        'message': 'Hey! Let\'s be friends!',
+        'timestamp': DateTime.now().subtract(const Duration(hours: 3)),
+      },
+    ]);
+
     final currentTab = useState(0);
-    final showAddFriend = useState(false);
-    final confettiController = useMemoized(() => ConfettiController(duration: const Duration(seconds: 3)));
-    final soundService = useMemoized(() => SoundService());
-    final selectedFriend = useState<Friend?>(null);
-    final showFriendDetails = useState(false);
+    final searchQuery = useState('');
+    final showAddFriendSearch = useState(false);
+    final addFriendSearchQuery = useState('');
+    final searchResults = useState<List<Map<String, dynamic>>>([]);
 
-    // Initialize friend service
+    // Sample users that can be found when searching
+    final allUsers = [
+      {
+        'id': 'u1',
+        'name': 'John Doe',
+        'username': 'john_doe',
+        'avatar': '👨‍💼',
+        'isOnline': true,
+        'isFriend': false,
+      },
+      {
+        'id': 'u2',
+        'name': 'Jane Smith',
+        'username': 'jane_smith',
+        'avatar': '👩‍💻',
+        'isOnline': false,
+        'isFriend': false,
+      },
+      {
+        'id': 'u3',
+        'name': 'Bob Wilson',
+        'username': 'bob_wilson',
+        'avatar': '👨‍🎨',
+        'isOnline': true,
+        'isFriend': false,
+      },
+      {
+        'id': 'u4',
+        'name': 'Alice Brown',
+        'username': 'alice_brown',
+        'avatar': '👩‍🔬',
+        'isOnline': false,
+        'isFriend': false,
+      },
+      {
+        'id': 'u5',
+        'name': 'Charlie Davis',
+        'username': 'charlie_d',
+        'avatar': '👨‍🚀',
+        'isOnline': true,
+        'isFriend': false,
+      },
+    ];
+
+    // Search for users when query changes
     useEffect(() {
-      friendService.initialize().then((_) {
-        isLoading.value = false;
-      });
-      return null;
-    }, []);
-
-    // Listen to friend service updates
-    useEffect(() {
-      final friendsSubscription = friendService.friendsStream.listen((friendsList) {
-        friends.value = friendsList;
-      });
-      
-      final requestsSubscription = friendService.requestsStream.listen((requestsList) {
-        requests.value = requestsList;
-      });
-      
-      final statsSubscription = friendService.statsStream.listen((statsData) {
-        stats.value = statsData;
-      });
-
-      return () {
-        friendsSubscription.cancel();
-        requestsSubscription.cancel();
-        statsSubscription.cancel();
-      };
-    }, []);
-
-    // Start status simulation
-    useEffect(() {
-      friendService.simulateStatusChanges();
-      return null;
-    }, []);
-
-    void handleAcceptRequest(String requestId) async {
-      await friendService.acceptFriendRequest(requestId);
-      confettiController.play();
-      soundService.playSuccessSound();
-    }
-
-    void handleRejectRequest(String requestId) async {
-      await friendService.rejectFriendRequest(requestId);
-      soundService.playErrorSound();
-    }
-
-    void handleRemoveFriend(String friendId) async {
-      await friendService.removeFriend(friendId);
-      soundService.playButtonClickSound();
-    }
-
-    void handleBlockFriend(String friendId) async {
-      await friendService.blockFriend(friendId);
-      soundService.playErrorSound();
-    }
-
-
-
-    void handleFriendTap(Friend friend) {
-      soundService.playTapSound();
-      selectedFriend.value = friend;
-      showFriendDetails.value = true;
-    }
-
-    void handleSearch(String query) {
-      searchQuery.value = query;
-      if (query.isEmpty) {
-        // Show all friends
-        friends.value = friendService.getFriends();
+      if (addFriendSearchQuery.value.isEmpty) {
+        searchResults.value = [];
       } else {
-        // Show filtered friends
-        friends.value = friendService.searchFriends(query);
+        final query = addFriendSearchQuery.value.toLowerCase();
+        searchResults.value = allUsers.where((user) {
+          final isNotFriend = !friends.value.any((friend) => friend['username'] == user['username']);
+          final matchesQuery = (user['name'] as String).toLowerCase().contains(query) || 
+                              (user['username'] as String).toLowerCase().contains(query);
+          return isNotFriend && matchesQuery;
+        }).toList();
       }
-    }
-
-    List<Friend> getFilteredFriends() {
-      if (searchQuery.value.isEmpty) {
-        return friends.value.where((f) => f.status == FriendStatus.accepted).toList();
-      }
-      return friends.value;
-    }
+      return null;
+    }, [addFriendSearchQuery.value]);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        backgroundColor: AppTheme.surfaceLight,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.primary, size: 24),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary, size: 24),
           onPressed: () => context.pop(),
           tooltip: 'Go Back',
         ),
-        title: const Text(
+        title: Text(
           'Friends',
-          style: TextStyle(fontWeight: FontWeight.bold),
-          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings, color: AppTheme.primary, size: 24),
-            onPressed: () => context.push('/settings'),
-            tooltip: 'Settings',
+            icon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary, size: 24),
+            onPressed: () => _showSearchDialog(context, searchQuery),
+            tooltip: 'Search',
+          ),
+          IconButton(
+            icon: Icon(Icons.person_add, color: Theme.of(context).colorScheme.primary, size: 24),
+            onPressed: () {
+              showAddFriendSearch.value = true;
+              addFriendSearchQuery.value = '';
+            },
+            tooltip: 'Add Friend',
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.backgroundLight,
-              AppTheme.backgroundLight.withValues(alpha: 0.95),
-              AppTheme.backgroundLight.withValues(alpha: 0.9),
-            ],
-            stops: const [0.0, 0.7, 1.0],
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Main content
-            Column(
+      body: showAddFriendSearch.value
+          ? _buildAddFriendSearch(context, addFriendSearchQuery, searchResults, showAddFriendSearch, friends, pendingRequests)
+          : Column(
               children: [
-                // Header with stats
-                _buildHeader(context, stats.value),
-                
-                // Search bar
-                _buildSearchBar(context, searchQuery.value, handleSearch),
-                
-                // Tab bar
-                _buildTabBar(context, currentTab.value, (index) {
-                  soundService.playButtonClickSound();
-                  currentTab.value = index;
-                }),
-                
+                // Tab Bar
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildTabButton(
+                          context,
+                          'Friends (${friends.value.length})',
+                          0,
+                          currentTab.value,
+                          () => currentTab.value = 0,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildTabButton(
+                          context,
+                          'Requests (${pendingRequests.value.length})',
+                          1,
+                          currentTab.value,
+                          () => currentTab.value = 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // Content
                 Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: isLoading.value
-                        ? _buildLoadingState(context)
-                        : currentTab.value == 0
-                            ? _buildFriendsList(context, getFilteredFriends(), handleFriendTap, handleRemoveFriend, handleBlockFriend)
-                            : _buildRequestsList(context, requests.value, handleAcceptRequest, handleRejectRequest),
-                  ),
+                  child: currentTab.value == 0
+                      ? _buildFriendsList(context, friends.value, searchQuery.value)
+                      : _buildRequestsList(context, pendingRequests.value),
                 ),
               ],
             ),
-            
-            // Confetti overlay
-            Align(
-              alignment: Alignment.topCenter,
-              child: ConfettiWidget(
-                confettiController: confettiController,
-                blastDirection: pi / 2,
-                maxBlastForce: 10,
-                minBlastForce: 4,
-                emissionFrequency: 0.02,
-                numberOfParticles: 100,
-                gravity: 0.06,
-                colors: const [
-                  AppTheme.primary,
-                  AppTheme.secondary,
-                  AppTheme.success,
-                  AppTheme.warning,
-                  AppTheme.error,
-                ],
-              ),
+      floatingActionButton: showAddFriendSearch.value
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                showAddFriendSearch.value = true;
+                addFriendSearchQuery.value = '';
+              },
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.person_add),
             ),
-
-            // Friend details modal
-            if (showFriendDetails.value && selectedFriend.value != null)
-              _buildFriendDetailsModal(context, selectedFriend.value!, handleRemoveFriend, handleBlockFriend, () {
-                showFriendDetails.value = false;
-                selectedFriend.value = null;
-              }),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          soundService.playButtonClickSound();
-          showAddFriend.value = true;
-        },
-        backgroundColor: AppTheme.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add Friend'),
-        elevation: 16,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-      ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, FriendStats stats) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.people,
-                color: Colors.white,
-                size: 32,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child:               Text(
-                'Friends',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // Use Wrap for better responsiveness on small screens
-              if (constraints.maxWidth < 300) {
-                return Wrap(
-                  alignment: WrapAlignment.spaceEvenly,
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: [
-                    _buildStatItem('Total', stats.totalFriends.toString(), Icons.people),
-                    _buildStatItem('Online', stats.onlineFriends.toString(), Icons.circle, color: AppTheme.success),
-                    _buildStatItem('Requests', stats.pendingRequests.toString(), Icons.notifications),
-                  ],
-                );
-              } else {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Expanded(child: _buildStatItem('Total', stats.totalFriends.toString(), Icons.people)),
-                    Expanded(child: _buildStatItem('Online', stats.onlineFriends.toString(), Icons.circle, color: AppTheme.success)),
-                    Expanded(child: _buildStatItem('Requests', stats.pendingRequests.toString(), Icons.notifications)),
-                  ],
-                );
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, IconData icon, {Color? color}) {
-    return Container(
-      constraints: const BoxConstraints(
-        minWidth: 60,
-        maxWidth: 120,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: color ?? Colors.white,
-            size: 24,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar(BuildContext context, String query, Function(String) onSearch) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.1),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, color: AppTheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              onChanged: onSearch,
-              decoration: InputDecoration(
-                hintText: 'Search friends...',
-                hintStyle: TextStyle(color: AppTheme.textMedium),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-              ),
-            ),
-          ),
-          if (query.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear, color: AppTheme.textMedium),
-              onPressed: () => onSearch(''),
-              constraints: const BoxConstraints(
-                minWidth: 40,
-                minHeight: 40,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabBar(BuildContext context, int currentTab, Function(int) onTabChanged) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceLight,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primary.withValues(alpha: 0.1),
-            blurRadius: 10,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildTabButton(
-              'Friends',
-              Icons.people,
-              currentTab == 0,
-              () => onTabChanged(0),
-            ),
-          ),
-          Expanded(
-            child: _buildTabButton(
-              'Requests',
-              Icons.notifications,
-              currentTab == 1,
-              () => onTabChanged(1),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabButton(String label, IconData icon, bool isSelected, VoidCallback onTap) {
+  Widget _buildTabButton(
+    BuildContext context,
+    String label,
+    int index,
+    int currentIndex,
+    VoidCallback onTap,
+  ) {
+    final isSelected = index == currentIndex;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          gradient: isSelected ? AppTheme.primaryGradient : null,
-          borderRadius: BorderRadius.circular(24),
+          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : AppTheme.textMedium,
-              size: 20,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.textMedium,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ],
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 14,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFriendsList(
-    BuildContext context,
-    List<Friend> friends,
-    Function(Friend) onFriendTap,
-    Function(String) onRemoveFriend,
-    Function(String) onBlockFriend,
-  ) {
-    if (friends.isEmpty) {
-      return _buildEmptyState(context, 'No friends found', 'Start adding friends to see them here');
+  Widget _buildFriendsList(BuildContext context, List<Map<String, dynamic>> friends, String searchQuery) {
+    final filteredFriends = friends.where((friend) {
+      if (searchQuery.isEmpty) return true;
+      final query = searchQuery.toLowerCase();
+      return friend['name'].toLowerCase().contains(query) || 
+             friend['username'].toLowerCase().contains(query);
+    }).toList();
+
+    if (filteredFriends.isEmpty) {
+      return _buildEmptyState(
+        context,
+        searchQuery.isEmpty ? 'No friends yet' : 'No friends found',
+        searchQuery.isEmpty ? 'Add some friends to get started!' : 'Try a different search term',
+        Icons.people_outline,
+      );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: friends.length,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: filteredFriends.length,
       itemBuilder: (context, index) {
-        final friend = friends[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: _buildFriendCard(context, friend, onFriendTap, onRemoveFriend, onBlockFriend),
-        ).animate().fadeIn(
-          delay: Duration(milliseconds: index * 100),
-          duration: const Duration(milliseconds: 500),
-        ).slideY(
-          begin: 0.3,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOutCubic,
-        );
+        final friend = filteredFriends[index];
+        return _buildFriendCard(context, friend);
       },
     );
   }
 
-  Widget _buildFriendCard(
-    BuildContext context,
-    Friend friend,
-    Function(Friend) onFriendTap,
-    Function(String) onRemoveFriend,
-    Function(String) onBlockFriend,
-  ) {
+  Widget _buildRequestsList(BuildContext context, List<Map<String, dynamic>> requests) {
+    if (requests.isEmpty) {
+      return _buildEmptyState(
+        context,
+        'No pending requests',
+        'Friend requests will appear here',
+        Icons.person_add_outlined,
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: requests.length,
+      itemBuilder: (context, index) {
+        final request = requests[index];
+        return _buildRequestCard(context, request);
+      },
+    );
+  }
+
+  Widget _buildFriendCard(BuildContext context, Map<String, dynamic> friend) {
     return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppTheme.surfaceLight,
-              AppTheme.surfaceLight.withValues(alpha: 0.8),
-            ],
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              radius: 25,
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              child: Text(
+                friend['avatar'],
+                style: const TextStyle(fontSize: 24),
+              ),
+            ),
+            if (friend['isOnline'])
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: Text(
+          friend['name'],
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primary.withValues(alpha: 0.2),
-              blurRadius: 15,
-              spreadRadius: 2,
-              offset: const Offset(0, 5),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '@${friend['username']}',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              friend['isOnline'] ? 'Online' : 'Last seen ${friend['lastSeen']}',
+              style: TextStyle(
+                color: friend['isOnline'] 
+                    ? Colors.green 
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 12,
+              ),
             ),
           ],
         ),
-        child: InkWell(
-          onTap: () => onFriendTap(friend),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
+        trailing: PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+          onSelected: (value) => _handleFriendAction(context, value, friend),
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'message',
+              child: Row(
+                children: [
+                  Icon(Icons.message, size: 20),
+                  SizedBox(width: 8),
+                  Text('Message'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'profile',
+              child: Row(
+                children: [
+                  Icon(Icons.person, size: 20),
+                  SizedBox(width: 8),
+                  Text('View Profile'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'remove',
+              child: Row(
+                children: [
+                  Icon(Icons.person_remove, size: 20, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Remove Friend', style: TextStyle(color: Colors.red)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        onTap: () => _showFriendProfile(context, friend),
+      ),
+    );
+  }
+
+  Widget _buildRequestCard(BuildContext context, Map<String, dynamic> request) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                // Avatar with online status
-                Stack(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primary.withValues(alpha: 0.4),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          friend.avatar,
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                      ),
-                    ),
-                    if (friend.isOnline)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: AppTheme.success,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.white, width: 3),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.success.withValues(alpha: 0.8),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  child: Text(
+                    request['avatar'],
+                    style: const TextStyle(fontSize: 24),
+                  ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        friend.name,
-                        style: const TextStyle(
-                          fontSize: 18,
+                        request['name'],
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
-                      if (friend.bio != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          friend.bio!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppTheme.textMedium,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 2),
+                      Text(
+                        '@${request['username']}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ],
-                      const SizedBox(height: 8),
-                      if (friend.interests.isNotEmpty)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: friend.interests.take(3).map((interest) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              interest,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          )).toList(),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        request['message'],
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
+                      ),
                     ],
                   ),
                 ),
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: AppTheme.textMedium),
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'remove':
-                        onRemoveFriend(friend.friendId);
-                        break;
-                      case 'block':
-                        onBlockFriend(friend.friendId);
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'remove',
-                      child: Row(
-                        children: [
-                          Icon(Icons.person_remove, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Remove Friend'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'block',
-                      child: Row(
-                        children: [
-                          Icon(Icons.block, color: Colors.orange),
-                          SizedBox(width: 8),
-                          Text('Block Friend'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRequestsList(
-    BuildContext context,
-    List<FriendRequest> requests,
-    Function(String) onAcceptRequest,
-    Function(String) onRejectRequest,
-  ) {
-    final pendingRequests = requests.where((r) => r.response == null).toList();
-    
-    if (pendingRequests.isEmpty) {
-      return _buildEmptyState(context, 'No pending requests', 'You\'re all caught up!');
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: pendingRequests.length,
-      itemBuilder: (context, index) {
-        final request = pendingRequests[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: _buildRequestCard(context, request, onAcceptRequest, onRejectRequest),
-        ).animate().fadeIn(
-          delay: Duration(milliseconds: index * 100),
-          duration: const Duration(milliseconds: 500),
-        ).slideY(
-          begin: 0.3,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeOutCubic,
-        );
-      },
-    );
-  }
-
-  Widget _buildRequestCard(
-    BuildContext context,
-    FriendRequest request,
-    Function(String) onAcceptRequest,
-    Function(String) onRejectRequest,
-  ) {
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppTheme.surfaceLight,
-              AppTheme.surfaceLight.withValues(alpha: 0.8),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primary.withValues(alpha: 0.2),
-              blurRadius: 15,
-              spreadRadius: 2,
-              offset: const Offset(0, 5),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _handleRequestAction(context, 'accept', request),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Accept'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _handleRequestAction(context, 'decline', request),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Decline'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.primaryGradient,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primary.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        request.fromUserAvatar,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          request.fromUserName,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          request.type == FriendRequestType.received ? 'Wants to be your friend' : 'Friend request sent',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppTheme.textMedium,
-                          ),
-                        ),
-                        if (request.message != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            request.message!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppTheme.textMedium,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+      ),
+    );
+  }
+
+  Widget _buildAddFriendSearch(BuildContext context, ValueNotifier<String> searchQuery, ValueNotifier<List<Map<String, dynamic>>> searchResults, ValueNotifier<bool> showAddFriendSearch, ValueNotifier<List<Map<String, dynamic>>> friends, ValueNotifier<List<Map<String, dynamic>>> pendingRequests) {
+    return Column(
+      children: [
+        // Search Header
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              if (request.type == FriendRequestType.received) ...[
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => onAcceptRequest(request.id),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.success,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Accept'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => onRejectRequest(request.id),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.error,
-                          side: BorderSide(color: AppTheme.error),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Reject'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ],
           ),
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
+                onPressed: () {
+                  searchQuery.value = '';
+                  showAddFriendSearch.value = false;
+                },
+              ),
+              Expanded(
+                child: TextField(
+                  autofocus: true,
+                  onChanged: (value) => searchQuery.value = value,
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or username...',
+                    prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.primary),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.background,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Search Results
+        Expanded(
+          child: searchQuery.value.isEmpty
+              ? _buildEmptyState(
+                  context,
+                  'Search for users',
+                  'Enter a name or username to find people to add as friends',
+                  Icons.search,
+                )
+              : searchResults.value.isEmpty
+                  ? _buildEmptyState(
+                      context,
+                      'No users found',
+                      'Try searching with a different name or username',
+                      Icons.person_search,
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: searchResults.value.length,
+                      itemBuilder: (context, index) {
+                        final user = searchResults.value[index];
+                        return _buildUserSearchCard(context, user, searchResults, pendingRequests);
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserSearchCard(BuildContext context, Map<String, dynamic> user, ValueNotifier<List<Map<String, dynamic>>> searchResults, ValueNotifier<List<Map<String, dynamic>>> pendingRequests) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              radius: 25,
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              child: Text(
+                user['avatar'],
+                style: const TextStyle(fontSize: 24),
+              ),
+            ),
+            if (user['isOnline'])
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: Text(
+          user['name'],
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '@${user['username']}',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              user['isOnline'] ? 'Online' : 'Offline',
+              style: TextStyle(
+                color: user['isOnline'] 
+                    ? Colors.green 
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        trailing: ElevatedButton(
+          onPressed: () => _sendFriendRequest(context, user, searchResults, pendingRequests),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text('Add'),
         ),
       ),
     );
   }
 
-  Widget _buildLoadingState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, String title, String subtitle, IconData icon) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
-              borderRadius: BorderRadius.circular(50),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.4),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.people,
-              color: Colors.white,
-              size: 50,
-            ),
+          Icon(
+            icon,
+            size: 80,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: 20),
-          Text(
-            'Loading friends...',
-            style: const TextStyle(
-              fontSize: 18,
-              color: AppTheme.textDark,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, String title, String subtitle) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
-              borderRadius: BorderRadius.circular(60),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.4),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.people_outline,
-              color: Colors.white,
-              size: 60,
-            ),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
-              color: AppTheme.textDark,
               fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: AppTheme.textMedium,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
             textAlign: TextAlign.center,
           ),
@@ -907,218 +675,191 @@ class FriendsScreen extends HookWidget {
     );
   }
 
-  Widget _buildFriendDetailsModal(
-    BuildContext context,
-    Friend friend,
-    Function(String) onRemoveFriend,
-    Function(String) onBlockFriend,
-    VoidCallback onClose,
-  ) {
-    return Container(
-      color: Colors.black.withValues(alpha: 0.8),
-      child: Center(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: AppTheme.primaryGradient,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primary.withValues(alpha: 0.6),
-                blurRadius: 40,
-                spreadRadius: 5,
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(40),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primary.withValues(alpha: 0.7),
-                            blurRadius: 20,
-                            spreadRadius: 3,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          friend.avatar,
-                          style: const TextStyle(fontSize: 32),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            friend.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: friend.isOnline ? AppTheme.success : AppTheme.textMedium,
-                                  borderRadius: BorderRadius.circular(6),
-                                  boxShadow: friend.isOnline ? [
-                                    BoxShadow(
-                                      color: AppTheme.success.withValues(alpha: 0.7),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                  ] : null,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                friend.isOnline ? 'Online' : 'Offline',
-                                style: TextStyle(
-                                  color: friend.isOnline ? AppTheme.success : AppTheme.textMedium,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: onClose,
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (friend.bio != null) ...[
-                      const Text(
-                        'Bio:',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        friend.bio!,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                    const Text(
-                      'Interests:',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: friend.interests.map((interest) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.primary.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          interest,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      )).toList(),
-                    ),
-                  ],
-                ),
-              ),
-              // Actions
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: onClose,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: const Text('Close'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          onClose();
-                          // TODO: Navigate to chat
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppTheme.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        child: const Text(
-                          'Message',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+  void _showSearchDialog(BuildContext context, ValueNotifier<String> searchQuery) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Search Friends'),
+        content: TextField(
+          onChanged: (value) => searchQuery.value = value,
+          decoration: const InputDecoration(
+            hintText: 'Enter name or username...',
+            prefixIcon: Icon(Icons.search),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendFriendRequest(BuildContext context, Map<String, dynamic> user, ValueNotifier<List<Map<String, dynamic>>> searchResults, ValueNotifier<List<Map<String, dynamic>>> pendingRequests) {
+    // TODO: Implement actual friend request functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Friend request sent to ${user['name']} (@${user['username']})!')),
+    );
+    
+    // Add to pending requests for demo purposes
+    pendingRequests.value = [
+      ...pendingRequests.value,
+      {
+        'id': 'req_${user['id']}',
+        'name': user['name'],
+        'username': user['username'],
+        'avatar': user['avatar'],
+        'message': 'Friend request sent',
+        'timestamp': DateTime.now(),
+      },
+    ];
+    
+    // Remove from search results
+    searchResults.value = searchResults.value.where((u) => u['id'] != user['id']).toList();
+  }
+
+  void _showAddFriendDialog(BuildContext context) {
+    final usernameController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Friend'),
+        content: TextField(
+          controller: usernameController,
+          decoration: const InputDecoration(
+            labelText: 'Username',
+            hintText: 'Enter friend\'s username',
+            prefixIcon: Icon(Icons.person),
+            prefixText: '@',
+          ),
+          textCapitalization: TextCapitalization.none,
+          autocorrect: false,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final username = usernameController.text.trim();
+              if (username.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a username')),
+                );
+                return;
+              }
+              
+              // TODO: Implement add friend functionality
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Friend request sent to @$username!')),
+              );
+            },
+            child: const Text('Send Request'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleFriendAction(BuildContext context, String action, Map<String, dynamic> friend) {
+    switch (action) {
+      case 'message':
+        // TODO: Navigate to chat
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Opening chat with ${friend['name']}')),
+        );
+        break;
+      case 'profile':
+        // TODO: Navigate to profile
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Viewing ${friend['name']}\'s profile')),
+        );
+        break;
+      case 'remove':
+        _showRemoveFriendDialog(context, friend);
+        break;
+    }
+  }
+
+  void _handleRequestAction(BuildContext context, String action, Map<String, dynamic> request) {
+    // TODO: Implement request handling
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Request ${action}ed')),
+    );
+  }
+
+  void _showFriendProfile(BuildContext context, Map<String, dynamic> friend) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(friend['name']),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              child: Text(
+                friend['avatar'],
+                style: const TextStyle(fontSize: 40),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              friend['isOnline'] ? 'Online' : 'Last seen ${friend['lastSeen']}',
+              style: TextStyle(
+                color: friend['isOnline'] 
+                    ? Colors.green 
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate to chat
+            },
+            child: const Text('Message'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRemoveFriendDialog(BuildContext context, Map<String, dynamic> friend) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Friend'),
+        content: Text('Are you sure you want to remove ${friend['name']} from your friends?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement remove friend
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${friend['name']} removed from friends')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
       ),
     );
   }
