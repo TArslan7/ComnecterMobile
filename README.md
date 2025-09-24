@@ -314,9 +314,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Contributors**: Thank you to all contributors!
 
 ---
-
-**Made with ❤️ using Flutter**
-
----
-
-*Last updated: December 2024*
