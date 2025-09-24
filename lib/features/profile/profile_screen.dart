@@ -49,6 +49,11 @@ class ProfileScreen extends HookWidget {
         ),
         actions: [
           IconButton(
+            icon: Icon(Icons.notifications, color: Theme.of(context).colorScheme.primary, size: 24),
+            onPressed: () => context.push('/notifications'),
+            tooltip: 'Notifications',
+          ),
+          IconButton(
             icon: Icon(Icons.people, color: Theme.of(context).colorScheme.primary, size: 24),
             onPressed: () => context.push('/friends'),
             tooltip: 'Friends',
