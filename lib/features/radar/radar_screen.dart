@@ -119,6 +119,17 @@ class RadarScreen extends HookWidget {
         actions: [
           IconButton(
             onPressed: () {
+              context.push('/notifications');
+            },
+            icon: Icon(
+              Icons.notifications,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
+            tooltip: 'Notifications',
+          ),
+          IconButton(
+            onPressed: () {
               context.push('/friends');
             },
             icon: Icon(

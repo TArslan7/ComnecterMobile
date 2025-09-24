@@ -11,6 +11,7 @@ import '../features/profile/profile_screen.dart';
 import '../features/community/community_screen.dart';
 import '../features/event/event_screen.dart';
 import '../features/friends/friends_screen.dart';
+import '../features/notifications/notifications_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/auth/sign_up_screen.dart';
@@ -123,6 +124,11 @@ GoRouter createRouter([WidgetRef? ref]) {
             path: '/friends',
             name: 'friends',
             builder: (context, state) => const FriendsScreen(),
+          ),
+          GoRoute(
+            path: '/notifications',
+            name: 'notifications',
+            builder: (context, state) => const NotificationsScreen(),
           ),
           GoRoute(
             path: '/settings',
