@@ -71,6 +71,340 @@ migrate_working_dir/
 # Firebase Configuration Files
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+ios/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+web/firebase-config.js
+web/firebase-config.json
+
+# API Keys and Secrets
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.test
+config.json
+secrets.json
+api-keys.json
+credentials.json
+service-account.json
+firebase-adminsdk-*.json
+
+# Android Signing and Security
 *.jks
 *.keystore
-.aider*
+key.properties
+keystore.properties
+android/app/upload-keystore.jks
+android/app/debug.keystore
+android/app/release.keystore
+android/app/keystore/
+android/keystore/
+
+# iOS Certificates and Provisioning
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+ios/*.xcconfig
+ios/Config/
+ios/Secrets/
+ios/GoogleService-Info.plist
+
+# macOS Certificates
+macos/*.xcconfig
+macos/Config/
+macos/Secrets/
+macos/GoogleService-Info.plist
+
+# Development and Local Configuration
+local.properties
+gradle.properties.local
+android/local.properties
+android/gradle.properties.local
+ios/local.properties
+macos/local.properties
+
+# Database and Cache Files
+*.db
+*.sqlite
+*.sqlite3
+*.cache
+.cache/
+cache/
+
+# Logs and Debug Files
+*.log
+logs/
+debug/
+crash-reports/
+analytics/
+
+# Backup and Temporary Files
+*.backup
+*.bak
+*.tmp
+*.temp
+backup/
+temp/
+tmp/
+
+# IDE and Editor Files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/usage.statistics.xml
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/scopes/
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/datasources.xml
+.idea/dataSources.ids
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+.idea/libraries/
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Flutter/Dart Specific
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.generated/
+.melos/
+.melos_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pubspec.lock
+
+# Additional Security
+*.pem
+*.key
+*.crt
+*.csr
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+*.aider*
+
+# Xcode Project Files (contain sensitive bundle IDs and project info)
+*.pbxproj
+*.xcworkspace
+*.xcodeproj/
+DerivedData/
+*.hmap
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.pbxuser
+*.xcuserdata/
+
+# Flutter Generated Files
+Generated.xcconfig
+Flutter-Generated.xcconfig
+ephemeral/
+*.xcconfig.local
+
+# Pods and Dependencies
+Pods/
+Podfile.lock
+*.xcworkspace/xcuserdata/
+
+# iOS/macOS Specific
+ios/Flutter/Generated.xcconfig
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/Flutter/engine/
+ios/.symlinks/
+ios/Pods/
+ios/.flutter-plugins
+ios/.flutter-plugins-dependencies
+ios/Flutter/.last_build_id
+ios/Runner/GoogleService-Info.plist
+ios/GoogleService-Info.plist
+
+# macOS Specific
+macos/Runner/GoogleService-Info.plist
+macos/GoogleService-Info.plist
+macos/Pods/
+macos/.symlinks/
+macos/.flutter-plugins
+macos/.flutter-plugins-dependencies
+
+# Web Configuration
+web/firebase-config.js
+web/firebase-config.json
+web/manifest.json
+
+# Android Specific
+android/app/google-services.json
+android/app/debug.keystore
+android/app/release.keystore
+android/app/upload-keystore.jks
+android/keystore/
+android/app/keystore/
+android/local.properties
+android/gradle.properties.local
+
+# Build and Generated Files
+build/
+.generated/
+.melos/
+.melos_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pubspec.lock
+
+# IDE and Editor Specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/usage.statistics.xml
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/scopes/
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/datasources.xml
+.idea/dataSources.ids
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+.idea/libraries/
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Temporary and Cache Files
+*.tmp
+*.temp
+*.cache
+.cache/
+cache/
+*.backup
+*.bak
+backup/
+temp/
+tmp/
+
+# Logs and Debug Files
+*.log
+logs/
+debug/
+crash-reports/
+analytics/
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+
+# Additional Sensitive Patterns
+*secret*
+*private*
+*confidential*
+*internal*
+*test*
+*debug*
+*staging*
+*production*
+*development*
+
+# Specific Sensitive Files Found in Codebase
+lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+web/firebase-config.js
+web/firebase-config.json
+
+# User-specific Xcode files
+*.xcuserdata/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Flutter/Dart specific sensitive files
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.generated/
+.melos/
+.melos_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pubspec.lock
+
+# Environment and configuration files
+.env
+.env.*
+config.json
+secrets.json
+api-keys.json
+credentials.json
+service-account.json
+firebase-adminsdk-*.json
+
+# Keystore and signing files
+*.jks
+*.keystore
+key.properties
+keystore.properties
+android/app/upload-keystore.jks
+android/app/debug.keystore
+android/app/release.keystore
+android/app/keystore/
+android/keystore/
+
+# iOS/macOS certificates and provisioning
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+ios/*.xcconfig
+ios/Config/
+ios/Secrets/
+macos/*.xcconfig
+macos/Config/
+macos/Secrets/
+
+# Local development files
+local.properties
+gradle.properties.local
+android/local.properties
+android/gradle.properties.local
+ios/local.properties
+macos/local.properties
