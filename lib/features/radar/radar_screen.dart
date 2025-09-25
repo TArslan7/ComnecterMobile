@@ -25,6 +25,9 @@ class RadarScreen extends HookWidget {
     final detectedUsers = useState<List<NearbyUser>>([]);
     final friendService = useMemoized(() => FriendService(), []);
     final rangeSettings = useState<RadarRangeSettings>(const RadarRangeSettings());
+    
+    // Foldable state for detected users list
+    final isUsersListExpanded = useState(true);
 
     useEffect(() {
       // Initialize radar service
@@ -347,11 +350,10 @@ class RadarScreen extends HookWidget {
               
               const SizedBox(height: 25),
               
-              // Detected Users List
+              // Detected Users List - Foldable
               Container(
                 width: double.infinity,
                 margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(15),
@@ -362,41 +364,69 @@ class RadarScreen extends HookWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.people,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Detected Users',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${detectedUsers.value.length}',
-                            style: TextStyle(
-                              fontSize: 12,
+                    // Header - clickable to expand/collapse
+                    GestureDetector(
+                      onTap: () {
+                        isUsersListExpanded.value = !isUsersListExpanded.value;
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.people,
                               color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                              size: 18,
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Detected Users',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${detectedUsers.value.length}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            AnimatedRotation(
+                              turns: isUsersListExpanded.value ? 0.0 : 0.5,
+                              duration: const Duration(milliseconds: 300),
+                              child: Icon(
+                                Icons.expand_less,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    
+                    // Expandable content
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: isUsersListExpanded.value ? null : 0,
+                      child: isUsersListExpanded.value ? Container(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: Column(
+                          children: [
                     
                     // User List
                     ...List.generate(detectedUsers.value.length, (index) {
@@ -521,30 +551,34 @@ class RadarScreen extends HookWidget {
                       );
                     }),
                     
-                    // Empty state when no users detected
-                    if (detectedUsers.value.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.radar_outlined,
-                              size: 32,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              isScanning.value 
-                                ? 'Scanning for nearby users...' 
-                                : 'No users detected in range',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            // Empty state when no users detected
+                            if (detectedUsers.value.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.radar_outlined,
+                                      size: 32,
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      isScanning.value 
+                                        ? 'Scanning for nearby users...' 
+                                        : 'No users detected in range',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
                           ],
                         ),
-                      ),
+                      ) : const SizedBox.shrink(),
+                    ),
                   ],
                 ),
               ),
