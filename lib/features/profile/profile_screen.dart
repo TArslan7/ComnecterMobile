@@ -195,6 +195,11 @@ class ProfileScreen extends HookWidget {
           
           // Radar Visibility Status - Tertiary hierarchy
           _buildRadarStatus(context, radarStatus.value),
+          
+          const SizedBox(height: 40),
+          
+          // Stat Cards Section
+          _buildStatCards(context, profile),
         ],
       ),
     );
@@ -434,6 +439,473 @@ class ProfileScreen extends HookWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatCards(BuildContext context, Map<String, dynamic> profile) {
+    final friendsCount = useState<int>(profile['friendsCount'] ?? 0);
+    final detectionsCount = useState<int>(profile['detectionsCount'] ?? 0);
+    final communitiesCount = useState<int>(profile['communitiesCount'] ?? 0);
+    
+    // Simulate data updates for demo purposes
+    useEffect(() {
+      final timer = Stream.periodic(const Duration(seconds: 5), (i) => i).listen((count) {
+        friendsCount.value = (friendsCount.value + (count % 3)).clamp(0, 999);
+        detectionsCount.value = (detectionsCount.value + (count % 2)).clamp(0, 999);
+        communitiesCount.value = (communitiesCount.value + (count % 4)).clamp(0, 99);
+      });
+      return timer.cancel;
+    }, []);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Your Stats',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  icon: '👥',
+                  count: friendsCount.value,
+                  label: 'Friends',
+                  onTap: () => context.push('/friends'),
+                  isEmpty: friendsCount.value == 0,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  icon: '📡',
+                  count: detectionsCount.value,
+                  label: 'Detections',
+                  onTap: () => _showDetectionsHistory(context, detectionsCount.value),
+                  isEmpty: detectionsCount.value == 0,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  context,
+                  icon: '🏘️',
+                  count: communitiesCount.value,
+                  label: 'Communities',
+                  onTap: () => _showCommunities(context, communitiesCount.value),
+                  isEmpty: communitiesCount.value == 0,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(BuildContext context, {
+    required String icon,
+    required int count,
+    required String label,
+    required VoidCallback onTap,
+    required bool isEmpty,
+  }) {
+    return GestureDetector(
+      onTap: () async {
+        await HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isEmpty
+                ? [
+                    Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+                    Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.1),
+                  ]
+                : [
+                    Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2),
+                    Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.1),
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isEmpty
+                ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)
+                : Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            width: 1,
+          ),
+          boxShadow: isEmpty
+              ? []
+              : [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon
+            Text(
+              icon,
+              style: TextStyle(
+                fontSize: 24,
+                color: isEmpty
+                    ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)
+                    : Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Animated Counter
+            isEmpty
+                ? Text(
+                    '0',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  )
+                : AnimatedCounter(
+                    count: count,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+            
+            const SizedBox(height: 4),
+            
+            // Label
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: isEmpty
+                    ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)
+                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            
+            // Empty state message
+            if (isEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                _getEmptyStateMessage(label),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  fontSize: 10,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getEmptyStateMessage(String label) {
+    switch (label.toLowerCase()) {
+      case 'friends':
+        return 'No friends yet 👀\nStart connecting!';
+      case 'detections':
+        return 'No detections yet 👀\nTry boosting your radar!';
+      case 'communities':
+        return 'No communities yet 👀\nJoin groups nearby!';
+      default:
+        return 'No data yet 👀';
+    }
+  }
+
+  void _showDetectionsHistory(BuildContext context, int detectionsCount) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            Text(
+              '📡 Detection History',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Check if user has detections
+            if (detectionsCount == 0) ...[
+              Icon(
+                Icons.radar_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No detections yet 👀',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Try boosting your radar!\nTurn on your radar and start scanning for nearby users.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to radar screen
+                },
+                icon: const Icon(Icons.radar),
+                label: const Text('Open Radar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ] else ...[
+              // Show detections list (placeholder for MVP)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.radar,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'You\'ve made $detectionsCount detections!',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Detection history features coming soon!\nYou\'ll be able to view detailed logs of all your radar scans.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCommunities(BuildContext context, int communitiesCount) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            Text(
+              '🏘️ Joined Communities',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Check if user has communities
+            if (communitiesCount == 0) ...[
+              Icon(
+                Icons.groups_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No communities yet 👀',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Join groups nearby!\nConnect with like-minded people in your area.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // TODO: Navigate to communities discovery
+                },
+                icon: const Icon(Icons.explore),
+                label: const Text('Explore Communities'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ] else ...[
+              // Show joined communities list (placeholder for MVP)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.groups,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'You\'re in $communitiesCount communities!',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Community management features coming soon!\nYou\'ll be able to view and manage all your joined groups.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AnimatedCounter extends HookWidget {
+  final int count;
+  final TextStyle? style;
+
+  const AnimatedCounter({
+    super.key,
+    required this.count,
+    this.style,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final animationController = useAnimationController(
+      duration: const Duration(milliseconds: 800),
+    );
+    final previousCount = useRef<int>(count);
+
+    useEffect(() {
+      if (previousCount.value != count) {
+        animationController.forward(from: 0);
+        previousCount.value = count;
+      }
+      return null;
+    }, [count]);
+
+    return AnimatedBuilder(
+      animation: animationController,
+      builder: (context, child) {
+        final animatedValue = Tween<double>(
+          begin: previousCount.value.toDouble(),
+          end: count.toDouble(),
+        ).animate(CurvedAnimation(
+          parent: animationController,
+          curve: Curves.easeOutCubic,
+        ));
+
+        return Text(
+          animatedValue.value.round().toString(),
+          style: style,
+        );
+      },
     );
   }
 }
