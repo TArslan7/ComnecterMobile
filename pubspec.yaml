@@ -21,6 +21,7 @@ dependencies:
   shimmer: ^3.0.0
   shared_preferences: ^2.2.2
   audioplayers: ^5.2.1
+  share_plus: ^7.2.1
   
   # Firebase Core
   firebase_core: ^2.24.2
