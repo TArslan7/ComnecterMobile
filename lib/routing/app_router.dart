@@ -233,8 +233,8 @@ class RootNavigation extends StatelessWidget {
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.event), 
-                  label: 'Events',
-                  tooltip: 'Events',
+                  label: 'Event',
+                  tooltip: 'Event',
                 ),
               ],
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,

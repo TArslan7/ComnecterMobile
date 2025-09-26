@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/services.dart';
@@ -35,8 +37,8 @@ class ProfileScreen extends HookWidget {
             'name': 'User',
             'username': '@user',
             'avatar': '👤',
-            'bio': '',
-            'interests': [],
+            'bio': 'This is a test bio to see if the bio section displays correctly.',
+            'interests': ['🎵 Music', '📚 Reading', '🏃‍♂️ Running'],
           };
         }
       } catch (e) {
@@ -46,8 +48,8 @@ class ProfileScreen extends HookWidget {
           'name': 'User',
           'username': '@user',
           'avatar': '👤',
-          'bio': '',
-          'interests': [],
+          'bio': 'This is a test bio to see if the bio section displays correctly.',
+          'interests': ['🎵 Music', '📚 Reading', '🏃‍♂️ Running'],
         };
       } finally {
         isLoading.value = false;
@@ -109,24 +111,10 @@ class ProfileScreen extends HookWidget {
           // Hero Section (Profile Photo + Name + Username)
           _buildHeroSection(context, profile, soundService),
           
-          const SizedBox(height: 20),
-          
-          // Bio Section
-          if (profile['bio'] != null && profile['bio'].toString().trim().isNotEmpty) ...[
-            _buildBioSection(context, profile),
-            const SizedBox(height: 16),
-          ],
-          
-          // Interests Section
-          if (profile['interests'] != null && (profile['interests'] as List).isNotEmpty) ...[
-            _buildInterestsDisplay(context, profile),
-            const SizedBox(height: 16),
-          ],
-          
           const SizedBox(height: 28),
           
           // Radar Visibility Status - Tertiary hierarchy
-          _buildRadarStatus(context, {
+          _buildRadarStatus(context, profile, {
             'isVisible': true,
             'range': 5,
             'isBoosted': false,
@@ -141,6 +129,11 @@ class ProfileScreen extends HookWidget {
           
           // Stat Cards Section
           _buildStatCards(context, profile),
+          
+          const SizedBox(height: 40),
+          
+          // Boost Visibility Section
+          _buildBoostVisibilitySection(context),
         ],
       ),
     );
@@ -404,73 +397,85 @@ class ProfileScreen extends HookWidget {
     );
   }
 
-  Widget _buildRadarStatus(BuildContext context, Map<String, dynamic> status) {
+  Widget _buildRadarStatus(BuildContext context, Map<String, dynamic> profile, Map<String, dynamic> status) {
     final isVisible = status['isVisible'] as bool;
     final range = status['range'] as int;
     final isBoosted = status['isBoosted'] as bool;
     
-    return Center(
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: isVisible 
-            ? (isBoosted 
-              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2)
-              : Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.2))
-            : Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: isVisible 
-              ? (isBoosted 
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                : Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5))
-              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-            width: 1,
+    return Column(
+      children: [
+        // Radar Status Bar
+        Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: isVisible 
+                ? (isBoosted 
+                  ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.2)
+                  : Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.2))
+                : Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: isVisible 
+                  ? (isBoosted 
+                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                    : Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5))
+                  : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 500),
+                  child: Icon(
+                    isVisible 
+                      ? (isBoosted ? Icons.rocket_launch : Icons.radar)
+                      : Icons.visibility_off,
+                    size: 20,
+                    color: isVisible 
+                      ? (isBoosted 
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.secondary)
+                      : Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 500),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isVisible 
+                      ? (isBoosted 
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.secondary)
+                      : Theme.of(context).colorScheme.outline,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.1,
+                  ) ?? const TextStyle(),
+                  child: Text(
+                    isVisible 
+                      ? (isBoosted 
+                        ? '🚀 Boosted to $range km'
+                        : '🔵 Visible in $range km')
+                      : '⚫ Hidden from radar',
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 500),
-              child: Icon(
-                isVisible 
-                  ? (isBoosted ? Icons.rocket_launch : Icons.radar)
-                  : Icons.visibility_off,
-                size: 20,
-                color: isVisible 
-                  ? (isBoosted 
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.secondary)
-                  : Theme.of(context).colorScheme.outline,
-              ),
-            ),
-            const SizedBox(width: 10),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 500),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: isVisible 
-                  ? (isBoosted 
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.secondary)
-                  : Theme.of(context).colorScheme.outline,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.1,
-              ) ?? const TextStyle(),
-              child: Text(
-                isVisible 
-                  ? (isBoosted 
-                    ? '🚀 Boosted to $range km'
-                    : '🔵 Visible in $range km')
-                  : '⚫ Hidden from radar',
-              ),
-            ),
-          ],
-        ),
-      ),
+        
+        // Bio and Interests Section
+        const SizedBox(height: 16),
+        _buildBioSection(context, profile),
+        
+        const SizedBox(height: 12),
+        _buildInterestsDisplay(context, profile),
+      ],
     );
   }
 
@@ -931,10 +936,17 @@ class ProfileScreen extends HookWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            profile['bio'] ?? '',
+            profile['bio']?.toString().trim().isNotEmpty == true 
+                ? profile['bio'] 
+                : 'No bio added yet. Tap "Edit Profile" to add one!',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+              color: profile['bio']?.toString().trim().isNotEmpty == true 
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               height: 1.4,
+              fontStyle: profile['bio']?.toString().trim().isNotEmpty == true 
+                  ? FontStyle.normal 
+                  : FontStyle.italic,
             ),
             textAlign: TextAlign.left,
           ),
@@ -979,30 +991,38 @@ class ProfileScreen extends HookWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: interests.map((interest) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                    width: 1,
+          interests.isNotEmpty 
+              ? Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: interests.map((interest) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        interest.trim(),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                )
+              : Text(
+                  'No interests added yet. Tap "Edit Profile" to add some!',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontStyle: FontStyle.italic,
                   ),
                 ),
-                child: Text(
-                  interest.trim(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
         ],
       ),
     );
@@ -1165,6 +1185,471 @@ class ProfileScreen extends HookWidget {
     print('🔗 Generated unique shareable link for user $userId: $shareableLink');
     
     return shareableLink;
+  }
+
+  Widget _buildBoostVisibilitySection(BuildContext context) {
+    final isBoostActive = useState(false);
+    final boostTimeRemaining = useState(0);
+    
+    // Ultra-smooth animation controllers
+    final heartbeatController = useAnimationController(
+      duration: const Duration(milliseconds: 2500), // Very slow, smooth breathing
+    );
+    
+    final glowController = useAnimationController(
+      duration: const Duration(milliseconds: 3000), // Ultra-smooth glow
+    );
+    
+    final scaleController = useAnimationController(
+      duration: const Duration(milliseconds: 2000), // Smooth scale
+    );
+    
+    // Countdown timer
+    useEffect(() {
+      if (isBoostActive.value) {
+        boostTimeRemaining.value = 300; // 5 minutes in seconds
+        
+        StreamSubscription? countdownTimer;
+        countdownTimer = Stream.periodic(const Duration(seconds: 1), (i) => i).listen((_) {
+          if (boostTimeRemaining.value > 0) {
+            boostTimeRemaining.value = boostTimeRemaining.value - 1;
+          } else {
+            isBoostActive.value = false;
+            countdownTimer?.cancel();
+          }
+        });
+        
+        return () => countdownTimer?.cancel();
+      }
+      return null;
+    }, [isBoostActive.value]);
+    
+    // Start smooth continuous animation
+    useEffect(() {
+      if (!isBoostActive.value) {
+        // Start all animations with smooth continuous motion
+        heartbeatController.repeat(reverse: true);
+        glowController.repeat(reverse: true);
+        scaleController.repeat(reverse: true);
+      } else {
+        heartbeatController.stop();
+        glowController.stop();
+        scaleController.stop();
+      }
+      return null;
+    }, [isBoostActive.value]);
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          // Premium Boost Button with Heartbeat Animation
+          AnimatedBuilder(
+            animation: Listenable.merge([heartbeatController, glowController, scaleController]),
+            builder: (context, child) {
+              final heartbeatValue = heartbeatController.value;
+              final glowValue = glowController.value;
+              final scaleValue = scaleController.value;
+              
+              // Ultra-smooth scale effect with gentle easing
+              final pulseScale = 1.0 + (Curves.easeInOutCubic.transform(heartbeatValue) * 0.025); // Very gentle
+              final scalePulse = 1.0 + (Curves.easeInOutCubic.transform(scaleValue) * 0.015); // Extremely subtle
+              
+              // Ultra-smooth glow effect with gentle easing
+              final glowIntensity = 0.25 + (Curves.easeInOutCubic.transform(glowValue) * 0.35) + (Curves.easeInOutCubic.transform(heartbeatValue) * 0.15);
+              
+              return Transform.scale(
+                scale: isBoostActive.value ? 1.0 : pulseScale * scalePulse,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      // Primary cyan glow - smooth and subtle
+                      BoxShadow(
+                        color: Colors.cyan.withValues(alpha: glowIntensity * 0.6),
+                        blurRadius: 15 + (glowValue * 5) + (heartbeatValue * 8),
+                        spreadRadius: 3 + (glowValue * 2) + (heartbeatValue * 3),
+                      ),
+                      // Secondary purple glow - subtle
+                      BoxShadow(
+                        color: Colors.purple.withValues(alpha: glowIntensity * 0.4),
+                        blurRadius: 12 + (glowValue * 4) + (heartbeatValue * 6),
+                        spreadRadius: 2 + (glowValue * 1) + (heartbeatValue * 2),
+                      ),
+                      // Yellow charging effect - smooth
+                      if (!isBoostActive.value)
+                        BoxShadow(
+                          color: Colors.yellow.withValues(alpha: (0.2 + heartbeatValue * 0.3) * 0.5),
+                          blurRadius: 18 + (heartbeatValue * 12),
+                          spreadRadius: 5 + (heartbeatValue * 3),
+                        ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () => isBoostActive.value 
+                        ? _showDeactivateConfirmation(context, isBoostActive)
+                        : _showBoostConfirmation(context, isBoostActive, boostTimeRemaining),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: Colors.cyan.withValues(alpha: 0.8),
+                          width: 2,
+                        ),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Icon with charging animation
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          child: Icon(
+                            Icons.bolt_rounded,
+                            size: 24,
+                            color: Colors.cyan,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        
+                        // Button text with heartbeat effect
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 500),
+                              style: TextStyle(
+                                fontSize: 16 + (Curves.easeInOutCubic.transform(heartbeatValue) * 0.5), // Very subtle pulsing
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 1.2,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.5),
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                  // Very subtle glowing text shadow
+                                  if (!isBoostActive.value)
+                                    Shadow(
+                                      color: Colors.cyan.withValues(alpha: heartbeatValue * 0.2),
+                                      blurRadius: 3 + (heartbeatValue * 1),
+                                      offset: const Offset(0, 0),
+                                    ),
+                                ],
+                              ),
+                              child: Text(
+                                'BOOST VISIBILITY',
+                              ),
+                            ),
+                            if (isBoostActive.value) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatTime(boostTimeRemaining.value),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.yellow,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        
+                        const SizedBox(width: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Boost description
+          Text(
+            isBoostActive.value 
+                ? 'Your profile is highlighted and appears at the top of detection lists!'
+                : 'Highlight your profile and increase detection chances',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBoostConfirmation(BuildContext context, ValueNotifier<bool> isBoostActive, ValueNotifier<int> boostTimeRemaining) async {
+    await HapticFeedback.lightImpact();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => BoostConfirmationDialog(
+        onConfirm: () {
+          isBoostActive.value = true;
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  void _showDeactivateConfirmation(BuildContext context, ValueNotifier<bool> isBoostActive) async {
+    await HapticFeedback.lightImpact();
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.power_off_rounded,
+              color: Colors.orange,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Deactivate Boost',
+              style: TextStyle(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to deactivate your boost? You\'ll lose the remaining time.',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              isBoostActive.value = false;
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Deactivate'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+}
+
+class BoostConfirmationDialog extends HookWidget {
+  final VoidCallback onConfirm;
+
+  const BoostConfirmationDialog({
+    super.key,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pulseController = useAnimationController(
+      duration: const Duration(milliseconds: 1000),
+    );
+    
+    useEffect(() {
+      pulseController.repeat(reverse: true);
+      return null;
+    }, []);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Premium icon with animation
+            AnimatedBuilder(
+              animation: pulseController,
+              builder: (context, child) {
+                final pulseValue = pulseController.value;
+                return Transform.scale(
+                  scale: 1.0 + (pulseValue * 0.1),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.cyan.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(50),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.cyan.withValues(alpha: 0.5),
+                          blurRadius: 15 + (pulseValue * 10),
+                          spreadRadius: 3 + (pulseValue * 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.bolt_rounded,
+                      size: 32,
+                      color: Colors.cyan,
+                    ),
+                  ),
+                );
+              },
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Title
+            Text(
+              'Boost Your Profile',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.cyan,
+              ),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Description
+            Text(
+              'Make your profile stand out and get detected more:',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Features list
+            Column(
+              children: [
+                _buildFeatureItem(context, Icons.highlight_rounded, 'Highlight your profile'),
+                const SizedBox(height: 8),
+                _buildFeatureItem(context, Icons.trending_up_rounded, 'Increase detection chances'),
+                const SizedBox(height: 8),
+                _buildFeatureItem(context, Icons.arrow_upward_rounded, 'Appear at top of detection lists'),
+                const SizedBox(height: 8),
+                _buildFeatureItem(context, Icons.timer_rounded, 'Active for 5 minutes'),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(width: 12),
+                
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      onConfirm();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.cyan,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Activate Boost',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureItem(BuildContext context, IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Colors.cyan,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
