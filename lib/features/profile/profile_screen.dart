@@ -5,6 +5,8 @@ import '../../services/sound_service.dart';
 import '../../services/profile_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfileScreen extends HookWidget {
@@ -132,8 +134,8 @@ class ProfileScreen extends HookWidget {
           
           const SizedBox(height: 32),
           
-          // Edit Profile Button
-          _buildEditProfileButton(context, refreshTrigger),
+          // Profile Action Buttons (Edit & Share)
+          _buildProfileActionButtons(context, profile, refreshTrigger),
           
           const SizedBox(height: 40),
           
@@ -1006,22 +1008,103 @@ class ProfileScreen extends HookWidget {
     );
   }
 
-  Widget _buildEditProfileButton(BuildContext context, ValueNotifier<int> refreshTrigger) {
-    return Center(
-      child: ElevatedButton.icon(
-        onPressed: () => _openEditProfile(context, refreshTrigger),
-        icon: const Icon(Icons.edit, size: 18),
-        label: const Text('Edit Profile'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+  Widget _buildProfileActionButtons(BuildContext context, Map<String, dynamic> profile, ValueNotifier<int> refreshTrigger) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          // Edit Profile Button
+          Expanded(
+            child: _buildEditProfileButton(context, refreshTrigger),
           ),
-          elevation: 0,
-        ),
+          
+          const SizedBox(width: 12),
+          
+          // Share Profile Button
+          Expanded(
+            child: _buildShareProfileButton(context, profile),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildEditProfileButton(BuildContext context, ValueNotifier<int> refreshTrigger) {
+    return ElevatedButton.icon(
+      onPressed: () => _openEditProfile(context, refreshTrigger),
+      icon: const Icon(Icons.edit, size: 18),
+      label: const Text('Edit Profile'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 0,
+      ),
+    );
+  }
+
+  Widget _buildShareProfileButton(BuildContext context, Map<String, dynamic> profile) {
+    // Pulsing animation for the share button
+    final pulseController = useAnimationController(
+      duration: const Duration(milliseconds: 1000),
+    );
+    final sparkleController = useAnimationController(
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    // Start pulsing animation
+    useEffect(() {
+      pulseController.repeat(reverse: true);
+      sparkleController.repeat();
+      return null;
+    }, []);
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([pulseController, sparkleController]),
+      builder: (context, child) {
+        final pulseValue = pulseController.value;
+        final sparkleValue = sparkleController.value;
+        
+        // Create pulsing effect
+        final pulseScale = 1.0 + (pulseValue * 0.05); // Subtle pulse
+        final sparkleOpacity = 0.3 + (sparkleValue * 0.4); // Sparkle effect
+        
+        return Transform.scale(
+          scale: pulseScale,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: sparkleOpacity * 0.3),
+                  blurRadius: 8 + (pulseValue * 4),
+                  spreadRadius: 2 + (pulseValue * 2),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: () => _openShareProfileModal(context, profile),
+              icon: Icon(
+                Icons.share_rounded,
+                size: 18,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+              label: const Text('Share Profile'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1038,6 +1121,435 @@ class ProfileScreen extends HookWidget {
     if (result == true && context.mounted) {
       print('🔄 Refreshing profile after edit...');
       refreshTrigger.value = refreshTrigger.value + 1;
+    }
+  }
+
+  void _openShareProfileModal(BuildContext context, Map<String, dynamic> profile) async {
+    await HapticFeedback.lightImpact();
+    
+    // Generate unique shareable link
+    final shareableLink = _generateShareableLink(profile);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ShareProfileModal(
+        profile: profile,
+        shareableLink: shareableLink,
+      ),
+    );
+  }
+
+  String _generateShareableLink(Map<String, dynamic> profile) {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
+    final username = profile['username'] ?? '@user';
+    final name = profile['name'] ?? 'User';
+    
+    // Create a unique shareable link with user-specific data
+    final baseUrl = 'https://comnecter.app/profile';
+    final params = {
+      'id': userId, // Unique Firebase UID
+      'username': username.replaceAll('@', ''),
+      'name': Uri.encodeComponent(name),
+      'timestamp': DateTime.now().millisecondsSinceEpoch.toString(), // Additional uniqueness
+    };
+    
+    final queryString = params.entries
+        .map((e) => '${e.key}=${e.value}')
+        .join('&');
+    
+    final shareableLink = '$baseUrl?$queryString';
+    
+    // Debug: Print unique link for verification
+    print('🔗 Generated unique shareable link for user $userId: $shareableLink');
+    
+    return shareableLink;
+  }
+}
+
+class ShareProfileModal extends HookWidget {
+  final Map<String, dynamic> profile;
+  final String shareableLink;
+
+  const ShareProfileModal({
+    super.key,
+    required this.profile,
+    required this.shareableLink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.share_rounded,
+                  size: 32,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Share Profile',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Let others discover your profile',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // QR Code Section
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.qr_code_2_rounded,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Unique QR Code',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: QrImageView(
+                    data: shareableLink,
+                    version: QrVersions.auto,
+                    size: 140.0,
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Scan to view profile',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Each QR code is unique to your profile',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Share Options
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                // Copy Link Button
+                _buildShareOption(
+                  context,
+                  icon: Icons.copy_rounded,
+                  title: 'Copy Link',
+                  subtitle: 'Copy profile link to clipboard',
+                  onTap: () => _copyLink(context),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Share to Apps Button
+                _buildShareOption(
+                  context,
+                  icon: Icons.share_rounded,
+                  title: 'Share to Apps',
+                  subtitle: 'Share via WhatsApp, Instagram, etc.',
+                  onTap: () => _shareToApps(context),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Open in Browser Button
+                _buildShareOption(
+                  context,
+                  icon: Icons.open_in_browser_rounded,
+                  title: 'Open in Browser',
+                  subtitle: 'View profile in web browser',
+                  onTap: () => _openInBrowser(context),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Close Button
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Close',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Add bottom padding for safe area
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareOption(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _copyLink(BuildContext context) async {
+    await HapticFeedback.lightImpact();
+    await Clipboard.setData(ClipboardData(text: shareableLink));
+    
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Profile link copied to clipboard!'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _shareToApps(BuildContext context) async {
+    await HapticFeedback.lightImpact();
+    
+    final shareText = 'Check out ${profile['name'] ?? 'User'}\'s profile on Comnecter!\n\n$shareableLink';
+    
+    await Share.share(
+      shareText,
+      subject: '${profile['name'] ?? 'User'}\'s Comnecter Profile',
+    );
+  }
+
+  void _openInBrowser(BuildContext context) async {
+    await HapticFeedback.lightImpact();
+    
+    try {
+      print('🌐 Attempting to open profile link in browser: $shareableLink');
+      
+      final uri = Uri.parse(shareableLink);
+      
+      // Check if the URL can be launched
+      if (await canLaunchUrl(uri)) {
+        print('✅ URL can be launched, opening in external browser...');
+        
+        // Try multiple launch modes for better compatibility
+        bool launched = false;
+        
+        // First try external application
+        try {
+          launched = await launchUrl(
+            uri, 
+            mode: LaunchMode.externalApplication,
+          );
+          print('✅ Opened in external application: $launched');
+        } catch (e) {
+          print('⚠️ External application failed: $e');
+        }
+        
+        // If external failed, try platform default
+        if (!launched) {
+          try {
+            launched = await launchUrl(
+              uri, 
+              mode: LaunchMode.platformDefault,
+            );
+            print('✅ Opened with platform default: $launched');
+          } catch (e) {
+            print('⚠️ Platform default failed: $e');
+          }
+        }
+        
+        if (!launched) {
+          throw Exception('Failed to launch URL with any mode');
+        }
+        
+        // Show success message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Profile opened in browser!'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+        
+      } else {
+        print('❌ URL cannot be launched: $shareableLink');
+        throw Exception('URL cannot be launched');
+      }
+      
+    } catch (e) {
+      print('❌ Error opening browser: $e');
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open link: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 }
