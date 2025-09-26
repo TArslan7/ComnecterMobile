@@ -5,6 +5,7 @@ import '../../services/sound_service.dart';
 import '../../services/profile_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfileScreen extends HookWidget {
   const ProfileScreen({super.key});
@@ -13,15 +14,18 @@ class ProfileScreen extends HookWidget {
   Widget build(BuildContext context) {
     final userProfile = useState<Map<String, dynamic>>({});
     final isLoading = useState(true);
+    final refreshTrigger = useState(0);
     final soundService = useMemoized(() => SoundService());
     final profileService = useMemoized(() => ProfileService.instance);
 
-    // Load user profile on initialization
+    // Load user profile on initialization and when refresh is triggered
     Future<void> loadUserProfile() async {
       try {
         isLoading.value = true;
+        print('🔄 Loading profile data (trigger: ${refreshTrigger.value})');
         final profile = await profileService.getCurrentUserProfile();
         if (profile != null) {
+          print('✅ Profile loaded: $profile');
           userProfile.value = profile;
         } else {
           // Fallback to default profile if loading fails
@@ -29,14 +33,19 @@ class ProfileScreen extends HookWidget {
             'name': 'User',
             'username': '@user',
             'avatar': '👤',
+            'bio': '',
+            'interests': [],
           };
         }
       } catch (e) {
+        print('❌ Error loading profile: $e');
         // Use fallback profile
         userProfile.value = {
           'name': 'User',
           'username': '@user',
           'avatar': '👤',
+          'bio': '',
+          'interests': [],
         };
       } finally {
         isLoading.value = false;
@@ -46,7 +55,7 @@ class ProfileScreen extends HookWidget {
     useEffect(() {
       loadUserProfile();
       return null;
-    }, []);
+    }, [refreshTrigger.value]);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -76,7 +85,7 @@ class ProfileScreen extends HookWidget {
       ),
       body: isLoading.value
           ? _buildLoadingState(context)
-          : _buildCleanProfileContent(context, userProfile.value, soundService),
+          : _buildCleanProfileContent(context, userProfile.value, soundService, refreshTrigger),
     );
   }
 
@@ -87,7 +96,7 @@ class ProfileScreen extends HookWidget {
   }
 
   // Hero section with animated profile photo and radar status
-  Widget _buildCleanProfileContent(BuildContext context, Map<String, dynamic> profile, SoundService soundService) {
+  Widget _buildCleanProfileContent(BuildContext context, Map<String, dynamic> profile, SoundService soundService, ValueNotifier<int> refreshTrigger) {
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -95,10 +104,41 @@ class ProfileScreen extends HookWidget {
         children: [
           const SizedBox(height: 40),
           
-          // Hero Section
+          // Hero Section (Profile Photo + Name + Username)
           _buildHeroSection(context, profile, soundService),
           
+          const SizedBox(height: 20),
+          
+          // Bio Section
+          if (profile['bio'] != null && profile['bio'].toString().trim().isNotEmpty) ...[
+            _buildBioSection(context, profile),
+            const SizedBox(height: 16),
+          ],
+          
+          // Interests Section
+          if (profile['interests'] != null && (profile['interests'] as List).isNotEmpty) ...[
+            _buildInterestsDisplay(context, profile),
+            const SizedBox(height: 16),
+          ],
+          
+          const SizedBox(height: 28),
+          
+          // Radar Visibility Status - Tertiary hierarchy
+          _buildRadarStatus(context, {
+            'isVisible': true,
+            'range': 5,
+            'isBoosted': false,
+          }),
+          
+          const SizedBox(height: 32),
+          
+          // Edit Profile Button
+          _buildEditProfileButton(context, refreshTrigger),
+          
           const SizedBox(height: 40),
+          
+          // Stat Cards Section
+          _buildStatCards(context, profile),
         ],
       ),
     );
@@ -190,16 +230,6 @@ class ProfileScreen extends HookWidget {
           
           // Copyable and Shareable Username - Secondary hierarchy
           _buildCopyableUsername(context, profile),
-          
-          const SizedBox(height: 28),
-          
-          // Radar Visibility Status - Tertiary hierarchy
-          _buildRadarStatus(context, radarStatus.value),
-          
-          const SizedBox(height: 40),
-          
-          // Stat Cards Section
-          _buildStatCards(context, profile),
         ],
       ),
     );
@@ -861,6 +891,716 @@ class ProfileScreen extends HookWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBioSection(BuildContext context, Map<String, dynamic> profile) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Bio',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            profile['bio'] ?? '',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.left,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInterestsDisplay(BuildContext context, Map<String, dynamic> profile) {
+    final interests = List<String>.from(profile['interests'] ?? []);
+    
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.interests_outlined,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Interests',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: interests.map((interest) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  interest.trim(),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditProfileButton(BuildContext context, ValueNotifier<int> refreshTrigger) {
+    return Center(
+      child: ElevatedButton.icon(
+        onPressed: () => _openEditProfile(context, refreshTrigger),
+        icon: const Icon(Icons.edit, size: 18),
+        label: const Text('Edit Profile'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+
+  void _openEditProfile(BuildContext context, ValueNotifier<int> refreshTrigger) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EditProfileScreen(),
+        fullscreenDialog: true,
+      ),
+    );
+    
+    // Refresh profile if changes were saved
+    if (result == true && context.mounted) {
+      print('🔄 Refreshing profile after edit...');
+      refreshTrigger.value = refreshTrigger.value + 1;
+    }
+  }
+}
+
+class EditProfileScreen extends HookWidget {
+  const EditProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final profileService = useMemoized(() => ProfileService.instance);
+    final isLoading = useState(false);
+    final isSaving = useState(false);
+    final showSuccess = useState(false);
+    
+    // Form controllers
+    final nameController = useTextEditingController();
+    final bioController = useTextEditingController();
+    final interestsController = useTextEditingController();
+    
+    // Form state
+    final selectedAvatar = useState<String>('👤');
+    final interests = useState<List<String>>([]);
+    final hasChanges = useState(false);
+    
+    // Available avatars
+    final availableAvatars = [
+      '👤', '👨', '👩', '🧑', '👨‍💼', '👩‍💼', '👨‍🎓', '👩‍🎓',
+      '👨‍🎨', '👩‍🎨', '👨‍🚀', '👩‍🚀', '👨‍💻', '👩‍💻', '👨‍🔬', '👩‍🔬',
+      '🦸', '🦸‍♀️', '🦸‍♂️', '🧙', '🧙‍♀️', '🧙‍♂️', '🧚', '🧚‍♀️',
+      '🧚‍♂️', '🎭', '🎨', '🎪', '🎯', '🏆', '🌟', '💫'
+    ];
+
+    // Load profile data
+    useEffect(() {
+      Future<void> loadProfile() async {
+        isLoading.value = true;
+        try {
+          print('🔄 Loading profile data...');
+          print('🔄 ProfileService instance: $profileService');
+          
+          // Check if user is authenticated
+          final auth = FirebaseAuth.instance;
+          final user = auth.currentUser;
+          print('🔄 Current user: ${user?.uid}');
+          print('🔄 User email: ${user?.email}');
+          
+          final profile = await profileService.getCurrentUserProfile();
+          if (profile != null) {
+            print('✅ Profile loaded: $profile');
+            nameController.text = profile['name'] ?? '';
+            bioController.text = profile['bio'] ?? '';
+            selectedAvatar.value = profile['avatar'] ?? '👤';
+            interests.value = List<String>.from(profile['interests'] ?? []);
+            interestsController.text = interests.value.join(', ');
+          } else {
+            print('❌ No profile data found');
+            // Set default values if no profile exists
+            nameController.text = '';
+            bioController.text = '';
+            selectedAvatar.value = '👤';
+            interests.value = [];
+            interestsController.text = '';
+          }
+        } catch (e) {
+          print('❌ Error loading profile: $e');
+          // Set default values on error
+          nameController.text = '';
+          bioController.text = '';
+          selectedAvatar.value = '👤';
+          interests.value = [];
+          interestsController.text = '';
+        } finally {
+          isLoading.value = false;
+        }
+      }
+      loadProfile();
+      return null;
+    }, []);
+
+    // Track changes
+    useEffect(() {
+      void checkChanges() {
+        final hasNameChanges = nameController.text.trim().isNotEmpty;
+        final hasBioChanges = bioController.text.trim().isNotEmpty;
+        final hasInterestsChanges = interestsController.text.trim().isNotEmpty;
+        
+        hasChanges.value = hasNameChanges || hasBioChanges || hasInterestsChanges;
+        
+        print('🔍 Change detection: name=$hasNameChanges, bio=$hasBioChanges, interests=$hasInterestsChanges, hasChanges=${hasChanges.value}');
+      }
+      
+      nameController.addListener(checkChanges);
+      bioController.addListener(checkChanges);
+      interestsController.addListener(checkChanges);
+      
+      // Initial check
+      checkChanges();
+      
+      return () {
+        nameController.removeListener(checkChanges);
+        bioController.removeListener(checkChanges);
+        interestsController.removeListener(checkChanges);
+      };
+    }, []);
+
+    // Parse interests from text
+    void updateInterests() {
+      final text = interestsController.text.trim();
+      if (text.isEmpty) {
+        interests.value = [];
+      } else {
+        interests.value = text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      }
+    }
+
+    // Save profile
+    Future<void> saveProfile() async {
+      if (isSaving.value) return;
+      
+      // Validate required fields
+      final name = nameController.text.trim();
+      if (name.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Please enter a display name'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+      
+      isSaving.value = true;
+      updateInterests();
+      
+      try {
+        final profileData = {
+          'name': name,
+          'bio': bioController.text.trim(),
+          'avatar': selectedAvatar.value,
+          'interests': interests.value,
+        };
+        
+        print('🔄 Attempting to save profile data: $profileData');
+        
+        final success = await profileService.updateUserProfile(profileData);
+        
+        print('💾 Save result: $success');
+        
+        if (success) {
+          showSuccess.value = true;
+          await Future.delayed(const Duration(milliseconds: 1500));
+          if (context.mounted) {
+            Navigator.pop(context, true); // Return true to indicate success
+          }
+        } else {
+          // Show error message
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Failed to save profile. Please try again.'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        print('❌ Error saving profile: $e');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } finally {
+        isSaving.value = false;
+      }
+    }
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Edit Profile',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          // Debug indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: hasChanges.value ? Colors.green : Colors.grey,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              hasChanges.value ? 'CHANGES' : 'NO CHANGES',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          if (hasChanges.value)
+            TextButton(
+              onPressed: isSaving.value ? null : saveProfile,
+              child: isSaving.value
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      'Save',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+        ],
+      ),
+      body: showSuccess.value
+          ? _buildSuccessAnimation(context)
+          : isLoading.value
+              ? const Center(child: CircularProgressIndicator())
+              : _buildEditForm(context, selectedAvatar, availableAvatars, nameController, bioController, interestsController, updateInterests),
+    );
+  }
+
+  Widget _buildSuccessAnimation(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.check,
+              size: 60,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Profile Updated!',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Your changes have been saved successfully',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditForm(
+    BuildContext context,
+    ValueNotifier<String> selectedAvatar,
+    List<String> availableAvatars,
+    TextEditingController nameController,
+    TextEditingController bioController,
+    TextEditingController interestsController,
+    VoidCallback updateInterests,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Profile Photo Section
+          _buildAvatarSection(context, selectedAvatar, availableAvatars),
+          
+          const SizedBox(height: 32),
+          
+          // Display Name Section
+          _buildTextField(
+            context,
+            controller: nameController,
+            label: 'Display Name',
+            hint: 'Enter your display name',
+            icon: Icons.person,
+            maxLines: 1,
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Bio Section
+          _buildTextField(
+            context,
+            controller: bioController,
+            label: 'Bio',
+            hint: 'Tell us about yourself...',
+            icon: Icons.description,
+            maxLines: 3,
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Interests Section
+          _buildInterestsSection(context, interestsController, updateInterests),
+          
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarSection(BuildContext context, ValueNotifier<String> selectedAvatar, List<String> availableAvatars) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Profile Photo',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Selected Avatar Preview
+        Center(
+          child: Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Container(
+              margin: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  selectedAvatar.value,
+                  style: const TextStyle(fontSize: 40),
+                ),
+              ),
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Avatar Selection Grid
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Choose an avatar',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: availableAvatars.map((avatar) {
+                  final isSelected = selectedAvatar.value == avatar;
+                  return GestureDetector(
+                    onTap: () => selectedAvatar.value = avatar,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          avatar,
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField(
+    BuildContext context, {
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+            ),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInterestsSection(BuildContext context, TextEditingController interestsController, VoidCallback updateInterests) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Interests',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: interestsController,
+          maxLines: 2,
+          onChanged: (_) => updateInterests(),
+          decoration: InputDecoration(
+            hintText: 'Enter your interests separated by commas (e.g., 🎵 Music, 📚 Reading, 🏃‍♂️ Running)',
+            prefixIcon: Icon(
+              Icons.interests,
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+            ),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '💡 Tip: Use emojis to make your interests more fun and expressive!',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 }

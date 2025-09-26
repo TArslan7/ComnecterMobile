@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class ProfileService {
   static ProfileService? _instance;
@@ -58,15 +59,48 @@ class ProfileService {
         return false;
       }
 
-      // Update Firestore document
-      await _firestore.collection('users').doc(user.uid).update({
-        ...profileData,
-        'lastUpdated': FieldValue.serverTimestamp(),
-      });
+      if (kDebugMode) {
+        print('🔄 Updating profile for user: ${user.uid}');
+        print('📝 Profile data: $profileData');
+      }
+
+      // Check if document exists, if not create it
+      final docRef = _firestore.collection('users').doc(user.uid);
+      final docSnapshot = await docRef.get();
+      
+      if (docSnapshot.exists) {
+        // Update existing document
+        await docRef.update({
+          ...profileData,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+        if (kDebugMode) {
+          print('✅ Updated existing Firestore document');
+        }
+      } else {
+        // Create new document
+        await docRef.set({
+          'uid': user.uid,
+          'email': user.email,
+          'createdAt': FieldValue.serverTimestamp(),
+          ...profileData,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+        if (kDebugMode) {
+          print('✅ Created new Firestore document');
+        }
+      }
+
+      if (kDebugMode) {
+        print('✅ Firestore document updated successfully');
+      }
 
       // Update Firebase Auth display name if provided
       if (profileData.containsKey('name')) {
         await user.updateDisplayName(profileData['name']);
+        if (kDebugMode) {
+          print('✅ Firebase Auth display name updated');
+        }
       }
 
       if (kDebugMode) {
@@ -76,6 +110,11 @@ class ProfileService {
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error updating user profile: $e');
+        print('❌ Error type: ${e.runtimeType}');
+        if (e is FirebaseException) {
+          print('❌ Firebase error code: ${e.code}');
+          print('❌ Firebase error message: ${e.message}');
+        }
       }
       return false;
     }
