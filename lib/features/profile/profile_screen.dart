@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -469,12 +470,386 @@ class ProfileScreen extends HookWidget {
           ),
         ),
         
-        // Bio and Interests Section
+        // About Me Card
         const SizedBox(height: 16),
-        _buildBioSection(context, profile),
-        
+        _buildAboutMeCard(context, profile),
+      ],
+    );
+  }
+
+  Widget _buildAboutMeCard(BuildContext context, Map<String, dynamic> profile) {
+    final bioController = useTextEditingController(text: profile['bio']?.toString() ?? '');
+    final interests = useState<List<String>>(List<String>.from(profile['interests'] ?? []));
+    final isEditingBio = useState(false);
+    final isEditingInterests = useState(false);
+    final autoSaveTimer = useRef<Timer?>(null);
+
+    // Auto-save functionality
+    void autoSave() {
+      autoSaveTimer.value?.cancel();
+      autoSaveTimer.value = Timer(const Duration(milliseconds: 500), () async {
+        try {
+          final profileData = {
+            'bio': bioController.text.trim(),
+            'interests': interests.value,
+          };
+          await ProfileService.instance.updateUserProfile(profileData);
+          if (kDebugMode) {
+            print('💾 Auto-saved bio and interests');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('❌ Auto-save failed: $e');
+          }
+        }
+      });
+    }
+
+    // Listen to bio changes
+    useEffect(() {
+      void listener() {
+        if (bioController.text != (profile['bio']?.toString() ?? '')) {
+          autoSave();
+        }
+      }
+      bioController.addListener(listener);
+      return () => bioController.removeListener(listener);
+    }, [bioController.text]);
+
+    // Listen to interests changes
+    useEffect(() {
+      autoSave();
+      return null;
+    }, [interests.value]);
+
+    return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.1),
+                Colors.white.withValues(alpha: 0.05),
+              ],
+            ),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                blurRadius: 15,
+                spreadRadius: 2,
+              ),
+              BoxShadow(
+                color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
+                blurRadius: 25,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.person_outline_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'About Me',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '✨ Live',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Bio Section
+                    _buildBioSection(context, bioController, isEditingBio),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // Interests Section
+                    _buildInterestsSection(context, interests, isEditingInterests),
+                  ],
+                ),
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _buildBioSection(BuildContext context, TextEditingController bioController, ValueNotifier<bool> isEditingBio) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.description_outlined,
+              size: 18,
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Bio',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => isEditingBio.value = !isEditingBio.value,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isEditingBio.value ? 'Done' : 'Edit',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 12),
-        _buildInterestsDisplay(context, profile),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          child: isEditingBio.value
+              ? TextField(
+                  controller: bioController,
+                  maxLines: 3,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    hintText: 'Tell us about yourself...',
+                    hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                    filled: true,
+                    fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+                    ),
+                  ),
+                )
+              : Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+                  ),
+                  child: Text(
+                    bioController.text.isEmpty 
+                        ? 'No bio added yet. Tap "Edit" to add one!'
+                        : bioController.text,
+                    style: TextStyle(
+                      color: bioController.text.isEmpty 
+                          ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontStyle: bioController.text.isEmpty ? FontStyle.italic : FontStyle.normal,
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInterestsSection(BuildContext context, ValueNotifier<List<String>> interests, ValueNotifier<bool> isEditingInterests) {
+    final availableInterests = [
+      '🎵 Music', '📚 Reading', '🏃‍♂️ Running', '🎮 Gaming', '🍳 Cooking',
+      '✈️ Travel', '📸 Photography', '🎨 Art', '💻 Tech', '🏋️‍♂️ Fitness',
+      '🐕 Pets', '🌱 Nature', '🎬 Movies', '📺 TV Shows', '🎪 Comedy',
+      '🏀 Sports', '🎯 Gaming', '🍕 Food', '☕ Coffee', '📖 Books'
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.interests_outlined,
+              size: 18,
+              color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Interests',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => isEditingInterests.value = !isEditingInterests.value,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isEditingInterests.value ? 'Done' : 'Edit',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.purple,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        if (isEditingInterests.value) ...[
+          // Interest selection grid
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: availableInterests.map((interest) {
+              final isSelected = interests.value.contains(interest);
+              return GestureDetector(
+                onTap: () {
+                  if (isSelected) {
+                    interests.value = interests.value.where((i) => i != interest).toList();
+                  } else {
+                    interests.value = [...interests.value, interest];
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected 
+                        ? Colors.purple.withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected 
+                          ? Colors.purple
+                          : Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    interest,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ] else ...[
+          // Display selected interests
+          interests.value.isEmpty
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+                  ),
+                  child: Text(
+                    'No interests added yet. Tap "Edit" to add some!',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: interests.value.map((interest) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.purple.withValues(alpha: 0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        interest,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ],
       ],
     );
   }
@@ -901,132 +1276,6 @@ class ProfileScreen extends HookWidget {
     );
   }
 
-  Widget _buildBioSection(BuildContext context, Map<String, dynamic> profile) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.description_outlined,
-                size: 18,
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Bio',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            profile['bio']?.toString().trim().isNotEmpty == true 
-                ? profile['bio'] 
-                : 'No bio added yet. Tap "Edit Profile" to add one!',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: profile['bio']?.toString().trim().isNotEmpty == true 
-                  ? Theme.of(context).colorScheme.onSurface
-                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-              height: 1.4,
-              fontStyle: profile['bio']?.toString().trim().isNotEmpty == true 
-                  ? FontStyle.normal 
-                  : FontStyle.italic,
-            ),
-            textAlign: TextAlign.left,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInterestsDisplay(BuildContext context, Map<String, dynamic> profile) {
-    final interests = List<String>.from(profile['interests'] ?? []);
-    
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.interests_outlined,
-                size: 18,
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Interests',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          interests.isNotEmpty 
-              ? Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: interests.map((interest) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        interest.trim(),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                )
-              : Text(
-                  'No interests added yet. Tap "Edit Profile" to add some!',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProfileActionButtons(BuildContext context, Map<String, dynamic> profile, ValueNotifier<int> refreshTrigger) {
     return Padding(
@@ -1290,17 +1539,18 @@ class ProfileScreen extends HookWidget {
                         ? _showDeactivateConfirmation(context, isBoostActive)
                         : _showBoostConfirmation(context, isBoostActive, boostTimeRemaining),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
                       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: Colors.cyan.withValues(alpha: 0.8),
-                          width: 2,
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                          width: 1,
                         ),
                       ),
                       elevation: 0,
+                      shadowColor: Colors.black.withValues(alpha: 0.05),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1311,7 +1561,7 @@ class ProfileScreen extends HookWidget {
                           child: Icon(
                             Icons.bolt_rounded,
                             size: 24,
-                            color: Colors.cyan,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1325,7 +1575,7 @@ class ProfileScreen extends HookWidget {
                               style: TextStyle(
                                 fontSize: 16 + (Curves.easeInOutCubic.transform(heartbeatValue) * 0.5), // Very subtle pulsing
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 letterSpacing: 1.2,
                                 shadows: [
                                   Shadow(
@@ -1454,8 +1704,8 @@ class ProfileScreen extends HookWidget {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             child: Text('Deactivate'),
           ),
@@ -1607,8 +1857,8 @@ class BoostConfirmationDialog extends HookWidget {
                       onConfirm();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.cyan,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1750,7 +2000,7 @@ class ShareProfileModal extends HookWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -2247,8 +2497,8 @@ class EditProfileScreen extends HookWidget {
             ),
             child: Text(
               hasChanges.value ? 'CHANGES' : 'NO CHANGES',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),
