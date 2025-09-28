@@ -26,22 +26,25 @@ class DetectionHistoryScreen extends HookWidget {
     useEffect(() {
       Future.microtask(() async {
         try {
+          print('Detection History Screen - Starting initialization...');
           await detectionService.initialize();
+          
           // Load initial data after initialization
-          detections.value = detectionService.getDetections(
+          final loadedDetections = detectionService.getDetections(
             filter: currentFilter.value,
             sort: currentSort.value,
           );
-          favorites.value = detectionService.getFavorites(sort: currentSort.value);
+          final loadedFavorites = detectionService.getFavorites(sort: currentSort.value);
           
-          // Debug: Print current detections count
-          print('Detection History Screen - Loaded ${detections.value.length} detections');
-          print('Detection History Screen - Loaded ${favorites.value.length} favorites');
+          print('Detection History Screen - Direct service call returned ${loadedDetections.length} detections');
+          print('Detection History Screen - Direct service call returned ${loadedFavorites.length} favorites');
           
-          // For testing: Add a test detection if none exist
-          if (detections.value.isEmpty) {
-            print('Detection History Screen - No detections found, this might be the issue');
-          }
+          // Update state
+          detections.value = loadedDetections;
+          favorites.value = loadedFavorites;
+          
+          print('Detection History Screen - State updated with ${detections.value.length} detections');
+          print('Detection History Screen - State updated with ${favorites.value.length} favorites');
           
           isLoading.value = false;
         } catch (e) {
@@ -503,6 +506,8 @@ class DetectionHistoryScreen extends HookWidget {
     bool isLoading,
     DetectionHistoryService detectionService,
   ) {
+    print('_buildDetectionsSection: Building with ${detections.length} detections');
+    
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -526,15 +531,15 @@ class DetectionHistoryScreen extends HookWidget {
                 ),
               ),
               const Spacer(),
-              if (detections.isNotEmpty) ...[
-                Text(
-                  '${detections.length}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600,
-                  ),
+              Text(
+                '${detections.length}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
+              if (detections.isNotEmpty) ...[
                 const SizedBox(width: 12),
                 Material(
                   color: Colors.transparent,
@@ -573,57 +578,226 @@ class DetectionHistoryScreen extends HookWidget {
                     ),
                   ),
                 ),
-              ] else
-                Text(
-                  '${detections.length}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),
           
-          // Detections list
+          // Detections list - Simplified approach
           Expanded(
             child: isLoading
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Loading detections...',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
+                ? const Center(child: CircularProgressIndicator())
                 : detections.isEmpty
                     ? _buildEmptyDetectionsState(context)
-                    : ListView.separated(
+                    : ListView.builder(
                         itemCount: detections.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 8),
-                        padding: const EdgeInsets.only(bottom: 16),
                         itemBuilder: (context, index) {
                           final detection = detections[index];
                           final isFavorite = favorites.any((f) => f.userId == detection.userId);
                           
-                          return _buildDetectionCard(
-                            context,
-                            detection,
-                            isFavorite,
-                            () => _onDetectionTap(context, detection),
-                            () => _onSaveToFavorites(detectionService, detection),
-                            () => _onRemoveFromFavorites(detectionService, detection.userId),
+                          print('Building detection card for: ${detection.name}');
+                          
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isFavorite 
+                                    ? Colors.red.withValues(alpha: 0.2)
+                                    : Colors.grey.shade100,
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 12,
+                                  spreadRadius: 0,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () => _onDetectionTap(context, detection),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Row(
+                                    children: [
+                                      // Avatar
+                                      Stack(
+                                        children: [
+                                          Container(
+                                            width: 56,
+                                            height: 56,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  AppTheme.primary,
+                                                  AppTheme.primary.withValues(alpha: 0.8),
+                                                ],
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppTheme.primary.withValues(alpha: 0.3),
+                                                  blurRadius: 8,
+                                                  spreadRadius: 0,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                detection.name.isNotEmpty ? detection.name[0].toUpperCase() : '?',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 20,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          if (isFavorite)
+                                            Positioned(
+                                              right: -2,
+                                              top: -2,
+                                              child: Container(
+                                                width: 20,
+                                                height: 20,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.shade600,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(color: Colors.white, width: 2),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.red.withValues(alpha: 0.3),
+                                                      blurRadius: 4,
+                                                      spreadRadius: 0,
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: const Icon(
+                                                  Icons.favorite,
+                                                  color: Colors.white,
+                                                  size: 12,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      
+                                      const SizedBox(width: 16),
+                                      
+                                      // User info
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              detection.name,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black87,
+                                                height: 1.2,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.primary.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.location_on,
+                                                        size: 14,
+                                                        color: AppTheme.primary,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${detection.distanceKm.toStringAsFixed(1)} km',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: AppTheme.primary,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.access_time,
+                                                        size: 14,
+                                                        color: Colors.grey.shade600,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        _formatTimestamp(detection.detectedAt),
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey.shade600,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      
+                                      // Action button
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: isFavorite 
+                                              ? Colors.red.withValues(alpha: 0.1)
+                                              : Colors.grey.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: IconButton(
+                                          onPressed: isFavorite 
+                                              ? () => _onRemoveFromFavorites(detectionService, detection.userId)
+                                              : () => _onSaveToFavorites(detectionService, detection),
+                                          icon: Icon(
+                                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                                            color: isFavorite ? Colors.red.shade600 : Colors.grey.shade600,
+                                            size: 22,
+                                          ),
+                                          tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                                          padding: const EdgeInsets.all(12),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           );
                         },
                       ),

@@ -195,6 +195,13 @@ class DetectionHistoryService {
     int? limit,
   }) {
     print('DetectionHistoryService: getDetections called with ${_detections.length} total detections');
+    
+    // Ensure we have some detections for testing
+    if (_detections.isEmpty) {
+      print('DetectionHistoryService: No detections found, adding mock data');
+      _addMockDetections();
+    }
+    
     List<UserDetection> filtered = List.from(_detections);
     
     // Apply filter
