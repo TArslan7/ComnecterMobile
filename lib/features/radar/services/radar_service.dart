@@ -58,20 +58,25 @@ class RadarService {
     _scanTimer = null;
   }
 
-  // Pause radar (stops scanning and disables detectability)
-  void pauseRadar() {
-    stopScanning();
-    // When radar is paused, automatically disable detectability
-    _settings = _settings.copyWith(enableAutoDetection: false);
+  // Toggle radar visibility (affects both detectability and detection ability)
+  void toggleRadarVisibility(bool isVisible) {
+    _settings = _settings.copyWith(enableAutoDetection: isVisible);
+    
+    if (isVisible) {
+      // If becoming visible, start scanning if not already scanning
+      if (!_isScanning) {
+        startScanning();
+      }
+    } else {
+      // If becoming invisible, stop scanning
+      stopScanning();
+    }
+    
     _usersController.add(_currentUsers);
   }
 
-  // Resume radar (enables detectability but doesn't start scanning automatically)
-  void resumeRadar() {
-    // When radar is resumed, user can choose to enable detectability
-    // This doesn't automatically start scanning - user needs to press start
-    _usersController.add(_currentUsers);
-  }
+  // Check if radar is visible (can detect and be detected)
+  bool get isRadarVisible => _settings.enableAutoDetection;
 
   // Update radar settings
   void updateSettings(RadarSettings newSettings) {

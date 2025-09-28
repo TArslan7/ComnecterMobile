@@ -2369,15 +2369,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
   Widget _buildPrivacySection(BuildContext context) {
     return Column(
       children: [
-        // Detectability Toggle
+        // Radar Visibility Toggle
         _buildToggleSetting(
           context,
           'Radar Visibility',
-          'Allow other users to detect you on radar',
+          'Show on radar and detect other users',
           Icons.visibility,
           radarService.getDetectabilityStatus(),
           (value) {
-            radarService.updateDetectability(value);
+            radarService.toggleRadarVisibility(value);
             setState(() {}); // Refresh UI
           },
           soundService,
@@ -2405,7 +2405,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'When radar is paused, you automatically become invisible to other users. Radar range can be adjusted on the radar screen.',
+                  'When radar visibility is off, you cannot detect other users and they cannot detect you. Radar range can be adjusted on the radar screen.',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.blue.shade700,

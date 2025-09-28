@@ -56,8 +56,8 @@ class RadarScreen extends HookWidget {
       });
 
 
-      // Start scanning initially
-      if (isScanning.value) {
+      // Start scanning initially if visible
+      if (isDetectable.value) {
         radarService.startScanning();
       }
 
@@ -74,7 +74,7 @@ class RadarScreen extends HookWidget {
     }, [rangeSettings.value]);
 
     useEffect(() {
-      if (isScanning.value) {
+      if (isDetectable.value) {
         radarService.startScanning();
         heartbeatController.repeat();
         radarController.repeat();
@@ -84,10 +84,11 @@ class RadarScreen extends HookWidget {
         radarController.stop();
       }
       return null;
-    }, [isScanning.value]);
+    }, [isDetectable.value]);
 
-    void toggleScanning() {
-      isScanning.value = !isScanning.value;
+    void toggleRadarVisibility() {
+      isDetectable.value = !isDetectable.value;
+      radarService.toggleRadarVisibility(isDetectable.value);
     }
 
     void sendFriendRequest(NearbyUser user) async {
@@ -172,13 +173,13 @@ class RadarScreen extends HookWidget {
             tooltip: 'Friends',
           ),
           IconButton(
-            onPressed: toggleScanning,
+            onPressed: toggleRadarVisibility,
             icon: Icon(
-              isScanning.value ? Icons.pause : Icons.play_arrow,
-              color: Theme.of(context).colorScheme.primary,
+              isDetectable.value ? Icons.visibility : Icons.visibility_off,
+              color: isDetectable.value ? Colors.green.shade600 : Colors.grey.shade600,
               size: 24,
             ),
-            tooltip: isScanning.value ? 'Pause Radar' : 'Start Radar',
+            tooltip: isDetectable.value ? 'Hide from Radar' : 'Show on Radar',
           ),
         ],
       ),
@@ -318,10 +319,12 @@ class RadarScreen extends HookWidget {
               
               // Status text
               Text(
-                isScanning.value ? 'Scanning for connections...' : 'Radar paused',
+                isDetectable.value ? 'Scanning for connections...' : 'Radar hidden - not detecting others',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: isDetectable.value 
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Colors.grey.shade600,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -346,16 +349,18 @@ class RadarScreen extends HookWidget {
                       height: 10,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isScanning.value 
-                          ? Theme.of(context).colorScheme.primary 
-                          : Theme.of(context).colorScheme.outline,
+                        color: isDetectable.value 
+                          ? Colors.green.shade600 
+                          : Colors.grey.shade600,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isScanning.value ? 'Active' : 'Inactive',
+                      isDetectable.value ? 'Visible' : 'Hidden',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: isDetectable.value 
+                          ? Colors.green.shade700 
+                          : Colors.grey.shade700,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -406,22 +411,22 @@ class RadarScreen extends HookWidget {
                       color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                     ),
                     
-                    // Detectability Status
+                    // Detection Ability Status
                     Row(
                       children: [
                         Icon(
-                          isDetectable.value ? Icons.visibility : Icons.visibility_off,
+                          isDetectable.value ? Icons.radar : Icons.radar_outlined,
                           size: 16,
                           color: isDetectable.value 
-                              ? Colors.green.shade600 
+                              ? Colors.blue.shade600 
                               : Colors.grey.shade600,
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          isDetectable.value ? 'Visible' : 'Hidden',
+                          isDetectable.value ? 'Detecting' : 'Not Detecting',
                           style: TextStyle(
                             color: isDetectable.value 
-                                ? Colors.green.shade700 
+                                ? Colors.blue.shade700 
                                 : Colors.grey.shade700,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
@@ -562,9 +567,9 @@ class RadarScreen extends HookWidget {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      isScanning.value 
+                                      isDetectable.value 
                                         ? 'Scanning for nearby users...' 
-                                        : 'No users detected in range',
+                                        : 'Radar hidden - cannot detect others',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
