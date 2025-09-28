@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import '../../services/sound_service.dart';
 import '../../services/notification_service.dart';
@@ -383,6 +384,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                 'Account',
                 Icons.account_circle,
                 [
+                  _buildActionSetting(
+                    context,
+                    'Update Email',
+                    'Change your email address',
+                    Icons.email,
+                    () async {
+                      await soundService.playButtonClickSound();
+                      _showUpdateEmailDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   _buildActionSetting(
                     context,
                     'Change Password',
@@ -1842,6 +1854,319 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showUpdateEmailDialog(BuildContext context) {
+    final newEmailController = TextEditingController();
+    final passwordController = TextEditingController();
+    bool obscurePassword = true;
+    bool isUpdating = false;
+    final theme = Theme.of(context);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent closing while updating
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.email,
+                color: AppTheme.primary,
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Update Email',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Enter your new email address and current password to update your account.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Current Email Display
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.email_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Current: ${ref.read(authServiceProvider).currentUser?.email ?? 'Unknown'}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // New Email
+                TextFormField(
+                  controller: newEmailController,
+                  keyboardType: TextInputType.emailAddress,
+                  enabled: !isUpdating,
+                  decoration: InputDecoration(
+                    labelText: 'New Email Address',
+                    hintText: 'Enter your new email address',
+                    prefixIcon: Icon(Icons.email_outlined, color: theme.colorScheme.primary),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a new email address';
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      return 'Please enter a valid email address';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Current Password
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: obscurePassword,
+                  enabled: !isUpdating,
+                  decoration: InputDecoration(
+                    labelText: 'Current Password',
+                    hintText: 'Enter your current password',
+                    prefixIcon: Icon(Icons.lock, color: theme.colorScheme.primary),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscurePassword = !obscurePassword;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Warning message
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'You will need to verify your new email address before it becomes active.',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                if (isUpdating) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Updating email...',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isUpdating ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isUpdating ? null : () async {
+                // Validate new email
+                final newEmail = newEmailController.text.trim();
+                if (newEmail.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Please enter a new email address'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                  return;
+                }
+                
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(newEmail)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Please enter a valid email address'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Check if email is different from current
+                final currentEmail = ref.read(authServiceProvider).currentUser?.email;
+                if (newEmail == currentEmail) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('New email must be different from current email'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Validate password
+                if (passwordController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Please enter your current password'),
+                      backgroundColor: theme.colorScheme.error,
+                    ),
+                  );
+                  return;
+                }
+                
+                setState(() {
+                  isUpdating = true;
+                });
+                
+                try {
+                  final authService = ref.read(authServiceProvider);
+                  
+                  // Re-authenticate user
+                  final credential = EmailAuthProvider.credential(
+                    email: currentEmail!,
+                    password: passwordController.text,
+                  );
+                  
+                  await authService.currentUser?.reauthenticateWithCredential(credential);
+                  
+                  // Update email
+                  await authService.currentUser?.verifyBeforeUpdateEmail(newEmail);
+                  
+                  if (context.mounted) {
+                    Navigator.pop(context); // Close dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('✅ Verification email sent to your new address'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    setState(() {
+                      isUpdating = false;
+                    });
+                    String errorMessage = 'Failed to update email';
+                    
+                    if (e is FirebaseAuthException) {
+                      switch (e.code) {
+                        case 'wrong-password':
+                          errorMessage = 'Incorrect password';
+                          break;
+                        case 'invalid-email':
+                          errorMessage = 'Invalid email address';
+                          break;
+                        case 'email-already-in-use':
+                          errorMessage = 'Email is already in use';
+                          break;
+                        case 'requires-recent-login':
+                          errorMessage = 'Please sign out and sign in again, then try updating your email';
+                          break;
+                        default:
+                          errorMessage = e.message ?? 'Failed to update email';
+                      }
+                    }
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ $errorMessage'),
+                        backgroundColor: theme.colorScheme.error,
+                        duration: const Duration(seconds: 5),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: isUpdating
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Update Email'),
+            ),
+          ],
+        ),
       ),
     );
   }
