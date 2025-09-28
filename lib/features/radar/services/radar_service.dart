@@ -58,6 +58,26 @@ class RadarService {
     _scanTimer = null;
   }
 
+  // Toggle radar visibility (affects both detectability and detection ability)
+  void toggleRadarVisibility(bool isVisible) {
+    _settings = _settings.copyWith(enableAutoDetection: isVisible);
+    
+    if (isVisible) {
+      // If becoming visible, start scanning if not already scanning
+      if (!_isScanning) {
+        startScanning();
+      }
+    } else {
+      // If becoming invisible, stop scanning
+      stopScanning();
+    }
+    
+    _usersController.add(_currentUsers);
+  }
+
+  // Check if radar is visible (can detect and be detected)
+  bool get isRadarVisible => _settings.enableAutoDetection;
+
   // Update radar settings
   void updateSettings(RadarSettings newSettings) {
     _settings = newSettings;
@@ -71,6 +91,10 @@ class RadarService {
   // Update range settings
   void updateRangeSettings(RadarRangeSettings newRangeSettings) {
     _rangeSettings = newRangeSettings;
+    _settings = _settings.copyWith(detectionRangeKm: newRangeSettings.rangeKm);
+    
+    // Emit updated users with new range
+    _usersController.add(_currentUsers);
     
     // Restart scanning if currently scanning
     if (_isScanning) {
@@ -282,6 +306,29 @@ class RadarService {
 
   // Check if scanning
   bool get isScanning => _isScanning;
+
+  // Update radar range
+  void updateRange(double rangeKm) {
+    _settings = _settings.copyWith(detectionRangeKm: rangeKm);
+    _rangeSettings = _rangeSettings.copyWith(rangeKm: rangeKm);
+    
+    // Emit updated users with new range
+    _usersController.add(_currentUsers);
+  }
+
+  // Update detectability
+  void updateDetectability(bool isDetectable) {
+    _settings = _settings.copyWith(enableAutoDetection: isDetectable);
+    
+    // Emit updated users
+    _usersController.add(_currentUsers);
+  }
+
+  // Get current range
+  double getCurrentRange() => _settings.detectionRangeKm;
+
+  // Get current detectability status
+  bool getDetectabilityStatus() => _settings.enableAutoDetection;
 
   // Dispose resources
   void dispose() {

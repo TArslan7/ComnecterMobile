@@ -212,7 +212,7 @@ class RadarRangeSettings {
   final bool useMiles;
 
   const RadarRangeSettings({
-    this.rangeKm = 5.0,
+    this.rangeKm = 1.0,
     this.mode = RadarRangeMode.local,
     this.useClusters = false,
     this.useHeatmap = false,

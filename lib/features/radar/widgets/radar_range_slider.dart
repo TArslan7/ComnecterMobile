@@ -78,7 +78,7 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
         }
         
         // Apply constraints
-        rangeKm = rangeKm.clamp(1.0, 20000.0);
+        rangeKm = rangeKm.clamp(0.1, 321.87);
         
         _updateRange(rangeKm);
       }
@@ -333,8 +333,8 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
             ),
             child: Slider(
               value: _getSliderValue(),
-              min: 1.0,
-              max: widget.settings.useMiles ? 12427.0 : 20000.0,
+              min: 0.1,
+              max: widget.settings.useMiles ? 200.0 : 321.87,
               divisions: _getDivisions(),
               onChanged: (value) {
                 final rangeKm = widget.settings.useMiles ? widget.settings.toKm(value) : value;
@@ -348,13 +348,13 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                widget.settings.useMiles ? '1 mi' : '1 km',
+                widget.settings.useMiles ? '0.1 mi' : '0.1 km',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               Text(
-                widget.settings.useMiles ? '12,427 mi' : '20,000 km',
+                widget.settings.useMiles ? '200 mi' : '322 km',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
@@ -431,21 +431,26 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
   double _getSliderValue() {
     if (widget.settings.useMiles) {
       final milesValue = widget.settings.toMiles(_currentRange);
-      return milesValue.clamp(1.0, 12427.0);
+      return milesValue.clamp(0.1, 200.0);
     } else {
-      return _currentRange.clamp(1.0, 20000.0);
+      return _currentRange.clamp(0.1, 321.87);
     }
   }
 
   int _getDivisions() {
     if (widget.settings.useMiles) {
-      if (_currentRange <= 62) return 61; // 1mi steps (62 miles = 100km)
-      if (_currentRange <= 621) return 55; // 10mi steps (621 miles = 1000km)
-      return 124; // 100mi steps (12,427 miles = 20,000km)
+      // For miles: more divisions for better precision
+      if (_currentRange <= 10) return 90; // 0.1mi steps (0.1 to 10 miles)
+      if (_currentRange <= 50) return 490; // 0.1mi steps (0.1 to 50 miles)
+      if (_currentRange <= 100) return 990; // 0.1mi steps (0.1 to 100 miles)
+      return 1999; // 0.1mi steps (0.1 to 200 miles)
     } else {
-      if (_currentRange <= 100) return 99; // 1km steps
-      if (_currentRange <= 1000) return 90; // 10km steps
-      return 199; // 100km steps
+      // For km: more divisions for better precision
+      if (_currentRange <= 10) return 90; // 0.1km steps (0.1 to 10 km)
+      if (_currentRange <= 50) return 490; // 0.1km steps (0.1 to 50 km)
+      if (_currentRange <= 100) return 990; // 0.1km steps (0.1 to 100 km)
+      if (_currentRange <= 200) return 1999; // 0.1km steps (0.1 to 200 km)
+      return 3217; // 0.1km steps (0.1 to 321.87 km)
     }
   }
 }

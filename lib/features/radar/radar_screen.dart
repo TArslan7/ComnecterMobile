@@ -27,26 +27,48 @@ class RadarScreen extends HookWidget {
     final radarService = useMemoized(() => RadarService(), []);
     final detectedUsers = useState<List<NearbyUser>>([]);
     final friendService = useMemoized(() => FriendService(), []);
-    final rangeSettings = useState<RadarRangeSettings>(const RadarRangeSettings());
+    final rangeSettings = useState<RadarRangeSettings>(const RadarRangeSettings(rangeKm: 1.0));
     
     // Detection history service - use the same instance as RadarService
     final detectionHistoryService = useMemoized(() => DetectionHistoryService(), []);
     
     // Foldable state for detected users list
     final isUsersListExpanded = useState(true);
+    
+    // Real-time privacy settings feedback
+    final currentRange = useState(1.0);
+    final displayRange = useState(1.0); // Range displayed in UI (only updates after save)
+    final pendingRange = useState(1.0); // Range that user is adjusting (not yet saved)
+    final hasPendingChanges = useState(false); // Track if there are unsaved changes
+    final isDetectable = useState(true);
 
     useEffect(() {
       // Initialize services (RadarService will initialize DetectionHistoryService)
-      radarService.initialize();
+      radarService.initialize().then((_) {
+        // Initialize privacy settings
+        currentRange.value = radarService.getCurrentRange();
+        displayRange.value = currentRange.value; // Set display range to current range
+        pendingRange.value = currentRange.value; // Set pending range to current range
+        isDetectable.value = radarService.getDetectabilityStatus();
+        // Initialize range settings with current range
+        rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
+      });
       
       // Listen to detected users
       final subscription = radarService.usersStream.listen((users) {
         detectedUsers.value = users.where((user) => user.isDetected).toList();
+        // Update privacy settings from radar service
+        currentRange.value = radarService.getCurrentRange();
+        displayRange.value = currentRange.value; // Update display range
+        pendingRange.value = currentRange.value; // Update pending range
+        isDetectable.value = radarService.getDetectabilityStatus();
+        // Update range settings to reflect current state
+        rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
       });
 
 
-      // Start scanning initially
-      if (isScanning.value) {
+      // Start scanning initially if visible
+      if (isDetectable.value) {
         radarService.startScanning();
       }
 
@@ -56,14 +78,20 @@ class RadarScreen extends HookWidget {
       };
     }, []);
 
-    // Update range settings when changed
-    useEffect(() {
+    // Save range changes function
+    void saveRangeChanges() {
+      // Update the range settings with pending range
+      rangeSettings.value = rangeSettings.value.copyWith(rangeKm: pendingRange.value);
+      // Apply the changes to radar service
       radarService.updateRangeSettings(rangeSettings.value);
-      return null;
-    }, [rangeSettings.value]);
+      // Update display range to show saved value
+      displayRange.value = pendingRange.value;
+      // Clear pending changes
+      hasPendingChanges.value = false;
+    }
 
     useEffect(() {
-      if (isScanning.value) {
+      if (isDetectable.value) {
         radarService.startScanning();
         heartbeatController.repeat();
         radarController.repeat();
@@ -73,10 +101,11 @@ class RadarScreen extends HookWidget {
         radarController.stop();
       }
       return null;
-    }, [isScanning.value]);
+    }, [isDetectable.value]);
 
-    void toggleScanning() {
-      isScanning.value = !isScanning.value;
+    void toggleRadarVisibility() {
+      isDetectable.value = !isDetectable.value;
+      radarService.toggleRadarVisibility(isDetectable.value);
     }
 
     void sendFriendRequest(NearbyUser user) async {
@@ -161,13 +190,13 @@ class RadarScreen extends HookWidget {
             tooltip: 'Friends',
           ),
           IconButton(
-            onPressed: toggleScanning,
+            onPressed: toggleRadarVisibility,
             icon: Icon(
-              isScanning.value ? Icons.pause : Icons.play_arrow,
-              color: Theme.of(context).colorScheme.primary,
+              isDetectable.value ? Icons.visibility : Icons.visibility_off,
+              color: isDetectable.value ? Colors.green.shade600 : Colors.grey.shade600,
               size: 24,
             ),
-            tooltip: isScanning.value ? 'Pause Radar' : 'Start Radar',
+            tooltip: isDetectable.value ? 'Hide from Radar' : 'Show on Radar',
           ),
         ],
       ),
@@ -307,10 +336,12 @@ class RadarScreen extends HookWidget {
               
               // Status text
               Text(
-                isScanning.value ? 'Scanning for connections...' : 'Radar paused',
+                isDetectable.value ? 'Scanning for connections...' : 'Radar hidden - not detecting others',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: isDetectable.value 
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Colors.grey.shade600,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -335,18 +366,90 @@ class RadarScreen extends HookWidget {
                       height: 10,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isScanning.value 
-                          ? Theme.of(context).colorScheme.primary 
-                          : Theme.of(context).colorScheme.outline,
+                        color: isDetectable.value 
+                          ? Colors.green.shade600 
+                          : Colors.grey.shade600,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isScanning.value ? 'Active' : 'Inactive',
+                      isDetectable.value ? 'Visible' : 'Hidden',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: isDetectable.value 
+                          ? Colors.green.shade700 
+                          : Colors.grey.shade700,
                         fontWeight: FontWeight.w600,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Real-time Privacy Settings Feedback
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Range Display
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.radar,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          rangeSettings.value.copyWith(rangeKm: displayRange.value).getDisplayValue(),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Divider
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                    
+                    // Detection Ability Status
+                    Row(
+                      children: [
+                        Icon(
+                          isDetectable.value ? Icons.radar : Icons.radar_outlined,
+                          size: 16,
+                          color: isDetectable.value 
+                              ? Colors.blue.shade600 
+                              : Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isDetectable.value ? 'Detecting' : 'Not Detecting',
+                          style: TextStyle(
+                            color: isDetectable.value 
+                                ? Colors.blue.shade700 
+                                : Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -358,13 +461,48 @@ class RadarScreen extends HookWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: RadarRangeSlider(
-                  settings: rangeSettings.value,
+                  settings: rangeSettings.value.copyWith(rangeKm: pendingRange.value),
                   onChanged: (newSettings) {
+                    // Update pending range and mark as having changes
+                    pendingRange.value = newSettings.rangeKm;
+                    hasPendingChanges.value = true;
+                    // Update range settings to reflect unit changes
                     rangeSettings.value = newSettings;
                   },
                   userCount: detectedUsers.value.length,
                 ),
               ),
+              
+              // Save Range Button
+              if (hasPendingChanges.value) ...[
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: saveRangeChanges,
+                          icon: const Icon(Icons.save, size: 18),
+                          label: Text(
+                            'Update Range to ${rangeSettings.value.copyWith(rangeKm: pendingRange.value).getDisplayValue()}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               
               const SizedBox(height: 25),
               
@@ -481,9 +619,9 @@ class RadarScreen extends HookWidget {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      isScanning.value 
+                                      isDetectable.value 
                                         ? 'Scanning for nearby users...' 
-                                        : 'No users detected in range',
+                                        : 'Radar hidden - cannot detect others',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
