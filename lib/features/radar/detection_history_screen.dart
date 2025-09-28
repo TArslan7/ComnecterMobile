@@ -198,6 +198,140 @@ class DetectionHistoryScreen extends HookWidget {
     );
   }
 
+  void _showClearHistoryDialog(BuildContext context, DetectionHistoryService service) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.clear_all,
+              color: Colors.red.shade600,
+              size: 28,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Clear Detection History',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will remove all recent detections from your history.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.blue.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.blue.shade600,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Your saved favorites will not be affected.',
+                      style: TextStyle(
+                        color: Colors.blue.shade700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _clearDetectionHistoryWithAnimation(context, service);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Clear History'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearDetectionHistoryWithAnimation(BuildContext context, DetectionHistoryService service) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Clear the detection history
+      await service.clearDetections();
+      
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Detection history cleared successfully'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing history: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildTabButton(
     BuildContext context,
     String title,
@@ -273,14 +407,58 @@ class DetectionHistoryScreen extends HookWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                '${detections.length}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
+              if (detections.isNotEmpty) ...[
+                Text(
+                  '${detections.length}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: () => _showClearHistoryDialog(context, detectionService),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.clear_all,
+                          color: Colors.red.shade600,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Clear',
+                          style: TextStyle(
+                            color: Colors.red.shade600,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ] else
+                Text(
+                  '${detections.length}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -724,6 +902,7 @@ class _SwipeableDetectionCard extends HookWidget {
   final VoidCallback? onTap;
   final VoidCallback? onSaveToFavorites;
   final VoidCallback? onRemoveFromFavorites;
+  final bool isClearing;
 
   const _SwipeableDetectionCard({
     required this.detection,
@@ -731,6 +910,7 @@ class _SwipeableDetectionCard extends HookWidget {
     this.onTap,
     this.onSaveToFavorites,
     this.onRemoveFromFavorites,
+    this.isClearing = false,
   });
 
   @override
@@ -743,6 +923,17 @@ class _SwipeableDetectionCard extends HookWidget {
     final glowController = useAnimationController(
       duration: const Duration(milliseconds: 1500),
     );
+    final fadeController = useAnimationController(
+      duration: const Duration(milliseconds: 500),
+    );
+
+    // Trigger fade-out animation when clearing
+    useEffect(() {
+      if (isClearing) {
+        fadeController.forward();
+      }
+      return null;
+    }, [isClearing]);
 
     // Handle swipe gestures
     void handlePanUpdate(DragUpdateDetails details) {
@@ -785,11 +976,21 @@ class _SwipeableDetectionCard extends HookWidget {
       onPanEnd: handlePanEnd,
       onTap: onTap,
       child: AnimatedBuilder(
-        animation: Listenable.merge([animationController, glowController]),
+        animation: Listenable.merge([animationController, glowController, fadeController]),
         builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(swipeOffset.value, 0),
-            child: Container(
+          return FadeTransition(
+            opacity: fadeController,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: Offset.zero,
+                end: const Offset(-1.0, 0.0),
+              ).animate(CurvedAnimation(
+                parent: fadeController,
+                curve: Curves.easeInOut,
+              )),
+              child: Transform.translate(
+                offset: Offset(swipeOffset.value, 0),
+                child: Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
@@ -951,6 +1152,8 @@ class _SwipeableDetectionCard extends HookWidget {
                   // Swipe action indicators
                   if (!isFavorite) _buildSwipeActions(context, animationController, swipeOffset.value),
                 ],
+              ),
+            ),
               ),
             ),
           );
