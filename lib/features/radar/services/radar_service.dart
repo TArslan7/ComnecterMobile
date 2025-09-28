@@ -283,6 +283,29 @@ class RadarService {
   // Check if scanning
   bool get isScanning => _isScanning;
 
+  // Update radar range
+  void updateRange(double rangeKm) {
+    _settings = _settings.copyWith(detectionRangeKm: rangeKm);
+    _rangeSettings = _rangeSettings.copyWith(rangeKm: rangeKm);
+    
+    // Emit updated users with new range
+    _usersController.add(_currentUsers);
+  }
+
+  // Update detectability
+  void updateDetectability(bool isDetectable) {
+    _settings = _settings.copyWith(enableAutoDetection: isDetectable);
+    
+    // Emit updated users
+    _usersController.add(_currentUsers);
+  }
+
+  // Get current range
+  double getCurrentRange() => _settings.detectionRangeKm;
+
+  // Get current detectability status
+  bool getDetectabilityStatus() => _settings.enableAutoDetection;
+
   // Dispose resources
   void dispose() {
     stopScanning();

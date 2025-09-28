@@ -9,6 +9,7 @@ import 'services/detection_history_service.dart';
 import 'models/user_model.dart';
 import 'models/detection_model.dart';
 import 'widgets/radar_range_slider.dart';
+import 'privacy_settings_screen.dart';
 
 class RadarScreen extends HookWidget {
   const RadarScreen({super.key});
@@ -34,14 +35,25 @@ class RadarScreen extends HookWidget {
     
     // Foldable state for detected users list
     final isUsersListExpanded = useState(true);
+    
+    // Real-time privacy settings feedback
+    final currentRange = useState(2.0);
+    final isDetectable = useState(true);
 
     useEffect(() {
       // Initialize services (RadarService will initialize DetectionHistoryService)
-      radarService.initialize();
+      radarService.initialize().then((_) {
+        // Initialize privacy settings
+        currentRange.value = radarService.getCurrentRange();
+        isDetectable.value = radarService.getDetectabilityStatus();
+      });
       
       // Listen to detected users
       final subscription = radarService.usersStream.listen((users) {
         detectedUsers.value = users.where((user) => user.isDetected).toList();
+        // Update privacy settings from radar service
+        currentRange.value = radarService.getCurrentRange();
+        isDetectable.value = radarService.getDetectabilityStatus();
       });
 
 
@@ -127,6 +139,21 @@ class RadarScreen extends HookWidget {
           tooltip: 'Settings',
         ),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const PrivacySettingsScreen(),
+                ),
+              );
+            },
+            icon: Icon(
+              Icons.privacy_tip_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
+            tooltip: 'Privacy Settings',
+          ),
           IconButton(
             onPressed: () {
               context.push('/detection-history');
@@ -347,6 +374,76 @@ class RadarScreen extends HookWidget {
                         color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w600,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Real-time Privacy Settings Feedback
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Range Display
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.radar,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${currentRange.value.toStringAsFixed(1)} km',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Divider
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                    
+                    // Detectability Status
+                    Row(
+                      children: [
+                        Icon(
+                          isDetectable.value ? Icons.visibility : Icons.visibility_off,
+                          size: 16,
+                          color: isDetectable.value 
+                              ? Colors.green.shade600 
+                              : Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isDetectable.value ? 'Visible' : 'Hidden',
+                          style: TextStyle(
+                            color: isDetectable.value 
+                                ? Colors.green.shade700 
+                                : Colors.grey.shade700,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
