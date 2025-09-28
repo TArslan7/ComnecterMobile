@@ -466,6 +466,8 @@ class RadarScreen extends HookWidget {
                     // Update pending range and mark as having changes
                     pendingRange.value = newSettings.rangeKm;
                     hasPendingChanges.value = true;
+                    // Update range settings to reflect unit changes
+                    rangeSettings.value = newSettings;
                   },
                   userCount: detectedUsers.value.length,
                 ),
