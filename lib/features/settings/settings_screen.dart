@@ -302,17 +302,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                   const SizedBox(height: 16),
                   _buildActionSetting(
                     context,
-                    'About',
-                    'App version and information',
-                    Icons.info,
-                    () async {
-                      await soundService.playButtonClickSound();
-                      _showAboutDialog(context);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildActionSetting(
-                    context,
                     'Privacy Policy',
                     'Read our privacy policy',
                     Icons.security,
