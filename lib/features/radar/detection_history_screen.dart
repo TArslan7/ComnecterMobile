@@ -27,7 +27,6 @@ class DetectionHistoryScreen extends HookWidget {
     useEffect(() {
       Future.microtask(() async {
         try {
-          print('Detection History Screen - Starting initialization...');
           await detectionService.initialize();
           
           // Load initial data after initialization
@@ -37,19 +36,14 @@ class DetectionHistoryScreen extends HookWidget {
           );
           final loadedFavorites = detectionService.getFavorites(sort: currentSort.value);
           
-          print('Detection History Screen - Direct service call returned ${loadedDetections.length} detections');
-          print('Detection History Screen - Direct service call returned ${loadedFavorites.length} favorites');
           
           // Update state
           detections.value = loadedDetections;
           favorites.value = loadedFavorites;
           
-          print('Detection History Screen - State updated with ${detections.value.length} detections');
-          print('Detection History Screen - State updated with ${favorites.value.length} favorites');
           
           isLoading.value = false;
         } catch (e) {
-          print('Error initializing detection history service: $e');
           isLoading.value = false;
         }
       });
@@ -59,12 +53,10 @@ class DetectionHistoryScreen extends HookWidget {
     // Listen to detection updates
     useEffect(() {
       final subscription = detectionService.detectionsStream.listen((newDetections) {
-        print('DetectionHistoryScreen: Received detection stream update with ${newDetections.length} detections');
         detections.value = detectionService.getDetections(
           filter: currentFilter.value,
           sort: currentSort.value,
         );
-        print('DetectionHistoryScreen: Updated detections state with ${detections.value.length} detections');
       });
       return subscription.cancel;
     }, [currentFilter.value, currentSort.value]);
@@ -109,35 +101,6 @@ class DetectionHistoryScreen extends HookWidget {
           ),
         ),
         actions: [
-          // Debug button to add test detection
-          IconButton(
-            onPressed: () {
-              // Add a test detection for debugging
-              final testUser = NearbyUser(
-                id: 'test_user_${DateTime.now().millisecondsSinceEpoch}',
-                name: 'Test User',
-                avatar: '',
-                distanceKm: 1.5,
-                angleDegrees: 0.0,
-                signalStrength: 0.8,
-                isOnline: true,
-                isDetected: true,
-                isSelected: false,
-                interests: ['Testing'],
-                lastSeen: DateTime.now(),
-                metadata: {'test': true},
-              );
-              detectionService.addDetection(testUser);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Test detection added')),
-              );
-            },
-            icon: Icon(
-              Icons.bug_report,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            tooltip: 'Add Test Detection',
-          ),
           IconButton(
             onPressed: () => _showSettingsDialog(context, detectionService),
             icon: Icon(
@@ -502,7 +465,6 @@ class DetectionHistoryScreen extends HookWidget {
     ValueNotifier<bool> isClearing,
     DetectionHistoryService detectionService,
   ) {
-    print('_buildDetectionsSection: Building with ${detections.length} detections');
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -591,7 +553,6 @@ class DetectionHistoryScreen extends HookWidget {
                           final detection = detections[index];
                           final isFavorite = favorites.any((f) => f.userId == detection.userId);
                           
-                          print('Building detection card for: ${detection.name}');
                           
                           return AnimatedOpacity(
                             opacity: isClearing.value ? 0.0 : 1.0,
