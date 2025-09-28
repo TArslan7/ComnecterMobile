@@ -202,17 +202,33 @@ class DetectionHistoryScreen extends HookWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         title: Row(
           children: [
-            Icon(
-              Icons.clear_all,
-              color: Colors.red.shade600,
-              size: 28,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.clear_all,
+                color: Colors.red.shade600,
+                size: 24,
+              ),
             ),
-            const SizedBox(width: 8),
-            const Text(
-              'Clear Detection History',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Clear Detection History',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.red.shade700,
+                ),
+              ),
             ),
           ],
         ),
@@ -220,36 +236,66 @@ class DetectionHistoryScreen extends HookWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'This will remove all recent detections from your history.',
-              style: TextStyle(fontSize: 16),
+            Text(
+              'Are you sure you want to clear your detection history?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            Text(
+              'This action will remove all recent detections from your history.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Warning section
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.orange.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.blue.withValues(alpha: 0.3),
+                  color: Colors.orange.withValues(alpha: 0.2),
+                  width: 1,
                 ),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    Icons.info_outline,
-                    color: Colors.blue.shade600,
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade600,
                     size: 20,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      'Your saved favorites will not be affected.',
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Important',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'This action cannot be undone. Your saved favorites will remain safe.',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -260,7 +306,16 @@ class DetectionHistoryScreen extends HookWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -268,12 +323,23 @@ class DetectionHistoryScreen extends HookWidget {
               await _clearDetectionHistoryWithAnimation(context, service);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 2,
             ),
-            child: const Text('Clear History'),
+            child: const Text(
+              'Clear History',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       ),
     );
   }
@@ -417,36 +483,40 @@ class DetectionHistoryScreen extends HookWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () => _showClearHistoryDialog(context, detectionService),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.red.withValues(alpha: 0.3),
-                        width: 1,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showClearHistoryDialog(context, detectionService),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.clear_all,
-                          color: Colors.red.shade600,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Clear',
-                          style: TextStyle(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.clear_all,
                             color: Colors.red.shade600,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            size: 16,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            'Clear',
+                            style: TextStyle(
+                              color: Colors.red.shade600,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
