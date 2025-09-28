@@ -9,7 +9,6 @@ import 'services/detection_history_service.dart';
 import 'models/user_model.dart';
 import 'models/detection_model.dart';
 import 'widgets/radar_range_slider.dart';
-import 'privacy_settings_screen.dart';
 
 class RadarScreen extends HookWidget {
   const RadarScreen({super.key});
@@ -139,21 +138,6 @@ class RadarScreen extends HookWidget {
           tooltip: 'Settings',
         ),
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const PrivacySettingsScreen(),
-                ),
-              );
-            },
-            icon: Icon(
-              Icons.privacy_tip_outlined,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
-            ),
-            tooltip: 'Privacy Settings',
-          ),
           IconButton(
             onPressed: () {
               context.push('/detection-history');

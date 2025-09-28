@@ -13,6 +13,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/auth_provider.dart';
 import 'models/app_settings.dart';
 import 'services/settings_service.dart';
+import '../radar/services/radar_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -26,12 +27,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
   bool isLoading = true;
   late ConfettiController confettiController;
   late SoundService soundService;
+  late RadarService radarService;
 
   @override
   void initState() {
     super.initState();
     confettiController = ConfettiController(duration: const Duration(seconds: 2));
     soundService = SoundService();
+    radarService = RadarService();
     _loadSettings();
   }
 
@@ -241,6 +244,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
                     },
                     soundService,
                   ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Privacy Settings
+              _buildSettingsCard(
+                context,
+                'Privacy & Detection',
+                Icons.privacy_tip_outlined,
+                [
+                  _buildPrivacySection(context),
                 ],
               ),
               const SizedBox(height: 20),
@@ -2349,6 +2363,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPrivacySection(BuildContext context) {
+    return Column(
+      children: [
+        // Detectability Toggle
+        _buildToggleSetting(
+          context,
+          'Radar Visibility',
+          'Allow other users to detect you on radar',
+          Icons.visibility,
+          radarService.getDetectabilityStatus(),
+          (value) {
+            radarService.updateDetectability(value);
+            setState(() {}); // Refresh UI
+          },
+          soundService,
+        ),
+        const SizedBox(height: 16),
+        
+        // Privacy Information
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.blue.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: Colors.blue.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'When radar is paused, you automatically become invisible to other users. Radar range can be adjusted on the radar screen.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.blue.shade700,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 } 
