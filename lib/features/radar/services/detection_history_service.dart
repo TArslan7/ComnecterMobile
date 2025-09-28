@@ -36,7 +36,10 @@ class DetectionHistoryService {
     
     // Add some mock data for testing if no detections exist
     if (_detections.isEmpty) {
+      print('DetectionHistoryService: No detections found, adding mock data');
       _addMockDetections();
+    } else {
+      print('DetectionHistoryService: Found ${_detections.length} existing detections');
     }
   }
   
@@ -100,6 +103,7 @@ class DetectionHistoryService {
 
   /// Add a new detection to history
   Future<void> addDetection(NearbyUser user) async {
+    print('DetectionHistoryService: Adding detection for user ${user.name}');
     final detection = UserDetection.fromNearbyUser(user);
     
     // Remove any existing detection for the same user to avoid duplicates
@@ -107,6 +111,8 @@ class DetectionHistoryService {
     
     // Add new detection at the beginning
     _detections.insert(0, detection);
+    
+    print('DetectionHistoryService: Total detections now: ${_detections.length}');
     
     // Limit the number of detections
     if (_detections.length > _settings.maxDetections) {
@@ -121,6 +127,7 @@ class DetectionHistoryService {
     
     // Emit update
     _detectionsController.add(List.unmodifiable(_detections));
+    print('DetectionHistoryService: Emitted update with ${_detections.length} detections');
   }
 
   /// Add a user to favorites

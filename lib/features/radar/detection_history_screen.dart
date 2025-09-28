@@ -37,6 +37,11 @@ class DetectionHistoryScreen extends HookWidget {
           print('Detection History Screen - Loaded ${detections.value.length} detections');
           print('Detection History Screen - Loaded ${favorites.value.length} favorites');
           
+          // For testing: Add a test detection if none exist
+          if (detections.value.isEmpty) {
+            print('Detection History Screen - No detections found, this might be the issue');
+          }
+          
           isLoading.value = false;
         } catch (e) {
           print('Error initializing detection history service: $e');
@@ -49,10 +54,12 @@ class DetectionHistoryScreen extends HookWidget {
     // Listen to detection updates
     useEffect(() {
       final subscription = detectionService.detectionsStream.listen((newDetections) {
+        print('DetectionHistoryScreen: Received detection stream update with ${newDetections.length} detections');
         detections.value = detectionService.getDetections(
           filter: currentFilter.value,
           sort: currentSort.value,
         );
+        print('DetectionHistoryScreen: Updated detections state with ${detections.value.length} detections');
       });
       return subscription.cancel;
     }, [currentFilter.value, currentSort.value]);
