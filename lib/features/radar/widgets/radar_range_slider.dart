@@ -78,7 +78,7 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
         }
         
         // Apply constraints
-        rangeKm = rangeKm.clamp(0.1, 200.0);
+        rangeKm = rangeKm.clamp(0.1, 321.87);
         
         _updateRange(rangeKm);
       }
@@ -334,7 +334,7 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
             child: Slider(
               value: _getSliderValue(),
               min: 0.1,
-              max: widget.settings.useMiles ? 200.0 : 200.0,
+              max: widget.settings.useMiles ? 200.0 : 321.87,
               divisions: _getDivisions(),
               onChanged: (value) {
                 final rangeKm = widget.settings.useMiles ? widget.settings.toKm(value) : value;
@@ -354,7 +354,7 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
                 ),
               ),
               Text(
-                widget.settings.useMiles ? '200 mi' : '200 km',
+                widget.settings.useMiles ? '200 mi' : '322 km',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
@@ -433,7 +433,7 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
       final milesValue = widget.settings.toMiles(_currentRange);
       return milesValue.clamp(0.1, 200.0);
     } else {
-      return _currentRange.clamp(0.1, 200.0);
+      return _currentRange.clamp(0.1, 321.87);
     }
   }
 
@@ -449,7 +449,8 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
       if (_currentRange <= 10) return 90; // 0.1km steps (0.1 to 10 km)
       if (_currentRange <= 50) return 490; // 0.1km steps (0.1 to 50 km)
       if (_currentRange <= 100) return 990; // 0.1km steps (0.1 to 100 km)
-      return 1999; // 0.1km steps (0.1 to 200 km)
+      if (_currentRange <= 200) return 1999; // 0.1km steps (0.1 to 200 km)
+      return 3217; // 0.1km steps (0.1 to 321.87 km)
     }
   }
 }
