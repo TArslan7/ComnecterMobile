@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../features/auth/two_factor_screen.dart';
 import '../features/radar/radar_screen.dart';
+import '../features/radar/detection_history_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/community/community_screen.dart';
@@ -99,6 +100,11 @@ GoRouter createRouter([WidgetRef? ref]) {
             path: '/',
             name: 'radar',
             builder: (context, state) => const RadarScreen(),
+          ),
+          GoRoute(
+            path: '/detection-history',
+            name: 'detection-history',
+            builder: (context, state) => const DetectionHistoryScreen(),
           ),
           GoRoute(
             path: '/chat',

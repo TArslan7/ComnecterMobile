@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/services.dart';
 import '../models/user_model.dart';
+import '../services/detection_history_service.dart';
 import '../../../services/sound_service.dart';
 
 class RadarService {
@@ -21,9 +22,13 @@ class RadarService {
   RadarRangeSettings _rangeSettings = const RadarRangeSettings();
   List<NearbyUser> _currentUsers = [];
   final Random _random = Random();
+  final DetectionHistoryService _detectionHistoryService = DetectionHistoryService();
 
   // Initialize the radar service
   Future<void> initialize() async {
+    // Initialize detection history service
+    await _detectionHistoryService.initialize();
+    
     // Generate initial mock users
     _currentUsers = _generateMockUsers();
     _usersController.add(_currentUsers);
@@ -118,10 +123,15 @@ class RadarService {
     _currentUsers = newUsers;
     _usersController.add(_currentUsers);
 
-    // Emit detection events
+    // Emit detection events and save to history
     for (final userId in detectedUsers) {
       final user = _currentUsers.firstWhere((u) => u.id == userId);
       _emitDetection(user, false);
+      
+      // Save to detection history
+      if (_settings.enableAutoDetection) {
+        _detectionHistoryService.addDetection(user);
+      }
     }
   }
 
@@ -142,6 +152,9 @@ class RadarService {
     
     _usersController.add(_currentUsers);
     _emitDetection(updatedUser, true);
+    
+    // Save to detection history
+    _detectionHistoryService.addDetection(updatedUser);
   }
 
   // Toggle user selection
