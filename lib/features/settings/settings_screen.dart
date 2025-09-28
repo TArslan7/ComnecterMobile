@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart';
 import 'models/app_settings.dart';
 import 'services/settings_service.dart';
 import '../radar/services/radar_service.dart';
+import 'widgets/glowing_switch.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -2369,8 +2370,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
   Widget _buildPrivacySection(BuildContext context) {
     return Column(
       children: [
-        // Radar Visibility Toggle
-        _buildToggleSetting(
+        // Radar Visibility Toggle with Glowing Switch
+        _buildGlowingToggleSetting(
           context,
           'Radar Visibility',
           'Show on radar and detect other users',
@@ -2417,6 +2418,83 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProv
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGlowingToggleSetting(
+    BuildContext context,
+    String title,
+    String subtitle,
+    IconData icon,
+    bool value,
+    ValueChanged<bool> onChanged,
+    SoundService soundService,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          
+          const SizedBox(width: 16),
+          
+          // Title and subtitle
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(width: 16),
+          
+          // Glowing Switch
+          GlowingSwitch(
+            value: value,
+            onChanged: (newValue) async {
+              await soundService.playButtonClickSound();
+              onChanged(newValue);
+            },
+            activeColor: Colors.green,
+            inactiveColor: Colors.grey.shade400,
+          ),
+        ],
+      ),
     );
   }
 } 
