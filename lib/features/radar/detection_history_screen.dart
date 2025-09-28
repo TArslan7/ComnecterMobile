@@ -536,11 +536,30 @@ class DetectionHistoryScreen extends HookWidget {
           // Detections list
           Expanded(
             child: isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Loading detections...',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 : detections.isEmpty
                     ? _buildEmptyDetectionsState(context)
-                    : ListView.builder(
+                    : ListView.separated(
                         itemCount: detections.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        padding: const EdgeInsets.only(bottom: 16),
                         itemBuilder: (context, index) {
                           final detection = detections[index];
                           final isFavorite = favorites.any((f) => f.userId == detection.userId);
@@ -1061,54 +1080,65 @@ class _SwipeableDetectionCard extends HookWidget {
               child: Transform.translate(
                 offset: Offset(swipeOffset.value, 0),
                 child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                  // Glow effect when swiping
-                  if (isSwipeActive.value)
-                    BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.3 + (glowController.value * 0.4)),
-                      blurRadius: 20 + (glowController.value * 30),
-                      spreadRadius: 5 + (glowController.value * 15),
-                    ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Main card content
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isFavorite 
-                            ? Colors.red.withValues(alpha: 0.3)
-                            : Colors.grey.shade200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
+                      // Glow effect when swiping
+                      if (isSwipeActive.value)
+                        BoxShadow(
+                          color: Colors.green.withValues(alpha: 0.4 + (glowController.value * 0.3)),
+                          blurRadius: 25 + (glowController.value * 35),
+                          spreadRadius: 8 + (glowController.value * 20),
+                        ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      // Main card content
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isFavorite 
+                                ? Colors.red.withValues(alpha: 0.2)
+                                : Colors.grey.shade100,
+                            width: 1,
+                          ),
+                        ),
                     child: Row(
                       children: [
                         // Avatar
                         Stack(
                           children: [
                             Container(
-                              width: 48,
-                              height: 48,
+                              width: 56,
+                              height: 56,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                   colors: [
                                     AppTheme.primary,
-                                    AppTheme.primary.withValues(alpha: 0.7),
+                                    AppTheme.primary.withValues(alpha: 0.8),
                                   ],
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primary.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    spreadRadius: 0,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Center(
                                 child: Text(
@@ -1116,7 +1146,7 @@ class _SwipeableDetectionCard extends HookWidget {
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                    fontSize: 20,
                                   ),
                                 ),
                               ),
@@ -1126,66 +1156,103 @@ class _SwipeableDetectionCard extends HookWidget {
                                 right: -2,
                                 top: -2,
                                 child: Container(
-                                  width: 18,
-                                  height: 18,
+                                  width: 20,
+                                  height: 20,
                                   decoration: BoxDecoration(
-                                    color: Colors.red,
+                                    color: Colors.red.shade600,
                                     shape: BoxShape.circle,
                                     border: Border.all(color: Colors.white, width: 2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.red.withValues(alpha: 0.3),
+                                        blurRadius: 4,
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
                                   ),
                                   child: const Icon(
                                     Icons.favorite,
                                     color: Colors.white,
-                                    size: 10,
+                                    size: 12,
                                   ),
                                 ),
                               ),
                           ],
                         ),
                         
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         
                         // User info
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 detection.name,
                                 style: const TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black87,
+                                  height: 1.2,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    size: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${detection.distanceKm.toStringAsFixed(1)} km',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.location_on,
+                                          size: 14,
+                                          color: AppTheme.primary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${detection.distanceKm.toStringAsFixed(1)} km',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppTheme.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _formatTimestamp(detection.detectedAt),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.access_time,
+                                          size: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _formatTimestamp(detection.detectedAt),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -1196,24 +1263,38 @@ class _SwipeableDetectionCard extends HookWidget {
                         
                         // Action button
                         if (isFavorite)
-                          IconButton(
-                            onPressed: onRemoveFromFavorites,
-                            icon: Icon(
-                              Icons.favorite,
-                              color: Colors.red.shade400,
-                              size: 20,
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            tooltip: 'Remove from favorites',
+                            child: IconButton(
+                              onPressed: onRemoveFromFavorites,
+                              icon: Icon(
+                                Icons.favorite,
+                                color: Colors.red.shade600,
+                                size: 22,
+                              ),
+                              tooltip: 'Remove from favorites',
+                              padding: const EdgeInsets.all(12),
+                            ),
                           )
                         else
-                          IconButton(
-                            onPressed: onSaveToFavorites,
-                            icon: Icon(
-                              Icons.favorite_border,
-                              color: Colors.grey.shade400,
-                              size: 20,
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            tooltip: 'Add to favorites',
+                            child: IconButton(
+                              onPressed: onSaveToFavorites,
+                              icon: Icon(
+                                Icons.favorite_border,
+                                color: Colors.grey.shade600,
+                                size: 22,
+                              ),
+                              tooltip: 'Add to favorites',
+                              padding: const EdgeInsets.all(12),
+                            ),
                           ),
                       ],
                     ),
@@ -1241,22 +1322,43 @@ class _SwipeableDetectionCard extends HookWidget {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.green.withValues(alpha: 0.1),
+                      Colors.green.withValues(alpha: 0.2),
+                    ],
+                  ),
                   borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
+                    topRight: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
                   ),
                 ),
                 child: AnimatedBuilder(
                   animation: animationController,
                   builder: (context, child) {
                     return Transform.scale(
-                      scale: 1.0 + (animationController.value * 0.3),
-                      child: const Center(
-                        child: Icon(
-                          Icons.favorite,
-                          color: Colors.green,
-                          size: 24,
+                      scale: 1.0 + (animationController.value * 0.2),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.favorite,
+                              color: Colors.green.shade600,
+                              size: 28,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Save',
+                              style: TextStyle(
+                                color: Colors.green.shade600,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
