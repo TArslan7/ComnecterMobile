@@ -45,6 +45,7 @@ class DetectionHistoryService {
   
   /// Add mock detections for testing
   void _addMockDetections() {
+    final now = DateTime.now();
     final mockDetections = [
       UserDetection(
         id: 'mock_1',
@@ -53,7 +54,7 @@ class DetectionHistoryService {
         avatar: '',
         distanceKm: 0.5,
         signalStrength: 0.85,
-        detectedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        detectedAt: now.subtract(const Duration(minutes: 5)),
         isOnline: true,
         interests: ['Music', 'Travel'],
         metadata: {'interests': ['Music', 'Travel']},
@@ -65,7 +66,7 @@ class DetectionHistoryService {
         avatar: '',
         distanceKm: 1.2,
         signalStrength: 0.72,
-        detectedAt: DateTime.now().subtract(const Duration(minutes: 15)),
+        detectedAt: now.subtract(const Duration(minutes: 15)),
         isOnline: true,
         interests: ['Sports', 'Gaming'],
         metadata: {'interests': ['Sports', 'Gaming']},
@@ -77,7 +78,7 @@ class DetectionHistoryService {
         avatar: '',
         distanceKm: 0.8,
         signalStrength: 0.91,
-        detectedAt: DateTime.now().subtract(const Duration(hours: 1)),
+        detectedAt: now.subtract(const Duration(hours: 1)),
         isOnline: false,
         interests: ['Art', 'Photography'],
         metadata: {'interests': ['Art', 'Photography']},
@@ -89,10 +90,34 @@ class DetectionHistoryService {
         avatar: '',
         distanceKm: 2.1,
         signalStrength: 0.58,
-        detectedAt: DateTime.now().subtract(const Duration(hours: 2)),
+        detectedAt: now.subtract(const Duration(hours: 2)),
         isOnline: true,
         interests: ['Technology', 'Coding'],
         metadata: {'interests': ['Technology', 'Coding']},
+      ),
+      UserDetection(
+        id: 'mock_5',
+        userId: 'user_5',
+        name: 'Emma Brown',
+        avatar: '',
+        distanceKm: 0.3,
+        signalStrength: 0.95,
+        detectedAt: now.subtract(const Duration(minutes: 30)),
+        isOnline: true,
+        interests: ['Fitness', 'Yoga'],
+        metadata: {'interests': ['Fitness', 'Yoga']},
+      ),
+      UserDetection(
+        id: 'mock_6',
+        userId: 'user_6',
+        name: 'Frank Miller',
+        avatar: '',
+        distanceKm: 1.8,
+        signalStrength: 0.65,
+        detectedAt: now.subtract(const Duration(hours: 3)),
+        isOnline: false,
+        interests: ['Cooking', 'Food'],
+        metadata: {'interests': ['Cooking', 'Food']},
       ),
     ];
     
@@ -169,23 +194,31 @@ class DetectionHistoryService {
     DetectionSort? sort,
     int? limit,
   }) {
+    print('DetectionHistoryService: getDetections called with ${_detections.length} total detections');
     List<UserDetection> filtered = List.from(_detections);
     
     // Apply filter
     if (filter != null) {
+      print('DetectionHistoryService: Applying filter $filter');
       filtered = _applyFilter(filtered, filter);
+      print('DetectionHistoryService: After filter: ${filtered.length} detections');
     }
     
     // Apply sort
     if (sort != null) {
+      print('DetectionHistoryService: Applying sort $sort');
       filtered = _applySort(filtered, sort);
+      print('DetectionHistoryService: After sort: ${filtered.length} detections');
     }
     
     // Apply limit
     if (limit != null && limit > 0) {
+      print('DetectionHistoryService: Applying limit $limit');
       filtered = filtered.take(limit).toList();
+      print('DetectionHistoryService: After limit: ${filtered.length} detections');
     }
     
+    print('DetectionHistoryService: Returning ${filtered.length} detections');
     return filtered;
   }
 
