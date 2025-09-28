@@ -27,7 +27,7 @@ class RadarScreen extends HookWidget {
     final radarService = useMemoized(() => RadarService(), []);
     final detectedUsers = useState<List<NearbyUser>>([]);
     final friendService = useMemoized(() => FriendService(), []);
-    final rangeSettings = useState<RadarRangeSettings>(const RadarRangeSettings());
+    final rangeSettings = useState<RadarRangeSettings>(const RadarRangeSettings(rangeKm: 1.0));
     
     // Detection history service - use the same instance as RadarService
     final detectionHistoryService = useMemoized(() => DetectionHistoryService(), []);
@@ -36,7 +36,8 @@ class RadarScreen extends HookWidget {
     final isUsersListExpanded = useState(true);
     
     // Real-time privacy settings feedback
-    final currentRange = useState(2.0);
+    final currentRange = useState(1.0);
+    final displayRange = useState(1.0); // Range displayed in UI (only updates after save)
     final isDetectable = useState(true);
 
     useEffect(() {
@@ -44,6 +45,7 @@ class RadarScreen extends HookWidget {
       radarService.initialize().then((_) {
         // Initialize privacy settings
         currentRange.value = radarService.getCurrentRange();
+        displayRange.value = currentRange.value; // Set display range to current range
         isDetectable.value = radarService.getDetectabilityStatus();
         // Initialize range settings with current range
         rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
@@ -54,6 +56,7 @@ class RadarScreen extends HookWidget {
         detectedUsers.value = users.where((user) => user.isDetected).toList();
         // Update privacy settings from radar service
         currentRange.value = radarService.getCurrentRange();
+        displayRange.value = currentRange.value; // Update display range
         isDetectable.value = radarService.getDetectabilityStatus();
         // Update range settings to reflect current state
         rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
@@ -74,6 +77,8 @@ class RadarScreen extends HookWidget {
     // Update range settings when changed
     useEffect(() {
       radarService.updateRangeSettings(rangeSettings.value);
+      // Update display range only when range is actually applied
+      displayRange.value = rangeSettings.value.rangeKm;
       return null;
     }, [rangeSettings.value]);
 
@@ -398,7 +403,7 @@ class RadarScreen extends HookWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          rangeSettings.value.getDisplayValue(),
+                          rangeSettings.value.copyWith(rangeKm: displayRange.value).getDisplayValue(),
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
@@ -451,6 +456,8 @@ class RadarScreen extends HookWidget {
                   settings: rangeSettings.value,
                   onChanged: (newSettings) {
                     rangeSettings.value = newSettings;
+                    // Only update display range when user saves (not during live interaction)
+                    // The display range will be updated when the range is actually applied
                   },
                   userCount: detectedUsers.value.length,
                 ),
