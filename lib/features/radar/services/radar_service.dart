@@ -91,6 +91,10 @@ class RadarService {
   // Update range settings
   void updateRangeSettings(RadarRangeSettings newRangeSettings) {
     _rangeSettings = newRangeSettings;
+    _settings = _settings.copyWith(detectionRangeKm: newRangeSettings.rangeKm);
+    
+    // Emit updated users with new range
+    _usersController.add(_currentUsers);
     
     // Restart scanning if currently scanning
     if (_isScanning) {

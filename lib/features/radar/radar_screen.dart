@@ -45,6 +45,8 @@ class RadarScreen extends HookWidget {
         // Initialize privacy settings
         currentRange.value = radarService.getCurrentRange();
         isDetectable.value = radarService.getDetectabilityStatus();
+        // Initialize range settings with current range
+        rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
       });
       
       // Listen to detected users
@@ -53,6 +55,8 @@ class RadarScreen extends HookWidget {
         // Update privacy settings from radar service
         currentRange.value = radarService.getCurrentRange();
         isDetectable.value = radarService.getDetectabilityStatus();
+        // Update range settings to reflect current state
+        rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
       });
 
 
@@ -394,7 +398,7 @@ class RadarScreen extends HookWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${currentRange.value.toStringAsFixed(1)} km',
+                          rangeSettings.value.getDisplayValue(),
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
