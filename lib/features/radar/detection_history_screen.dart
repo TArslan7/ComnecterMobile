@@ -21,6 +21,7 @@ class DetectionHistoryScreen extends HookWidget {
     final currentSort = useState(DetectionSort.newest);
     final showSwipeHints = useState(true);
     final selectedTab = useState(0); // 0 = Recent Detections, 1 = Saved Favorites
+    final isClearing = useState(false);
 
     // Initialize service and load data
     useEffect(() {
@@ -191,16 +192,17 @@ class DetectionHistoryScreen extends HookWidget {
               child: selectedTab.value == 0
                   ? Container(
                       key: const ValueKey('detections'),
-                      child: _buildDetectionsSection(
-                        context,
-                        detections.value,
-                        favorites.value,
-                        currentFilter.value,
-                        currentSort.value,
-                        showSwipeHints.value,
-                        isLoading.value,
-                        detectionService,
-                      ),
+                        child: _buildDetectionsSection(
+                          context,
+                          detections.value,
+                          favorites.value,
+                          currentFilter.value,
+                          currentSort.value,
+                          showSwipeHints.value,
+                          isLoading.value,
+                          isClearing,
+                          detectionService,
+                        ),
                     )
                   : Container(
                       key: const ValueKey('favorites'),
@@ -254,7 +256,7 @@ class DetectionHistoryScreen extends HookWidget {
     );
   }
 
-  void _showClearHistoryDialog(BuildContext context, DetectionHistoryService service) {
+  void _showClearHistoryDialog(BuildContext context, DetectionHistoryService service, ValueNotifier<bool> isClearing) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -376,7 +378,7 @@ class DetectionHistoryScreen extends HookWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              await _clearDetectionHistoryWithAnimation(context, service);
+              await _clearDetectionHistoryWithAnimation(context, service, isClearing);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade600,
@@ -400,24 +402,19 @@ class DetectionHistoryScreen extends HookWidget {
     );
   }
 
-  Future<void> _clearDetectionHistoryWithAnimation(BuildContext context, DetectionHistoryService service) async {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
+  Future<void> _clearDetectionHistoryWithAnimation(BuildContext context, DetectionHistoryService service, ValueNotifier<bool> isClearing) async {
+    // Start clearing animation
+    isClearing.value = true;
+    
+    // Wait for animation to complete
+    await Future.delayed(const Duration(milliseconds: 500));
+    
     try {
       // Clear the detection history
       await service.clearDetections();
       
-      // Close loading dialog
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
+      // Stop clearing animation
+      isClearing.value = false;
 
       // Show success message
       if (context.mounted) {
@@ -436,10 +433,8 @@ class DetectionHistoryScreen extends HookWidget {
         );
       }
     } catch (e) {
-      // Close loading dialog
-      if (context.mounted) {
-        Navigator.pop(context);
-      }
+      // Stop clearing animation
+      isClearing.value = false;
 
       // Show error message
       if (context.mounted) {
@@ -504,6 +499,7 @@ class DetectionHistoryScreen extends HookWidget {
     DetectionSort sort,
     bool showSwipeHints,
     bool isLoading,
+    ValueNotifier<bool> isClearing,
     DetectionHistoryService detectionService,
   ) {
     print('_buildDetectionsSection: Building with ${detections.length} detections');
@@ -544,7 +540,7 @@ class DetectionHistoryScreen extends HookWidget {
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => _showClearHistoryDialog(context, detectionService),
+                    onTap: () => _showClearHistoryDialog(context, detectionService, isClearing),
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -597,8 +593,13 @@ class DetectionHistoryScreen extends HookWidget {
                           
                           print('Building detection card for: ${detection.name}');
                           
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
+                          return AnimatedOpacity(
+                            opacity: isClearing.value ? 0.0 : 1.0,
+                            duration: const Duration(milliseconds: 500),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOut,
+                              margin: const EdgeInsets.only(bottom: 12),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
@@ -798,7 +799,8 @@ class DetectionHistoryScreen extends HookWidget {
                                 ),
                               ),
                             ),
-                          );
+                          ),
+                        );
                         },
                       ),
           ),
