@@ -24,8 +24,24 @@ class DetectionHistoryScreen extends HookWidget {
     // Initialize service and load data
     useEffect(() {
       Future.microtask(() async {
-        await detectionService.initialize();
-        isLoading.value = false;
+        try {
+          await detectionService.initialize();
+          // Load initial data after initialization
+          detections.value = detectionService.getDetections(
+            filter: currentFilter.value,
+            sort: currentSort.value,
+          );
+          favorites.value = detectionService.getFavorites(sort: currentSort.value);
+          
+          // Debug: Print current detections count
+          print('Detection History Screen - Loaded ${detections.value.length} detections');
+          print('Detection History Screen - Loaded ${favorites.value.length} favorites');
+          
+          isLoading.value = false;
+        } catch (e) {
+          print('Error initializing detection history service: $e');
+          isLoading.value = false;
+        }
       });
       return null;
     }, []);

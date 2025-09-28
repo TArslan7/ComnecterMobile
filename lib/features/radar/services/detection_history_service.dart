@@ -33,6 +33,69 @@ class DetectionHistoryService {
   /// Initialize the service and load data from storage
   Future<void> initialize() async {
     await _loadFromStorage();
+    
+    // Add some mock data for testing if no detections exist
+    if (_detections.isEmpty) {
+      _addMockDetections();
+    }
+  }
+  
+  /// Add mock detections for testing
+  void _addMockDetections() {
+    final mockDetections = [
+      UserDetection(
+        id: 'mock_1',
+        userId: 'user_1',
+        name: 'Alice Johnson',
+        avatar: '',
+        distanceKm: 0.5,
+        signalStrength: 0.85,
+        detectedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        isOnline: true,
+        interests: ['Music', 'Travel'],
+        metadata: {'interests': ['Music', 'Travel']},
+      ),
+      UserDetection(
+        id: 'mock_2',
+        userId: 'user_2',
+        name: 'Bob Smith',
+        avatar: '',
+        distanceKm: 1.2,
+        signalStrength: 0.72,
+        detectedAt: DateTime.now().subtract(const Duration(minutes: 15)),
+        isOnline: true,
+        interests: ['Sports', 'Gaming'],
+        metadata: {'interests': ['Sports', 'Gaming']},
+      ),
+      UserDetection(
+        id: 'mock_3',
+        userId: 'user_3',
+        name: 'Carol Davis',
+        avatar: '',
+        distanceKm: 0.8,
+        signalStrength: 0.91,
+        detectedAt: DateTime.now().subtract(const Duration(hours: 1)),
+        isOnline: false,
+        interests: ['Art', 'Photography'],
+        metadata: {'interests': ['Art', 'Photography']},
+      ),
+      UserDetection(
+        id: 'mock_4',
+        userId: 'user_4',
+        name: 'David Wilson',
+        avatar: '',
+        distanceKm: 2.1,
+        signalStrength: 0.58,
+        detectedAt: DateTime.now().subtract(const Duration(hours: 2)),
+        isOnline: true,
+        interests: ['Technology', 'Coding'],
+        metadata: {'interests': ['Technology', 'Coding']},
+      ),
+    ];
+    
+    _detections.addAll(mockDetections);
+    _detectionsController.add(List.unmodifiable(_detections));
+    _saveToStorage();
   }
 
   /// Add a new detection to history
