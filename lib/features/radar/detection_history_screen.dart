@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'models/detection_model.dart';
+import 'models/user_model.dart';
 import 'services/detection_history_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -104,6 +105,35 @@ class DetectionHistoryScreen extends HookWidget {
           ),
         ),
         actions: [
+          // Debug button to add test detection
+          IconButton(
+            onPressed: () {
+              // Add a test detection for debugging
+              final testUser = NearbyUser(
+                id: 'test_user_${DateTime.now().millisecondsSinceEpoch}',
+                name: 'Test User',
+                avatar: '',
+                distanceKm: 1.5,
+                angleDegrees: 0.0,
+                signalStrength: 0.8,
+                isOnline: true,
+                isDetected: true,
+                isSelected: false,
+                interests: ['Testing'],
+                lastSeen: DateTime.now(),
+                metadata: {'test': true},
+              );
+              detectionService.addDetection(testUser);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Test detection added')),
+              );
+            },
+            icon: Icon(
+              Icons.bug_report,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            tooltip: 'Add Test Detection',
+          ),
           IconButton(
             onPressed: () => _showSettingsDialog(context, detectionService),
             icon: Icon(
