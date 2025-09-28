@@ -130,7 +130,10 @@ class RadarService {
       
       // Save to detection history
       if (_settings.enableAutoDetection) {
+        print('RadarService: Saving detection for user ${user.name} to history');
         _detectionHistoryService.addDetection(user);
+      } else {
+        print('RadarService: Auto detection disabled, not saving to history');
       }
     }
   }
@@ -154,6 +157,7 @@ class RadarService {
     _emitDetection(updatedUser, true);
     
     // Save to detection history
+    print('RadarService: Manually detecting user ${updatedUser.name} and saving to history');
     _detectionHistoryService.addDetection(updatedUser);
   }
 

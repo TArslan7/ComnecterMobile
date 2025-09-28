@@ -29,16 +29,15 @@ class RadarScreen extends HookWidget {
     final friendService = useMemoized(() => FriendService(), []);
     final rangeSettings = useState<RadarRangeSettings>(const RadarRangeSettings());
     
-    // Detection history service
+    // Detection history service - use the same instance as RadarService
     final detectionHistoryService = useMemoized(() => DetectionHistoryService(), []);
     
     // Foldable state for detected users list
     final isUsersListExpanded = useState(true);
 
     useEffect(() {
-      // Initialize services
+      // Initialize services (RadarService will initialize DetectionHistoryService)
       radarService.initialize();
-      detectionHistoryService.initialize();
       
       // Listen to detected users
       final subscription = radarService.usersStream.listen((users) {

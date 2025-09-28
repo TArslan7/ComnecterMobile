@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'models/detection_model.dart';
+import 'models/user_model.dart';
 import 'services/detection_history_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -20,12 +21,31 @@ class DetectionHistoryScreen extends HookWidget {
     final currentSort = useState(DetectionSort.newest);
     final showSwipeHints = useState(true);
     final selectedTab = useState(0); // 0 = Recent Detections, 1 = Saved Favorites
+    final isClearing = useState(false);
 
     // Initialize service and load data
     useEffect(() {
       Future.microtask(() async {
-        await detectionService.initialize();
-        isLoading.value = false;
+        try {
+          await detectionService.initialize();
+          
+          // Load initial data after initialization
+          final loadedDetections = detectionService.getDetections(
+            filter: currentFilter.value,
+            sort: currentSort.value,
+          );
+          final loadedFavorites = detectionService.getFavorites(sort: currentSort.value);
+          
+          
+          // Update state
+          detections.value = loadedDetections;
+          favorites.value = loadedFavorites;
+          
+          
+          isLoading.value = false;
+        } catch (e) {
+          isLoading.value = false;
+        }
       });
       return null;
     }, []);
@@ -135,16 +155,17 @@ class DetectionHistoryScreen extends HookWidget {
               child: selectedTab.value == 0
                   ? Container(
                       key: const ValueKey('detections'),
-                      child: _buildDetectionsSection(
-                        context,
-                        detections.value,
-                        favorites.value,
-                        currentFilter.value,
-                        currentSort.value,
-                        showSwipeHints.value,
-                        isLoading.value,
-                        detectionService,
-                      ),
+                        child: _buildDetectionsSection(
+                          context,
+                          detections.value,
+                          favorites.value,
+                          currentFilter.value,
+                          currentSort.value,
+                          showSwipeHints.value,
+                          isLoading.value,
+                          isClearing,
+                          detectionService,
+                        ),
                     )
                   : Container(
                       key: const ValueKey('favorites'),
@@ -198,6 +219,199 @@ class DetectionHistoryScreen extends HookWidget {
     );
   }
 
+  void _showClearHistoryDialog(BuildContext context, DetectionHistoryService service, ValueNotifier<bool> isClearing) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.clear_all,
+                color: Colors.red.shade600,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Clear Detection History',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.red.shade700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to clear your detection history?',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This action will remove all recent detections from your history.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Warning section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade600,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Important',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'This action cannot be undone. Your saved favorites will remain safe.',
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _clearDetectionHistoryWithAnimation(context, service, isClearing);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 2,
+            ),
+            child: const Text(
+              'Clear History',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      ),
+    );
+  }
+
+  Future<void> _clearDetectionHistoryWithAnimation(BuildContext context, DetectionHistoryService service, ValueNotifier<bool> isClearing) async {
+    // Start clearing animation
+    isClearing.value = true;
+    
+    // Wait for animation to complete
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    try {
+      // Clear the detection history
+      await service.clearDetections();
+      
+      // Stop clearing animation
+      isClearing.value = false;
+
+      // Show success message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Detection history cleared successfully'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Stop clearing animation
+      isClearing.value = false;
+
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing history: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildTabButton(
     BuildContext context,
     String title,
@@ -248,8 +462,10 @@ class DetectionHistoryScreen extends HookWidget {
     DetectionSort sort,
     bool showSwipeHints,
     bool isLoading,
+    ValueNotifier<bool> isClearing,
     DetectionHistoryService detectionService,
   ) {
+    
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -281,11 +497,51 @@ class DetectionHistoryScreen extends HookWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (detections.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showClearHistoryDialog(context, detectionService, isClearing),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.clear_all,
+                            color: Colors.red.shade600,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Clear',
+                            style: TextStyle(
+                              color: Colors.red.shade600,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),
           
-          // Detections list
+          // Detections list - Simplified approach
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -297,14 +553,215 @@ class DetectionHistoryScreen extends HookWidget {
                           final detection = detections[index];
                           final isFavorite = favorites.any((f) => f.userId == detection.userId);
                           
-                          return _buildDetectionCard(
-                            context,
-                            detection,
-                            isFavorite,
-                            () => _onDetectionTap(context, detection),
-                            () => _onSaveToFavorites(detectionService, detection),
-                            () => _onRemoveFromFavorites(detectionService, detection.userId),
-                          );
+                          
+                          return AnimatedOpacity(
+                            opacity: isClearing.value ? 0.0 : 1.0,
+                            duration: const Duration(milliseconds: 500),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOut,
+                              margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isFavorite 
+                                    ? Colors.red.withValues(alpha: 0.2)
+                                    : Colors.grey.shade100,
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 12,
+                                  spreadRadius: 0,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(16),
+                                onTap: () => _onDetectionTap(context, detection),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Row(
+                                    children: [
+                                      // Avatar
+                                      Stack(
+                                        children: [
+                                          Container(
+                                            width: 56,
+                                            height: 56,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  AppTheme.primary,
+                                                  AppTheme.primary.withValues(alpha: 0.8),
+                                                ],
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppTheme.primary.withValues(alpha: 0.3),
+                                                  blurRadius: 8,
+                                                  spreadRadius: 0,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                detection.name.isNotEmpty ? detection.name[0].toUpperCase() : '?',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 20,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          if (isFavorite)
+                                            Positioned(
+                                              right: -2,
+                                              top: -2,
+                                              child: Container(
+                                                width: 20,
+                                                height: 20,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.shade600,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(color: Colors.white, width: 2),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.red.withValues(alpha: 0.3),
+                                                      blurRadius: 4,
+                                                      spreadRadius: 0,
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: const Icon(
+                                                  Icons.favorite,
+                                                  color: Colors.white,
+                                                  size: 12,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      
+                                      const SizedBox(width: 16),
+                                      
+                                      // User info
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              detection.name,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black87,
+                                                height: 1.2,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.primary.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.location_on,
+                                                        size: 14,
+                                                        color: AppTheme.primary,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${detection.distanceKm.toStringAsFixed(1)} km',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: AppTheme.primary,
+                                                          fontWeight: FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.grey.withValues(alpha: 0.1),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.access_time,
+                                                        size: 14,
+                                                        color: Colors.grey.shade600,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        _formatTimestamp(detection.detectedAt),
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey.shade600,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      
+                                      // Action button
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: isFavorite 
+                                              ? Colors.red.withValues(alpha: 0.1)
+                                              : Colors.grey.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: IconButton(
+                                          onPressed: isFavorite 
+                                              ? () => _onRemoveFromFavorites(detectionService, detection.userId)
+                                              : () => _onSaveToFavorites(detectionService, detection),
+                                          icon: Icon(
+                                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                                            color: isFavorite ? Colors.red.shade600 : Colors.grey.shade600,
+                                            size: 22,
+                                          ),
+                                          tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                                          padding: const EdgeInsets.all(12),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
                         },
                       ),
           ),
@@ -380,22 +837,6 @@ class DetectionHistoryScreen extends HookWidget {
     );
   }
 
-  Widget _buildDetectionCard(
-    BuildContext context,
-    UserDetection detection,
-    bool isFavorite,
-    VoidCallback onTap,
-    VoidCallback onSaveToFavorites,
-    VoidCallback onRemoveFromFavorites,
-  ) {
-    return _SwipeableDetectionCard(
-      detection: detection,
-      isFavorite: isFavorite,
-      onTap: onTap,
-      onSaveToFavorites: onSaveToFavorites,
-      onRemoveFromFavorites: onRemoveFromFavorites,
-    );
-  }
 
   Widget _buildFavoriteCard(
     BuildContext context,
@@ -717,302 +1158,7 @@ class DetectionHistoryScreen extends HookWidget {
   }
 }
 
-/// A swipeable detection card with glow animations
-class _SwipeableDetectionCard extends HookWidget {
-  final UserDetection detection;
-  final bool isFavorite;
-  final VoidCallback? onTap;
-  final VoidCallback? onSaveToFavorites;
-  final VoidCallback? onRemoveFromFavorites;
 
-  const _SwipeableDetectionCard({
-    required this.detection,
-    this.isFavorite = false,
-    this.onTap,
-    this.onSaveToFavorites,
-    this.onRemoveFromFavorites,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final swipeOffset = useState(0.0);
-    final isSwipeActive = useState(false);
-    final animationController = useAnimationController(
-      duration: const Duration(milliseconds: 200),
-    );
-    final glowController = useAnimationController(
-      duration: const Duration(milliseconds: 1500),
-    );
-
-    // Handle swipe gestures
-    void handlePanUpdate(DragUpdateDetails details) {
-      if (isFavorite) return; // Don't allow swiping for favorites
-      
-      final delta = details.delta.dx;
-      final newOffset = (swipeOffset.value + delta).clamp(-200.0, 200.0);
-      swipeOffset.value = newOffset;
-      
-      if (newOffset.abs() > 50) {
-        isSwipeActive.value = true;
-        animationController.forward();
-      } else {
-        isSwipeActive.value = false;
-        animationController.reverse();
-      }
-    }
-
-    void handlePanEnd(DragEndDetails details) {
-      if (isFavorite) return;
-      
-      if (swipeOffset.value > 100) {
-        // Swipe right - save to favorites with glow animation
-        glowController.forward().then((_) {
-          glowController.reverse();
-        });
-        onSaveToFavorites?.call();
-        HapticFeedback.mediumImpact();
-      } else {
-        // Reset position
-        animationController.reverse();
-      }
-      
-      swipeOffset.value = 0.0;
-      isSwipeActive.value = false;
-    }
-
-    return GestureDetector(
-      onPanUpdate: handlePanUpdate,
-      onPanEnd: handlePanEnd,
-      onTap: onTap,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([animationController, glowController]),
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(swipeOffset.value, 0),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                  // Glow effect when swiping
-                  if (isSwipeActive.value)
-                    BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.3 + (glowController.value * 0.4)),
-                      blurRadius: 20 + (glowController.value * 30),
-                      spreadRadius: 5 + (glowController.value * 15),
-                    ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Main card content
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isFavorite 
-                            ? Colors.red.withValues(alpha: 0.3)
-                            : Colors.grey.shade200,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        // Avatar
-                        Stack(
-                          children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppTheme.primary,
-                                    AppTheme.primary.withValues(alpha: 0.7),
-                                  ],
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  detection.name.isNotEmpty ? detection.name[0].toUpperCase() : '?',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (isFavorite)
-                              Positioned(
-                                right: -2,
-                                top: -2,
-                                child: Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
-                                  ),
-                                  child: const Icon(
-                                    Icons.favorite,
-                                    color: Colors.white,
-                                    size: 10,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        
-                        const SizedBox(width: 12),
-                        
-                        // User info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                detection.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    size: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${detection.distanceKm.toStringAsFixed(1)} km',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _formatTimestamp(detection.detectedAt),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Action button
-                        if (isFavorite)
-                          IconButton(
-                            onPressed: onRemoveFromFavorites,
-                            icon: Icon(
-                              Icons.favorite,
-                              color: Colors.red.shade400,
-                              size: 20,
-                            ),
-                            tooltip: 'Remove from favorites',
-                          )
-                        else
-                          IconButton(
-                            onPressed: onSaveToFavorites,
-                            icon: Icon(
-                              Icons.favorite_border,
-                              color: Colors.grey.shade400,
-                              size: 20,
-                            ),
-                            tooltip: 'Add to favorites',
-                          ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Swipe action indicators
-                  if (!isFavorite) _buildSwipeActions(context, animationController, swipeOffset.value),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSwipeActions(BuildContext context, AnimationController animationController, double swipeOffset) {
-    return Positioned.fill(
-      child: Row(
-        children: [
-          // Right side - save action
-          if (swipeOffset > 50)
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
-                  ),
-                ),
-                child: AnimatedBuilder(
-                  animation: animationController,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: 1.0 + (animationController.value * 0.3),
-                      child: const Center(
-                        child: Icon(
-                          Icons.favorite,
-                          color: Colors.green,
-                          size: 24,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _formatTimestamp(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    if (difference.inMinutes < 1) {
-      return 'just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
-    }
-  }
-}
-
-/// Bottom sheet for showing detection details
 class _DetectionDetailsSheet extends StatelessWidget {
   final UserDetection detection;
 

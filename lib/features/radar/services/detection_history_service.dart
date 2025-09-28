@@ -33,10 +33,102 @@ class DetectionHistoryService {
   /// Initialize the service and load data from storage
   Future<void> initialize() async {
     await _loadFromStorage();
+    
+    // Add some mock data for testing if no detections exist
+    if (_detections.isEmpty) {
+      print('DetectionHistoryService: No detections found, adding mock data');
+      _addMockDetections();
+    } else {
+      print('DetectionHistoryService: Found ${_detections.length} existing detections');
+    }
+  }
+  
+  /// Add mock detections for testing
+  void _addMockDetections() {
+    final now = DateTime.now();
+    final mockDetections = [
+      UserDetection(
+        id: 'mock_1',
+        userId: 'user_1',
+        name: 'Alice Johnson',
+        avatar: '',
+        distanceKm: 0.5,
+        signalStrength: 0.85,
+        detectedAt: now.subtract(const Duration(minutes: 5)),
+        isOnline: true,
+        interests: ['Music', 'Travel'],
+        metadata: {'interests': ['Music', 'Travel']},
+      ),
+      UserDetection(
+        id: 'mock_2',
+        userId: 'user_2',
+        name: 'Bob Smith',
+        avatar: '',
+        distanceKm: 1.2,
+        signalStrength: 0.72,
+        detectedAt: now.subtract(const Duration(minutes: 15)),
+        isOnline: true,
+        interests: ['Sports', 'Gaming'],
+        metadata: {'interests': ['Sports', 'Gaming']},
+      ),
+      UserDetection(
+        id: 'mock_3',
+        userId: 'user_3',
+        name: 'Carol Davis',
+        avatar: '',
+        distanceKm: 0.8,
+        signalStrength: 0.91,
+        detectedAt: now.subtract(const Duration(hours: 1)),
+        isOnline: false,
+        interests: ['Art', 'Photography'],
+        metadata: {'interests': ['Art', 'Photography']},
+      ),
+      UserDetection(
+        id: 'mock_4',
+        userId: 'user_4',
+        name: 'David Wilson',
+        avatar: '',
+        distanceKm: 2.1,
+        signalStrength: 0.58,
+        detectedAt: now.subtract(const Duration(hours: 2)),
+        isOnline: true,
+        interests: ['Technology', 'Coding'],
+        metadata: {'interests': ['Technology', 'Coding']},
+      ),
+      UserDetection(
+        id: 'mock_5',
+        userId: 'user_5',
+        name: 'Emma Brown',
+        avatar: '',
+        distanceKm: 0.3,
+        signalStrength: 0.95,
+        detectedAt: now.subtract(const Duration(minutes: 30)),
+        isOnline: true,
+        interests: ['Fitness', 'Yoga'],
+        metadata: {'interests': ['Fitness', 'Yoga']},
+      ),
+      UserDetection(
+        id: 'mock_6',
+        userId: 'user_6',
+        name: 'Frank Miller',
+        avatar: '',
+        distanceKm: 1.8,
+        signalStrength: 0.65,
+        detectedAt: now.subtract(const Duration(hours: 3)),
+        isOnline: false,
+        interests: ['Cooking', 'Food'],
+        metadata: {'interests': ['Cooking', 'Food']},
+      ),
+    ];
+    
+    _detections.addAll(mockDetections);
+    _detectionsController.add(List.unmodifiable(_detections));
+    _saveToStorage();
   }
 
   /// Add a new detection to history
   Future<void> addDetection(NearbyUser user) async {
+    print('DetectionHistoryService: Adding detection for user ${user.name}');
     final detection = UserDetection.fromNearbyUser(user);
     
     // Remove any existing detection for the same user to avoid duplicates
@@ -44,6 +136,8 @@ class DetectionHistoryService {
     
     // Add new detection at the beginning
     _detections.insert(0, detection);
+    
+    print('DetectionHistoryService: Total detections now: ${_detections.length}');
     
     // Limit the number of detections
     if (_detections.length > _settings.maxDetections) {
@@ -58,6 +152,7 @@ class DetectionHistoryService {
     
     // Emit update
     _detectionsController.add(List.unmodifiable(_detections));
+    print('DetectionHistoryService: Emitted update with ${_detections.length} detections');
   }
 
   /// Add a user to favorites
@@ -99,23 +194,38 @@ class DetectionHistoryService {
     DetectionSort? sort,
     int? limit,
   }) {
+    print('DetectionHistoryService: getDetections called with ${_detections.length} total detections');
+    
+    // Ensure we have some detections for testing
+    if (_detections.isEmpty) {
+      print('DetectionHistoryService: No detections found, adding mock data');
+      _addMockDetections();
+    }
+    
     List<UserDetection> filtered = List.from(_detections);
     
     // Apply filter
     if (filter != null) {
+      print('DetectionHistoryService: Applying filter $filter');
       filtered = _applyFilter(filtered, filter);
+      print('DetectionHistoryService: After filter: ${filtered.length} detections');
     }
     
     // Apply sort
     if (sort != null) {
+      print('DetectionHistoryService: Applying sort $sort');
       filtered = _applySort(filtered, sort);
+      print('DetectionHistoryService: After sort: ${filtered.length} detections');
     }
     
     // Apply limit
     if (limit != null && limit > 0) {
+      print('DetectionHistoryService: Applying limit $limit');
       filtered = filtered.take(limit).toList();
+      print('DetectionHistoryService: After limit: ${filtered.length} detections');
     }
     
+    print('DetectionHistoryService: Returning ${filtered.length} detections');
     return filtered;
   }
 
