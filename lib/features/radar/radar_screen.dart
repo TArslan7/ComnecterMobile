@@ -38,6 +38,8 @@ class RadarScreen extends HookWidget {
     // Real-time privacy settings feedback
     final currentRange = useState(1.0);
     final displayRange = useState(1.0); // Range displayed in UI (only updates after save)
+    final pendingRange = useState(1.0); // Range that user is adjusting (not yet saved)
+    final hasPendingChanges = useState(false); // Track if there are unsaved changes
     final isDetectable = useState(true);
 
     useEffect(() {
@@ -46,6 +48,7 @@ class RadarScreen extends HookWidget {
         // Initialize privacy settings
         currentRange.value = radarService.getCurrentRange();
         displayRange.value = currentRange.value; // Set display range to current range
+        pendingRange.value = currentRange.value; // Set pending range to current range
         isDetectable.value = radarService.getDetectabilityStatus();
         // Initialize range settings with current range
         rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
@@ -57,6 +60,7 @@ class RadarScreen extends HookWidget {
         // Update privacy settings from radar service
         currentRange.value = radarService.getCurrentRange();
         displayRange.value = currentRange.value; // Update display range
+        pendingRange.value = currentRange.value; // Update pending range
         isDetectable.value = radarService.getDetectabilityStatus();
         // Update range settings to reflect current state
         rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
@@ -74,13 +78,17 @@ class RadarScreen extends HookWidget {
       };
     }, []);
 
-    // Update range settings when changed
-    useEffect(() {
+    // Save range changes function
+    void saveRangeChanges() {
+      // Update the range settings with pending range
+      rangeSettings.value = rangeSettings.value.copyWith(rangeKm: pendingRange.value);
+      // Apply the changes to radar service
       radarService.updateRangeSettings(rangeSettings.value);
-      // Update display range only when range is actually applied
-      displayRange.value = rangeSettings.value.rangeKm;
-      return null;
-    }, [rangeSettings.value]);
+      // Update display range to show saved value
+      displayRange.value = pendingRange.value;
+      // Clear pending changes
+      hasPendingChanges.value = false;
+    }
 
     useEffect(() {
       if (isDetectable.value) {
@@ -453,15 +461,46 @@ class RadarScreen extends HookWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: RadarRangeSlider(
-                  settings: rangeSettings.value,
+                  settings: rangeSettings.value.copyWith(rangeKm: pendingRange.value),
                   onChanged: (newSettings) {
-                    rangeSettings.value = newSettings;
-                    // Only update display range when user saves (not during live interaction)
-                    // The display range will be updated when the range is actually applied
+                    // Update pending range and mark as having changes
+                    pendingRange.value = newSettings.rangeKm;
+                    hasPendingChanges.value = true;
                   },
                   userCount: detectedUsers.value.length,
                 ),
               ),
+              
+              // Save Range Button
+              if (hasPendingChanges.value) ...[
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: saveRangeChanges,
+                          icon: const Icon(Icons.save, size: 18),
+                          label: Text(
+                            'Update Range to ${rangeSettings.value.copyWith(rangeKm: pendingRange.value).getDisplayValue()}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               
               const SizedBox(height: 25),
               
