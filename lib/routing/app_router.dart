@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../features/auth/two_factor_screen.dart';
-import '../features/radar/radar_screen.dart';
+import '../features/discover/discover_screen.dart';
 import '../features/radar/detection_history_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/profile/profile_screen.dart';
@@ -98,8 +98,8 @@ GoRouter createRouter([WidgetRef? ref]) {
         routes: [
           GoRoute(
             path: '/',
-            name: 'radar',
-            builder: (context, state) => const RadarScreen(),
+            name: 'discover',
+            builder: (context, state) => const DiscoverScreen(),
           ),
           GoRoute(
             path: '/detection-history',
@@ -178,7 +178,8 @@ class RootNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final location = GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString(); // ✅ werkt altijd
+    final location = GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
+    
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
@@ -186,7 +187,7 @@ class RootNavigation extends StatelessWidget {
           color: Theme.of(context).colorScheme.surface,
           boxShadow: [
             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 4,
               offset: const Offset(0, -2),
             ),
@@ -195,57 +196,65 @@ class RootNavigation extends StatelessWidget {
         child: SafeArea(
           child: SizedBox(
             height: 80,
-            child: NavigationBar(
-              selectedIndex: _calculateSelectedIndex(location),
-              onDestinationSelected: (index) {
-                switch (index) {
-                  case 0:
-                    context.go('/');
-                    break;
-                  case 1:
-                    context.go('/chat');
-                    break;
-                  case 2:
-                    context.go('/profile');
-                    break;
-                  case 3:
-                    context.go('/community');
-                    break;
-                  case 4:
-                    context.go('/event');
-                    break;
-                }
-              },
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.radar), 
-                  label: 'Radar',
-                  tooltip: 'Radar',
+            child: Row(
+              children: [
+                // Main navigation tabs
+                Expanded(
+                  child: NavigationBar(
+                    selectedIndex: _calculateSelectedIndex(location),
+                    onDestinationSelected: (index) {
+                      switch (index) {
+                        case 0:
+                          context.go('/');
+                          break;
+                        case 1:
+                          context.go('/chat');
+                          break;
+                        case 2:
+                          context.go('/profile');
+                          break;
+                        case 3:
+                          context.go('/community');
+                          break;
+                        case 4:
+                          context.go('/event');
+                          break;
+                      }
+                    },
+                    destinations: const [
+                      NavigationDestination(
+                        icon: Icon(Icons.explore), 
+                        label: 'Discover',
+                        tooltip: 'Discover',
+                      ),
+                      NavigationDestination(
+                        icon: Icon(Icons.chat_bubble), 
+                        label: 'Chat',
+                        tooltip: 'Chat',
+                      ),
+                      NavigationDestination(
+                        icon: Icon(Icons.person), 
+                        label: 'Profile',
+                        tooltip: 'Profile',
+                      ),
+                      NavigationDestination(
+                        icon: Icon(Icons.groups), 
+                        label: 'Community',
+                        tooltip: 'Community',
+                      ),
+                      NavigationDestination(
+                        icon: Icon(Icons.event), 
+                        label: 'Event',
+                        tooltip: 'Event',
+                      ),
+                    ],
+                    labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                    height: 80,
+                    elevation: 0,
+                  ),
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.chat_bubble), 
-                  label: 'Chat',
-                  tooltip: 'Chat',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person), 
-                  label: 'Profile',
-                  tooltip: 'Profile',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.groups), 
-                  label: 'Community',
-                  tooltip: 'Community',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.event), 
-                  label: 'Event',
-                  tooltip: 'Event',
-                ),
+                
               ],
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              height: 80,
-              elevation: 0,
             ),
           ),
         ),
@@ -260,4 +269,5 @@ class RootNavigation extends StatelessWidget {
     if (location.startsWith('/event')) return 4;
     return 0;
   }
+
 }
