@@ -38,6 +38,7 @@ class RadarScreen extends HookWidget {
     // Real-time privacy settings feedback
     final currentRange = useState(1.0);
     final displayRange = useState(1.0); // Range displayed in UI (only updates after save)
+    final displayUnit = useState(false); // Unit displayed in UI (only updates after save)
     final pendingRange = useState(1.0); // Range that user is adjusting (not yet saved)
     final hasPendingChanges = useState(false); // Track if there are unsaved changes
     final isDetectable = useState(true);
@@ -48,6 +49,7 @@ class RadarScreen extends HookWidget {
         // Initialize privacy settings
         currentRange.value = radarService.getCurrentRange();
         displayRange.value = currentRange.value; // Set display range to current range
+        displayUnit.value = rangeSettings.value.useMiles; // Set display unit to current unit
         pendingRange.value = currentRange.value; // Set pending range to current range
         isDetectable.value = radarService.getDetectabilityStatus();
         // Initialize range settings with current range
@@ -60,7 +62,11 @@ class RadarScreen extends HookWidget {
         // Update privacy settings from radar service
         currentRange.value = radarService.getCurrentRange();
         displayRange.value = currentRange.value; // Update display range
-        pendingRange.value = currentRange.value; // Update pending range
+        displayUnit.value = rangeSettings.value.useMiles; // Update display unit
+        // Only update pending range if there are no pending changes
+        if (!hasPendingChanges.value) {
+          pendingRange.value = currentRange.value; // Update pending range
+        }
         isDetectable.value = radarService.getDetectabilityStatus();
         // Update range settings to reflect current state
         rangeSettings.value = rangeSettings.value.copyWith(rangeKm: currentRange.value);
@@ -84,8 +90,9 @@ class RadarScreen extends HookWidget {
       rangeSettings.value = rangeSettings.value.copyWith(rangeKm: pendingRange.value);
       // Apply the changes to radar service
       radarService.updateRangeSettings(rangeSettings.value);
-      // Update display range to show saved value
+      // Update display range and unit to show saved values
       displayRange.value = pendingRange.value;
+      displayUnit.value = rangeSettings.value.useMiles;
       // Clear pending changes
       hasPendingChanges.value = false;
     }
@@ -411,7 +418,7 @@ class RadarScreen extends HookWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          rangeSettings.value.copyWith(rangeKm: displayRange.value).getDisplayValue(),
+                          rangeSettings.value.copyWith(rangeKm: displayRange.value, useMiles: displayUnit.value).getDisplayValue(),
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.w600,

@@ -53,6 +53,7 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
       _currentRange = newRange;
     });
     
+    // Only update the range, preserve all other settings including useMiles
     final newSettings = widget.settings.copyWith(rangeKm: newRange);
     widget.onChanged(newSettings);
   }
@@ -80,6 +81,7 @@ class _RadarRangeSliderState extends State<RadarRangeSlider> {
         // Apply constraints
         rangeKm = rangeKm.clamp(0.1, 321.87);
         
+        // Update range but preserve unit setting
         _updateRange(rangeKm);
       }
     }
