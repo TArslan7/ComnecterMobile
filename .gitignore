@@ -336,11 +336,18 @@ analytics/
 *private*
 *confidential*
 *internal*
-*test*
-*debug*
-*staging*
-*production*
-*development*
+# More specific patterns to avoid ignoring documentation
+test-*
+debug-*
+staging-*
+production-*
+development-*
+# Ignore environment-specific config files
+test.env
+debug.env
+staging.env
+production.env
+development.env
 
 # Specific Sensitive Files Found in Codebase
 lib/firebase_options.dart
