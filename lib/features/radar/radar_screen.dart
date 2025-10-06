@@ -11,11 +11,12 @@ import 'models/detection_model.dart';
 import 'widgets/radar_range_slider.dart';
 
 class RadarScreen extends HookWidget {
-  const RadarScreen({super.key});
+  final bool? isDetectableParam;
+  
+  const RadarScreen({super.key, this.isDetectableParam});
 
   @override
   Widget build(BuildContext context) {
-    final isScanning = useState(true);
     final heartbeatController = useAnimationController(
       duration: const Duration(milliseconds: 800),
     );
@@ -41,7 +42,7 @@ class RadarScreen extends HookWidget {
     final displayUnit = useState(false); // Unit displayed in UI (only updates after save)
     final pendingRange = useState(1.0); // Range that user is adjusting (not yet saved)
     final hasPendingChanges = useState(false); // Track if there are unsaved changes
-    final isDetectable = useState(true);
+    final isDetectable = useState(isDetectableParam ?? true);
 
     useEffect(() {
       // Initialize services (RadarService will initialize DetectionHistoryService)
@@ -110,10 +111,6 @@ class RadarScreen extends HookWidget {
       return null;
     }, [isDetectable.value]);
 
-    void toggleRadarVisibility() {
-      isDetectable.value = !isDetectable.value;
-      radarService.toggleRadarVisibility(isDetectable.value);
-    }
 
     void sendFriendRequest(NearbyUser user) async {
       try {
@@ -146,68 +143,7 @@ class RadarScreen extends HookWidget {
       }
     }
 
-    return Scaffold(
-              backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () {
-            context.push('/settings');
-          },
-          icon: Icon(
-            Icons.settings,
-            color: Theme.of(context).colorScheme.primary,
-            size: 24,
-          ),
-          tooltip: 'Settings',
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              context.push('/detection-history');
-            },
-            icon: Icon(
-              Icons.favorite,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
-            ),
-            tooltip: 'Saved Favorites',
-          ),
-          IconButton(
-            onPressed: () {
-              context.push('/notifications');
-            },
-            icon: Icon(
-              Icons.notifications,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
-            ),
-            tooltip: 'Notifications',
-          ),
-          IconButton(
-            onPressed: () {
-              context.push('/friends');
-            },
-            icon: Icon(
-              Icons.people,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
-            ),
-            tooltip: 'Friends',
-          ),
-          IconButton(
-            onPressed: toggleRadarVisibility,
-            icon: Icon(
-              isDetectable.value ? Icons.visibility : Icons.visibility_off,
-              color: isDetectable.value ? Colors.green.shade600 : Colors.grey.shade600,
-              size: 24,
-            ),
-            tooltip: isDetectable.value ? 'Hide from Radar' : 'Show on Radar',
-          ),
-        ],
-      ),
-      body: Container(
+    return Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -647,7 +583,6 @@ class RadarScreen extends HookWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
