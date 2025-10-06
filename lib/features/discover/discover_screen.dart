@@ -25,6 +25,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   List<Map<String, dynamic>> friends = [];
   List<Map<String, dynamic>> communities = [];
   List<Map<String, dynamic>> events = [];
+  bool _isDetectable = true;
   
   late RadarService radarService;
   late DetectionHistoryService detectionHistoryService;
@@ -71,6 +72,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () {
+            context.push('/settings');
+          },
+          icon: Icon(
+            Icons.settings,
+            color: Theme.of(context).colorScheme.primary,
+            size: 24,
+          ),
+          tooltip: 'Settings',
+        ),
         title: Text(
           _getViewTitle(currentView),
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -83,22 +97,56 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             icon: Icon(
               _getViewIcon(currentView),
               color: Theme.of(context).colorScheme.primary,
+              size: 24,
             ),
             onPressed: () => _showViewSelectorModal(context),
             tooltip: 'Switch View',
           ),
-          // Settings button
           IconButton(
+            onPressed: () {
+              context.push('/detection-history');
+            },
             icon: Icon(
-              Icons.settings,
+              Icons.favorite,
               color: Theme.of(context).colorScheme.primary,
+              size: 24,
             ),
-            onPressed: () => context.push('/settings'),
-            tooltip: 'Settings',
+            tooltip: 'Saved Favorites',
           ),
+          IconButton(
+            onPressed: () {
+              context.push('/notifications');
+            },
+            icon: Icon(
+              Icons.notifications,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
+            tooltip: 'Notifications',
+          ),
+          IconButton(
+            onPressed: () {
+              context.push('/friends');
+            },
+            icon: Icon(
+              Icons.people,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
+            tooltip: 'Friends',
+          ),
+          // Show/Hide Radar button (only visible in radar view)
+          if (currentView == DiscoverViewType.radar)
+            IconButton(
+              onPressed: () => _toggleRadarVisibility(),
+              icon: Icon(
+                _isDetectable ? Icons.visibility : Icons.visibility_off,
+                color: _isDetectable ? Colors.green.shade600 : Colors.grey.shade600,
+                size: 24,
+              ),
+              tooltip: _isDetectable ? 'Hide from Radar' : 'Show on Radar',
+            ),
         ],
-        elevation: 0,
-        backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
         child: Column(
@@ -129,6 +177,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           radarService: data['radarService'] as RadarService,
           detectionHistoryService: data['detectionHistoryService'] as DetectionHistoryService,
           friendService: data['friendService'] as FriendService,
+          isDetectable: _isDetectable,
         );
       case DiscoverViewType.map:
         return MapView(
@@ -157,8 +206,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
+  void _toggleRadarVisibility() {
+    setState(() {
+      _isDetectable = !_isDetectable;
+    });
+    radarService.toggleRadarVisibility(_isDetectable);
+  }
+
   Future<void> _loadData() async {
     try {
+      // Initialize radar visibility state
+      _isDetectable = radarService.getDetectabilityStatus();
+      
       // Load friends
       final friendsList = friendService.getFriends();
       setState(() {
@@ -224,7 +283,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       case DiscoverViewType.map:
         return 'Map';
       case DiscoverViewType.scroll:
-        return 'Discover';
+        return 'Scroll';
     }
   }
 
@@ -246,7 +305,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       case DiscoverViewType.map:
         return 'Real-time map with users and events';
       case DiscoverViewType.scroll:
-        return 'Browse detected users, friends, and communities';
+        return 'Scrollable list of users, friends, and communities';
     }
   }
 
@@ -347,6 +406,7 @@ class RadarView extends StatelessWidget {
   final RadarService radarService;
   final DetectionHistoryService detectionHistoryService;
   final FriendService friendService;
+  final bool isDetectable;
 
   const RadarView({
     super.key,
@@ -354,11 +414,12 @@ class RadarView extends StatelessWidget {
     required this.radarService,
     required this.detectionHistoryService,
     required this.friendService,
+    required this.isDetectable,
   });
 
   @override
   Widget build(BuildContext context) {
     // This will be the existing radar screen content
-    return const RadarScreen();
+    return RadarScreen(isDetectableParam: isDetectable);
   }
 }
