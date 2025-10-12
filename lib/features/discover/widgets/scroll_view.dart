@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import '../../radar/models/user_model.dart';
 import '../../friends/services/friend_service.dart';
 
@@ -22,7 +23,7 @@ class ScrollView extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final selectedTab = useState(0);
-    final tabs = ['Detected Users', 'Friends', 'Communities', 'Events'];
+    final tabs = ['All', 'Detected Users', 'Communities', 'Events', 'Saved'];
 
     return Column(
       children: [
@@ -82,10 +83,11 @@ class ScrollView extends HookWidget {
             child: IndexedStack(
               index: selectedTab.value,
               children: [
+                _buildAllFeedView(context),
                 _buildDetectedUsersList(context),
-                _buildFriendsList(context),
                 _buildCommunitiesList(context),
                 _buildEventsList(context),
+                _buildSavedList(context),
               ],
             ),
           ),
@@ -94,43 +96,131 @@ class ScrollView extends HookWidget {
     );
   }
 
-  Widget _buildDetectedUsersList(BuildContext context) {
-    if (detectedUsers.isEmpty) {
+  Widget _buildAllFeedView(BuildContext context) {
+    // Check if we have any content
+    final hasContent = detectedUsers.isNotEmpty || communities.isNotEmpty || events.isNotEmpty;
+    
+    if (!hasContent) {
       return _buildEmptyState(
         context,
-        'No users detected',
-        'Start scanning to discover people nearby',
-        Icons.radar,
+        'Nothing detected yet',
+        'Start exploring to discover nearby content',
+        Icons.explore_off,
       );
     }
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8),
-      itemCount: detectedUsers.length,
-      itemBuilder: (context, index) {
-        final user = detectedUsers[index];
-        return _buildUserCard(context, user);
-      },
+    
+    return Column(
+      children: [
+        // Open All Feed Button (full screen TikTok-style)
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                context.push('/discover/all');
+              },
+              icon: const Icon(Icons.fullscreen),
+              label: const Text('Open All Detected Feed'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ),
+        
+        // Mixed list showing ALL content
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(top: 8),
+            children: [
+              // Show ALL detected users
+              if (detectedUsers.isNotEmpty) ...[
+                _buildSectionHeader(context, 'Users Nearby (${detectedUsers.length})', Icons.person),
+                ...detectedUsers.map((user) => _buildUserCard(context, user)),
+              ],
+              
+              // Show ALL communities
+              if (communities.isNotEmpty) ...[
+                _buildSectionHeader(context, 'Communities (${communities.length})', Icons.groups),
+                ...communities.map((community) => _buildCommunityCard(context, community)),
+              ],
+              
+              // Show ALL events
+              if (events.isNotEmpty) ...[
+                _buildSectionHeader(context, 'Events (${events.length})', Icons.event),
+                ...events.map((event) => _buildEventCard(context, event)),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildFriendsList(BuildContext context) {
-    if (friends.isEmpty) {
-      return _buildEmptyState(
-        context,
-        'No friends yet',
-        'Connect with people you meet to build your network',
-        Icons.people,
-      );
-    }
+  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8),
-      itemCount: friends.length,
-      itemBuilder: (context, index) {
-        final friend = friends[index];
-        return _buildFriendCard(context, friend);
-      },
+  Widget _buildDetectedUsersList(BuildContext context) {
+    return Column(
+      children: [
+        // Users Feed Button - Always visible
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                context.push('/discover/users');
+              },
+              icon: const Icon(Icons.person_search),
+              label: const Text('Open Users Feed'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ),
+        
+        // List of detected users or empty state
+        Expanded(
+          child: detectedUsers.isEmpty
+              ? _buildEmptyState(
+                  context,
+                  'No users detected',
+                  'Start scanning to discover people nearby',
+                  Icons.radar,
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.only(top: 8),
+                  itemCount: detectedUsers.length,
+                  itemBuilder: (context, index) {
+                    final user = detectedUsers[index];
+                    return _buildUserCard(context, user);
+                  },
+                ),
+        ),
+      ],
     );
   }
 
@@ -144,13 +234,40 @@ class ScrollView extends HookWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8),
-      itemCount: communities.length,
-      itemBuilder: (context, index) {
-        final community = communities[index];
-        return _buildCommunityCard(context, community);
-      },
+    return Column(
+      children: [
+        // Communities Feed Button
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                context.push('/discover/communities');
+              },
+              icon: const Icon(Icons.groups),
+              label: const Text('Open Communities Feed'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ),
+        
+        // List of communities
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(top: 8),
+            itemCount: communities.length,
+            itemBuilder: (context, index) {
+              final community = communities[index];
+              return _buildCommunityCard(context, community);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -164,13 +281,46 @@ class ScrollView extends HookWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 8),
-      itemCount: events.length,
-      itemBuilder: (context, index) {
-        final event = events[index];
-        return _buildEventCard(context, event);
-      },
+    return Column(
+      children: [
+        // Events Feed Button
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Events Feed: Screen file needs to be created. Feature is 85% ready!'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+                // context.push('/discover/events'); // Uncomment when events_feed_screen.dart is created
+              },
+              icon: const Icon(Icons.event),
+              label: const Text('Open Events Feed (Coming Soon)'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                foregroundColor: Theme.of(context).colorScheme.onSecondary,
+              ),
+            ),
+          ),
+        ),
+        
+        // List of events
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(top: 8),
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return _buildEventCard(context, event);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -178,6 +328,10 @@ class ScrollView extends HookWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
+        onTap: () {
+          // Navigate to Users Feed when tapping a user in scroll view
+          context.push('/discover/users');
+        },
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: Theme.of(context).colorScheme.primary,
@@ -207,57 +361,12 @@ class ScrollView extends HookWidget {
               ),
           ],
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              onPressed: () => _sendFriendRequest(context, user),
-              icon: const Icon(Icons.person_add),
-              tooltip: 'Send friend request',
-            ),
-            IconButton(
-              onPressed: () => _startChat(context, user),
-              icon: const Icon(Icons.chat),
-              tooltip: 'Start chat',
-            ),
-          ],
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 16,
         ),
         isThreeLine: true,
-      ),
-    );
-  }
-
-  Widget _buildFriendCard(BuildContext context, Map<String, dynamic> friend) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-          child: Text(
-            friend['avatar'] ?? '👤',
-            style: const TextStyle(fontSize: 20),
-          ),
-        ),
-        title: Text(
-          friend['name'] ?? 'Unknown',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          friend['status'] ?? 'Online',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: friend['status'] == 'Online' 
-                ? Colors.green 
-                : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          ),
-        ),
-        trailing: IconButton(
-          onPressed: () => _startChat(context, friend),
-          icon: const Icon(Icons.chat),
-          tooltip: 'Start chat',
-        ),
       ),
     );
   }
@@ -266,11 +375,15 @@ class ScrollView extends HookWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
+        onTap: () {
+          // Navigate to Communities Feed when tapping a community in scroll view
+          context.push('/discover/communities');
+        },
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: Theme.of(context).colorScheme.tertiary,
           child: Text(
-            community['image'] ?? '👥',
+            community['avatar'] ?? community['image'] ?? '👥',
             style: const TextStyle(fontSize: 20),
           ),
         ),
@@ -303,9 +416,10 @@ class ScrollView extends HookWidget {
             ),
           ],
         ),
-        trailing: ElevatedButton(
-          onPressed: () => _joinCommunity(context, community),
-          child: const Text('Join'),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 16,
         ),
         isThreeLine: true,
       ),
@@ -313,12 +427,20 @@ class ScrollView extends HookWidget {
   }
 
   Widget _buildEventCard(BuildContext context, Map<String, dynamic> event) {
-    final eventDate = event['date'] as DateTime;
-    final isUpcoming = eventDate.isAfter(DateTime.now());
-    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
+        onTap: () {
+          // Navigate to Events Feed when tapping an event in scroll view
+          // Show message since events feed is not complete yet
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Events Feed coming soon! Feature is 85% ready.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // context.push('/discover/events'); // Uncomment when events feed screen is ready
+        },
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: Theme.of(context).colorScheme.error,
@@ -366,7 +488,7 @@ class ScrollView extends HookWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${event['attendees']} attending',
+                  '${event['attendeeCount'] ?? event['attendees'] ?? 0} attending',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
@@ -375,12 +497,69 @@ class ScrollView extends HookWidget {
             ),
           ],
         ),
-        trailing: ElevatedButton(
-          onPressed: isUpcoming ? () => _attendEvent(context, event) : null,
-          child: Text(isUpcoming ? 'Attend' : 'Past'),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 16,
         ),
         isThreeLine: true,
       ),
+    );
+  }
+
+  Widget _buildSavedList(BuildContext context) {
+    // This would show saved/favorited items (users, communities, events)
+    // For now, show a placeholder since we don't have saved items yet
+    return Column(
+      children: [
+        // Info about saved items
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.bookmark,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Your Saved Items',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Save users, communities, and events to view them later',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        
+        // Saved items list (currently empty)
+        Expanded(
+          child: _buildEmptyState(
+            context,
+            'No saved items yet',
+            'Tap the bookmark icon on any card to save it for later',
+            Icons.bookmark_border,
+          ),
+        ),
+      ],
     );
   }
 
@@ -410,63 +589,6 @@ class ScrollView extends HookWidget {
             textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-
-  void _sendFriendRequest(BuildContext context, NearbyUser user) async {
-    try {
-      await friendService.sendFriendRequest(
-        user.id,
-        user.name,
-        user.avatar,
-        message: 'Hey! I detected you on radar. Would you like to connect?',
-      );
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Friend request sent to ${user.name}!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send friend request: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _startChat(BuildContext context, dynamic user) {
-    // Navigate to chat screen
-    // This would typically navigate to a chat screen with the selected user
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Starting chat with ${user.name ?? user['name']}'),
-      ),
-    );
-  }
-
-  void _joinCommunity(BuildContext context, Map<String, dynamic> community) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Joining ${community['name']}...'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _attendEvent(BuildContext context, Map<String, dynamic> event) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Attending ${event['title']}...'),
-        backgroundColor: Colors.green,
       ),
     );
   }

@@ -104,17 +104,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
           IconButton(
             onPressed: () {
-              context.push('/detection-history');
-            },
-            icon: Icon(
-              Icons.favorite,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
-            ),
-            tooltip: 'Saved Favorites',
-          ),
-          IconButton(
-            onPressed: () {
               context.push('/notifications');
             },
             icon: Icon(

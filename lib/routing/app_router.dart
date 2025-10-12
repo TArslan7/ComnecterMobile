@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../features/auth/two_factor_screen.dart';
 import '../features/discover/discover_screen.dart';
-import '../features/radar/detection_history_screen.dart';
+import '../features/discover/all_feed_screen.dart';
+import '../features/discover/users_feed_screen.dart';
+import '../features/discover/communities_feed_screen.dart';
 import '../features/chat/chat_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/community/community_screen.dart';
@@ -16,6 +18,7 @@ import '../features/notifications/notifications_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/auth/sign_up_screen.dart';
+import '../features/subscription/subscription_screen.dart';
 
 GoRouter createRouter([WidgetRef? ref]) {
   return GoRouter(
@@ -102,11 +105,6 @@ GoRouter createRouter([WidgetRef? ref]) {
             builder: (context, state) => const DiscoverScreen(),
           ),
           GoRoute(
-            path: '/detection-history',
-            name: 'detection-history',
-            builder: (context, state) => const DetectionHistoryScreen(),
-          ),
-          GoRoute(
             path: '/chat',
             name: 'chat',
             builder: (context, state) => const ChatScreen(),
@@ -140,6 +138,26 @@ GoRouter createRouter([WidgetRef? ref]) {
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/discover/all',
+            name: 'discover-all',
+            builder: (context, state) => const AllFeedScreen(),
+          ),
+          GoRoute(
+            path: '/discover/users',
+            name: 'discover-users',
+            builder: (context, state) => const UsersFeedScreen(),
+          ),
+          GoRoute(
+            path: '/discover/communities',
+            name: 'discover-communities',
+            builder: (context, state) => const CommunitiesFeedScreen(),
+          ),
+          GoRoute(
+            path: '/subscription',
+            name: 'subscription',
+            builder: (context, state) => const SubscriptionScreen(),
           ),
         ],
       ),
