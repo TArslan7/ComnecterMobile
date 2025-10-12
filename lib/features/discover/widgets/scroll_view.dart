@@ -379,12 +379,27 @@ class ScrollView extends HookWidget {
           // Navigate to Communities Feed when tapping a community in scroll view
           context.push('/discover/communities');
         },
-        leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: Theme.of(context).colorScheme.tertiary,
-          child: Text(
-            community['avatar'] ?? community['image'] ?? '👥',
-            style: const TextStyle(fontSize: 20),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+              ],
+            ),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              community['avatar'] ?? community['image'] ?? '👥',
+              style: const TextStyle(fontSize: 20),
+            ),
           ),
         ),
         title: Text(
