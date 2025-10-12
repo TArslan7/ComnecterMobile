@@ -312,7 +312,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
   void _openCreateCommunitySheet() {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
-    final scaffoldContext = context; // Capture context before showing bottom sheet
 
     showModalBottomSheet(
       context: context,
@@ -320,7 +319,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
+      builder: (modalContext) {
         return Padding(
           padding: EdgeInsets.only(
             left: 16,
@@ -342,7 +341,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(modalContext),
                   ),
                 ],
               ),
@@ -377,25 +376,35 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   onPressed: () {
                     final name = nameController.text.trim();
                     if (name.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ScaffoldMessenger.of(modalContext).showSnackBar(
                         const SnackBar(content: Text('Please enter a community name.')),
                       );
                       return;
                     }
+                    
+                    final description = descriptionController.text.trim();
+                    
+                    // Close modal and wait for it to complete
+                    Navigator.pop(modalContext);
+                    
+                    // Add community after modal is dismissed
                     setState(() {
                       joinedCommunities.insert(0, {
                         'name': name,
                         'avatar': '🎯',
-                        'description': descriptionController.text.trim(),
+                        'description': description,
                         'memberCount': 1,
                         'tags': ['New'],
                         'isVerified': false,
                       });
                     });
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-                      SnackBar(content: Text('Community "$name" created')),
-                    );
+                    
+                    // Show success message
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Community "$name" created')),
+                      );
+                    }
                   },
                 ),
               ),
