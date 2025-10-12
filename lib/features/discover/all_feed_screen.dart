@@ -84,13 +84,13 @@ class _AllFeedScreenState extends ConsumerState<AllFeedScreen> {
     final isPremium = _subscriptionService.currentSubscription?.plan != SubscriptionPlan.free;
     
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       appBar: AppBar(
         title: const Text(
           'Discover',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         elevation: 0,
         actions: [
           // Hide Boosted toggle (premium feature)
