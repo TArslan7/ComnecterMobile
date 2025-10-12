@@ -312,6 +312,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   void _openCreateCommunitySheet() {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
+    final scaffoldContext = context; // Capture context before showing bottom sheet
 
     showModalBottomSheet(
       context: context,
@@ -392,7 +393,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       });
                     });
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(this.context).showSnackBar(
+                    ScaffoldMessenger.of(scaffoldContext).showSnackBar(
                       SnackBar(content: Text('Community "$name" created')),
                     );
                   },
